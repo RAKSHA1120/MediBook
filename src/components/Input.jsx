@@ -12,6 +12,7 @@ function Input({
       placeholder={placeholder}
       value={value}
       onChange={onChange}
+      className="input"
     />
   );
 }
