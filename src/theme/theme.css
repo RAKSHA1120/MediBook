@@ -1,1229 +1,84 @@
-<<<<<<< HEAD
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-
-:root {
-  /* Primary & Accent Colors */
-  --primary: #3B6FB6;
-  --primary-hover: #2d5d9c;
-  --primary-dark: #1e4577;
-  --primary-light: #eef4fb;
-  --primary-soft: #d2e4f7;
-  
-  --accent: #06b6d4; /* Cyan accent for clinical tech look */
-  --accent-soft: rgba(6, 182, 212, 0.1);
-  
-  /* Background Colors */
-  --background: #ffffff; /* Clean white background */
-=======
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap");
 
 :root {
-  /* ================================
+   /* ================================
      Typography
   ================================= */
 
-  --font-heading: "IBM Plex Serif", serif;
-  --font-body: "Inter", sans-serif;
+   --font-heading: "IBM Plex Serif", serif;
+   --font-body: "Inter", sans-serif;
 
-  /* ================================
+   /* ================================
      Colors
      Soft Healthcare Blue
   ================================= */
 
-  --primary: #2f6fa3;
-  --primary-hover: #275d89;
-  --primary-light: #6ec0ff;
-  --primary-soft: #abe1ff;
+   --primary: #2f6fa3;
+   --primary-hover: #275d89;
+   --primary-light: #6ec0ff;
+   --primary-soft: #abe1ff;
 
-  --background: #f4fafd;
->>>>>>> b9beb97 (Build MediBook design system components)
-  --surface: #ffffff;
-  --surface-glass: #ffffff;
+   --background: #f4fafd;
+   --surface: #ffffff;
+   --surface-glass: #ffffff;
 
-<<<<<<< HEAD
-  /* Text Colors */
-  --text-heading: #0f172a;
-  --text: #475569;
-  --text-muted: #94a3b8;
+   --text-heading: #172033;
+   --text-primary: #52657a;
+   --text-muted: #94a3b8;
 
-  /* Borders */
-  --border: #e2e8f0;
-  --border-light: rgba(226, 232, 240, 0.6);
+   --border: #d9e7f0;
 
-  /* Status Colors */
-  --success: #10b981; /* Emerald green */
-  --warning: #f59e0b;
-  --error: #ef4444;
-=======
-  --text-heading: #172033;
-  --text-primary: #52657a;
-  --text-muted: #94a3b8;
+   --success: #22a06b;
+   --warning: #f59e0b;
+   --error: #d64545;
 
-  --border: #d9e7f0;
-
-  --success: #22a06b;
-  --warning: #f59e0b;
-  --error: #d64545;
-
-  /* ================================
+   /* ================================
      Border Radius
   ================================= */
->>>>>>> b9beb97 (Build MediBook design system components)
 
-  /* Radius */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+   /* Radius */
+   --radius-sm: 8px;
+   --radius-md: 12px;
+   --radius-lg: 20px;
+   --radius-xl: 28px;
 
-<<<<<<< HEAD
-  /* Shadow System */
-  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 16px 36px rgba(15, 23, 42, 0.12);
-  --shadow-glow: 0 0 25px rgba(59, 111, 182, 0.25);
-
-  /* Font */
-  --font-family: 'Plus Jakarta Sans', Inter, system-ui, -apple-system, sans-serif;
-}
-
-/* ================================
-   Base Component Overrides
-================================ */
-
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-  color: #ffffff;
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 12px 24px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(59, 111, 182, 0.2);
-}
-
-.btn-primary::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
-  transition: 0.5s;
-}
-
-.btn-primary:hover:not(:disabled)::before {
-  left: 100%;
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 111, 182, 0.35);
-}
-
-.btn-primary:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: #cbd5e1;
-  box-shadow: none;
-}
-
-/* Modern Input Fields */
-.input-container {
-  position: relative;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  transition: all 0.3s ease;
-}
-
-.input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text-heading);
-  font-size: 14px;
-  outline: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.input::placeholder {
-  color: var(--text-muted);
-}
-
-/* Icon padding styling */
-.has-icon .input {
-  padding-left: 44px;
-}
-
-.input-icon {
-  position: absolute;
-  left: 14px;
-  color: var(--text-muted);
-  pointer-events: none;
-  transition: color 0.3s ease;
-}
-
-.input-focus-line {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 0;
-  height: 2px;
-  background: var(--primary);
-  transition: all 0.3s ease;
-  transform: translateX(-50%);
-  border-radius: 2px;
-  pointer-events: none;
-}
-
-/* Input Focus States */
-.input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(59, 111, 182, 0.15);
-  background: #fff;
-}
-
-.input:focus ~ .input-focus-line {
-  width: 90%;
-}
-
-.input:focus ~ .input-icon {
-  color: var(--primary);
-}
-
-/* Input Error & Success States */
-.input-container.has-error .input {
-  border-color: var(--error);
-  background: rgba(239, 68, 68, 0.02);
-}
-.input-container.has-error .input:focus {
-  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
-}
-.input-container.has-error .input-focus-line {
-  background: var(--error);
-}
-
-.input-container.has-success .input {
-  border-color: var(--success);
-  background: rgba(16, 185, 129, 0.01);
-}
-.input-container.has-success .input:focus {
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
-}
-.input-container.has-success .input-focus-line {
-  background: var(--success);
-}
-
-.card {
-  background: var(--surface-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: var(--radius-lg);
-  padding: 36px;
-  box-shadow: var(--shadow-md);
-}
-
-
-/* ================================
-   MediBook Login Redesign Styles
-================================ */
-
-.login-page {
-  min-height: 100vh;
-  padding: 40px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #ffffff;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(59, 111, 182, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.04) 0px, transparent 50%);
-  position: relative;
-  overflow: hidden;
-}
-
-/* Background floating glow spheres */
-.bg-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(120px);
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.4;
-}
-
-.bg-glow-1 {
-  width: 400px;
-  height: 400px;
-  background: rgba(59, 111, 182, 0.12);
-  top: -10%;
-  left: 20%;
-  animation: float-orb 22s infinite alternate ease-in-out;
-}
-
-.bg-glow-2 {
-  width: 500px;
-  height: 500px;
-  background: rgba(6, 182, 212, 0.08);
-  bottom: -15%;
-  right: 15%;
-  animation: float-orb 28s infinite alternate-reverse ease-in-out;
-}
-
-.bg-glow-3 {
-  width: 300px;
-  height: 300px;
-  background: rgba(124, 58, 237, 0.06);
-  top: 40%;
-  left: 45%;
-  animation: float-orb 18s infinite alternate ease-in-out;
-}
-
-@keyframes float-orb {
-  0% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(50px, 30px) scale(1.1);
-  }
-  100% {
-    transform: translate(-30px, -50px) scale(0.9);
-  }
-}
-
-/* Core Layout Container */
-.login-layout {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  max-width: 1100px;
-  min-height: 680px;
-  display: grid;
-  grid-template-columns: 1fr 1.15fr;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  box-shadow: 
-    0 20px 50px rgba(15, 23, 42, 0.08),
-    0 4px 12px rgba(15, 23, 42, 0.02);
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
-}
-
-.login-layout:hover {
-  transform: translateY(-2px);
-}
-
-/* --------------------------------
-   LEFT branding panel styling
---------------------------------- */
-.login-info {
-  position: relative;
-  padding: 56px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  color: #ffffff;
-  background: linear-gradient(145deg, #0f1c3f, #1e3a8a, #0369a1);
-  overflow: hidden;
-}
-
-/* Heartbeat and technical lines background SVG */
-.info-bg-pattern {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.heartbeat-line {
-  stroke-dasharray: 1000;
-  stroke-dashoffset: 1000;
-  animation: draw-heartbeat 6s linear infinite;
-  opacity: 0.25;
-}
-
-@keyframes draw-heartbeat {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-.brand-header {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.brand-logo-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.brand-logo {
-  width: 52px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #06b6d4;
-  box-shadow: 0 8px 32px rgba(6, 182, 212, 0.2);
-  z-index: 2;
-}
-
-.pulse-icon {
-  animation: pulse-scale 2s infinite ease-in-out;
-}
-
-@keyframes pulse-scale {
-  0%, 100% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 2px rgba(6, 182, 212, 0.3));
-  }
-  50% {
-    transform: scale(1.15);
-    filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.8));
-  }
-}
-
-.brand-logo-ring {
-  position: absolute;
-  width: 68px;
-  height: 68px;
-  border: 2px solid rgba(6, 182, 212, 0.3);
-  border-radius: 50%;
-  animation: breathe-ring 3s infinite ease-in-out;
-  pointer-events: none;
-}
-
-@keyframes breathe-ring {
-  0% {
-    transform: scale(0.7);
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.2);
-    opacity: 0;
-  }
-}
-
-.brand-titles h1 {
-  color: #ffffff;
-  font-size: 32px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-}
-
-.brand-subtitle {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 14px;
-  font-weight: 500;
-  margin-top: 2px;
-}
-
-/* Floating Testimonial Card */
-.healthcare-message {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  gap: 16px;
-  padding: 24px;
-  border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 
-    0 10px 30px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  margin: 40px 0;
-  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-}
-
-.healthcare-message:hover {
-  transform: translateY(-5px) scale(1.02);
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 15px 35px rgba(6, 182, 212, 0.15);
-}
-
-.message-icon-wrapper {
-  flex-shrink: 0;
-}
-
-.message-icon {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(6, 182, 212, 0.2);
-  color: #22d3ee;
-  border: 1px solid rgba(6, 182, 212, 0.3);
-}
-
-.message-text strong {
-  display: block;
-  font-size: 15px;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 6px;
-}
-
-.message-text p {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-/* Features checklist */
-.login-features {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.feature-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.feature-check {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #34d399;
-}
-
-.feature-item p {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* Security Badge */
-.secure-badge {
-  position: relative;
-  z-index: 2;
-  margin-top: 48px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 100px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  align-self: flex-start;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.secure-icon {
-  color: #10b981;
-  animation: pulse-secure 2.5s infinite ease-in-out;
-}
-
-@keyframes pulse-secure {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; transform: scale(1.05); }
-}
-
-
-/* --------------------------------
-   RIGHT form panel styling
---------------------------------- */
-.login-form-section {
-  display: flex;
-  align-items: center;
-  padding: 56px;
-}
-
-.login-form-section .card {
-  width: 100%;
-  padding: 0;
-  border: none;
-  box-shadow: none;
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-/* Form Header */
-.login-header {
-  margin-bottom: 32px;
-}
-
-.welcome-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--primary-light);
-  color: var(--primary);
-  padding: 6px 12px;
-  border-radius: 100px;
-  border: 1px solid rgba(59, 111, 182, 0.15);
-  margin-bottom: 12px;
-}
-
-.tag-icon {
-  animation: rotate-sparkle 4s linear infinite;
-}
-
-@keyframes rotate-sparkle {
-  0% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(180deg) scale(1.1); }
-  100% { transform: rotate(360deg) scale(1); }
-}
-
-.welcome-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-}
-
-.login-header h2 {
-  font-size: 32px;
-  font-weight: 800;
-  color: var(--text-heading);
-  letter-spacing: -0.5px;
-  margin-bottom: 8px;
-}
-
-.login-subtext {
-  color: var(--text);
-  font-size: 14px;
-}
-
-/* Forms layout styling */
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.form-group label {
-  color: var(--text-heading);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.input-with-validation {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.validation-icon-container {
-  position: absolute;
-  right: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  animation: bounce-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes bounce-in {
-  0% { transform: scale(0); }
-  100% { transform: scale(1); }
-}
-
-.validation-icon-container.success {
-  color: var(--success);
-}
-
-.validation-icon-container.error {
-  color: var(--error);
-}
-
-/* Message styling under field */
-.field-message {
-  font-size: 11px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  margin-top: 4px;
-}
-
-.field-message.success {
-  color: var(--success);
-}
-
-.field-message.error {
-  color: #b91c1c; /* Professional deep crimson */
-}
-
-/* Password eye button positioning */
-.password-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.password-wrapper .input {
-  padding-right: 48px;
-}
-
-.password-toggle-btn {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  padding: 4px;
-  color: var(--text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  border-radius: 6px;
-}
-
-.password-toggle-btn:hover {
-  color: var(--primary);
-  background: var(--primary-light);
-  transform: translateY(-50%) scale(1.05);
-}
-
-.password-toggle-btn:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-.password-label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.forgot-password-link {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--primary);
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  transition: color 0.2s ease;
-  position: relative;
-}
-
-.forgot-password-link::after {
-  content: '';
-  position: absolute;
-  width: 100%;
-  transform: scaleX(0);
-  height: 1.5px;
-  bottom: -2px;
-  left: 0;
-  background-color: var(--primary);
-  transform-origin: bottom right;
-  transition: transform 0.25s ease-out;
-}
-
-.forgot-password-link:hover {
-  color: var(--primary-hover);
-}
-
-.forgot-password-link:hover::after {
-  transform: scaleX(1);
-  transform-origin: bottom left;
-}
-
-/* Password Strength Indicator */
-.password-strength-container {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.strength-bar-track {
-  width: 100%;
-  height: 5px;
-  background: #e2e8f0;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.strength-bar-fill {
-  height: 100%;
-  width: 0%;
-  border-radius: 10px;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s ease;
-}
-
-.strength-level-1 {
-  background-color: #cbd5e1; /* Soft Slate */
-}
-
-.strength-level-2 {
-  background-color: #60a5fa; /* Soft Blue */
-}
-
-.strength-level-3 {
-  background-color: var(--primary); /* Deep Brand Blue */
-}
-
-.strength-label-text {
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.strength-text-1 {
-  color: #64748b; /* Slate */
-}
-
-.strength-text-2 {
-  color: #2563eb; /* Blue */
-}
-
-.strength-text-3 {
-  color: var(--primary); /* Deep Blue */
-}
-
-/* Custom checkbox wrapper styling */
-.form-options {
-  display: flex;
-  align-items: center;
-  margin-top: 4px;
-}
-
-.custom-checkbox-container {
-  display: flex;
-  align-items: center;
-  position: relative;
-  padding-left: 28px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-  user-select: none;
-}
-
-.custom-checkbox-container input {
-  position: absolute;
-  opacity: 0;
-  cursor: pointer;
-  height: 0;
-  width: 0;
-}
-
-.checkbox-checkmark {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  transform: translateY(-50%);
-  height: 18px;
-  width: 18px;
-  background-color: #ffffff;
-  border: 1.5px solid var(--border);
-  border-radius: 5px;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.custom-checkbox-container:hover input ~ .checkbox-checkmark {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(59, 111, 182, 0.08);
-}
-
-.custom-checkbox-container input:checked ~ .checkbox-checkmark {
-  background-color: var(--primary);
-  border-color: var(--primary);
-  box-shadow: 0 2px 8px rgba(59, 111, 182, 0.25);
-}
-
-.checkbox-checkmark::after {
-  content: "";
-  position: absolute;
-  display: none;
-}
-
-.custom-checkbox-container input:checked ~ .checkbox-checkmark::after {
-  display: block;
-}
-
-.custom-checkbox-container .checkbox-checkmark::after {
-  left: 5px;
-  top: 2px;
-  width: 4px;
-  height: 8px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-.checkbox-label {
-  line-height: 1;
-}
-
-/* Loading button spinner */
-.login-loading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Button hover content slide */
-.btn-inner-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.btn-arrow-icon {
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.btn-primary:hover .btn-arrow-icon {
-  transform: translateX(4px);
-}
-
-/* Social Google Sign in Divider */
-.social-divider {
-  display: flex;
-  align-items: center;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin: 24px 0;
-}
-
-.social-divider::before,
-.social-divider::after {
-  content: '';
-  flex: 1;
-  border-bottom: 1px solid var(--border);
-}
-
-.social-divider:not(:empty)::before {
-  margin-right: 12px;
-}
-
-.social-divider:not(:empty)::after {
-  margin-left: 12px;
-}
-
-.social-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.social-btn {
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 12px;
-  background-color: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-heading);
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: var(--shadow-sm);
-}
-
-.social-btn:hover {
-  background-color: var(--primary-light);
-  border-color: rgba(59, 111, 182, 0.25);
-  color: var(--primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-}
-
-.social-btn:active {
-  transform: translateY(0);
-}
-
-.social-icon {
-  flex-shrink: 0;
-}
-
-/* Register footer container styling */
-.register-link-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 32px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.register-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--primary);
-  cursor: pointer;
-  transition: color 0.2s ease;
-  position: relative;
-}
-
-.register-btn::after {
-  content: '';
-  position: absolute;
-  width: 100%;
-  transform: scaleX(0);
-  height: 1.5px;
-  bottom: -2px;
-  left: 0;
-  background-color: var(--primary);
-  transform-origin: bottom right;
-  transition: transform 0.25s ease-out;
-}
-
-.register-btn:hover {
-  color: var(--primary-hover);
-}
-
-.register-btn:hover::after {
-  transform: scaleX(1);
-  transform-origin: bottom left;
-}
-
-
-/* ================================
-   Modern Premium CSS Animations
-================================ */
-
-/* Custom load animations */
-.animate-fade-in {
-  opacity: 0;
-  animation: fade-in-keyframes 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-fade-in-right {
-  opacity: 0;
-  animation: fade-in-right-keyframes 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-slide-up-1 {
-  opacity: 0;
-  animation: slide-up-keyframes 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: 0.1s;
-}
-
-.animate-slide-up-2 {
-  opacity: 0;
-  animation: slide-up-keyframes 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: 0.2s;
-}
-
-.animate-slide-up-3 {
-  opacity: 0;
-  animation: slide-up-keyframes 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: 0.3s;
-}
-
-.animate-slide-up-4 {
-  opacity: 0;
-  animation: slide-up-keyframes 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: 0.4s;
-}
-
-.animate-slide-down {
-  animation: slide-down-keyframes 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-@keyframes fade-in-keyframes {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fade-in-right-keyframes {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes slide-up-keyframes {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slide-down-keyframes {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-
-/* ================================
-   Responsive Breakpoints
-================================ */
-
-@media (max-width: 992px) {
-  .login-layout {
-    grid-template-columns: 1fr;
-    max-width: 580px;
-    min-height: auto;
-  }
-
-  .login-info {
-    padding: 44px;
-    gap: 36px;
-  }
-
-  .healthcare-message {
-    margin: 20px 0;
-  }
-
-  .secure-badge {
-    margin-top: 24px;
-  }
-
-  .login-form-section {
-    padding: 44px;
-  }
-}
-
-@media (max-width: 576px) {
-  .login-page {
-    padding: 16px 12px;
-  }
-
-  .login-layout {
-    border-radius: var(--radius-lg);
-  }
-
-  .login-info,
-  .login-form-section {
-    padding: 32px 24px;
-  }
-
-  .login-info h1 {
-    font-size: 28px;
-  }
-
-  .login-header h2 {
-    font-size: 26px;
-  }
-
-  .social-actions {
-    flex-direction: column;
-  }
-
-  .login-features {
-    display: none; /* Hide features list on micro screens to save vertical space */
-  }
-  
-  .secure-badge {
-    margin-top: 12px;
-=======
-  /* ================================
+   /* ================================
      Shadows
   ================================= */
 
-  --shadow-sm: 0 1px 3px rgba(23, 32, 51, 0.08);
-  --shadow-md: 0 4px 12px rgba(23, 32, 51, 0.1);
+   --shadow-sm: 0 1px 3px rgba(23, 32, 51, 0.08);
+   --shadow-md: 0 4px 12px rgba(23, 32, 51, 0.1);
 
-  /* ================================
+   /* ================================
      Spacing
   ================================= */
 
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --space-2xl: 40px;
+   --space-xs: 4px;
+   --space-sm: 8px;
+   --space-md: 16px;
+   --space-lg: 24px;
+   --space-xl: 32px;
+   --space-2xl: 40px;
 
-  /* ================================
+   /* ================================
      Component Sizes
   ================================= */
 
-  --input-height: 44px;
-  --button-height: 44px;
+   --input-height: 44px;
+   --button-height: 44px;
 
-  --input-padding-x: 14px;
-  --button-padding-x: 18px;
+   --input-padding-x: 14px;
+   --button-padding-x: 18px;
 
-  /* ================================
+   /* ================================
      Icon Sizes
   ================================= */
 
-  --icon-sm: 16px;
-  --icon-md: 20px;
-  --icon-lg: 24px;
+   --icon-sm: 16px;
+   --icon-md: 20px;
+   --icon-lg: 24px;
 
-  --icon-stroke: 2px;
+   --icon-stroke: 2px;
 }
 
 /* ================================
@@ -1231,20 +86,20 @@
 ================================ */
 
 * {
-  box-sizing: border-box;
+   box-sizing: border-box;
 }
 
 html {
-  font-family: var(--font-body);
-  background: var(--background);
+   font-family: var(--font-body);
+   background: var(--background);
 }
 
 body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background: var(--background);
-  color: var(--text-primary);
+   margin: 0;
+   min-width: 320px;
+   min-height: 100vh;
+   background: var(--background);
+   color: var(--text-primary);
 }
 
 /* ================================
@@ -1257,13 +112,13 @@ h3,
 h4,
 h5,
 h6 {
-  margin: 0;
-  font-family: var(--font-heading);
-  color: var(--text-heading);
+   margin: 0;
+   font-family: var(--font-heading);
+   color: var(--text-heading);
 }
 
 p {
-  margin: 0;
+   margin: 0;
 }
 
 /* ================================
@@ -1274,11 +129,11 @@ button,
 input,
 textarea,
 select {
-  font-family: var(--font-body);
+   font-family: var(--font-body);
 }
 
 button {
-  cursor: pointer;
+   cursor: pointer;
 }
 
 /* ================================
@@ -1286,9 +141,8 @@ button {
 ================================ */
 
 @media (max-width: 768px) {
-  :root {
-    --space-lg: 20px;
-    --space-xl: 24px;
->>>>>>> b9beb97 (Build MediBook design system components)
-  }
+   :root {
+      --space-lg: 20px;
+      --space-xl: 24px;
+   }
 }
