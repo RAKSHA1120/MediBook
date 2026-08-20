@@ -1,207 +1,212 @@
+import { useState } from "react";
 import {
+  Lock,
   Eye,
   EyeOff,
-  Mail,
-  Lock,
-  CheckCircle2,
-  AlertCircle,
   ShieldCheck,
-  Activity,
-  ArrowRight,
-  Check,
-  Sparkles
+  CalendarDays,
+  Workflow,
+  BarChart3,
+  HeartPulse,
 } from "lucide-react";
-import { useState } from "react";
-import Card from "../components/Card";
 import Input from "../components/Input";
 import Button from "../components/Button";
+import FormField from "../components/FormField";
+import Checkbox from "../components/Checkbox";
+import hospitalIllustration from "../assets/hospital_appointment_illustration.png";
+import "./Login.css";
+
+const loginUser = {
+  mobile: "9876543210",
+  password: "123456"
+};
 
 function Login() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [activeTab, setActiveTab] = useState("signin");
 
-  const emailValid =
-    email === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const handleMobileChange = (e) => {
+    setMobile(e.target.value);
+    if (errors.mobile) {
+      setErrors((prev) => ({ ...prev, mobile: "" }));
+    }
+  };
 
-  const passwordStrength =
-    password.length === 0
-      ? 0
-      : password.length < 6
-      ? 1
-      : password.length < 10
-      ? 2
-      : 3;
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value);
+    if (errors.password || errors.mobile === "Invalid mobile number or password") {
+      setErrors((prev) => ({
+        ...prev,
+        password: "",
+        mobile: prev.mobile === "Invalid mobile number or password" ? "" : prev.mobile
+      }));
+    }
+  };
 
-  function handleSubmit(event) {
-    event.preventDefault();
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (loading) return;
 
-    if (!email || !password || !emailValid) {
+    const newErrors = {};
+
+    if (!mobile.trim()) {
+      newErrors.mobile = "Mobile number is required";
+    } else if (!/^\d{10}$/.test(mobile.trim())) {
+      newErrors.mobile = "Enter a valid 10-digit mobile number";
+    }
+
+    if (!password) {
+      newErrors.password = "Password is required";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
+    if (mobile.trim() !== loginUser.mobile || password !== loginUser.password) {
+      setErrors({ mobile: "Invalid mobile number or password" });
+      return;
+    }
+
+    setErrors({});
     setLoading(true);
 
+    // Simulate authentication processing
     setTimeout(() => {
       setLoading(false);
       alert("Login successful!");
     }, 1200);
-  }
+  };
+
+  const handleForgotPassword = (e) => {
+    e.preventDefault();
+    alert("Forgot password clicked. Redirecting to recovery flow...");
+  };
+
+  const handleSignUpClick = () => {
+    setActiveTab("signup");
+    alert("Sign Up flow is currently presentational.");
+  };
 
   return (
-    <div className="login-page">
-      {/* Dynamic Background Glows */}
-      <div className="bg-glow bg-glow-1"></div>
-      <div className="bg-glow bg-glow-2"></div>
-      <div className="bg-glow bg-glow-3"></div>
+    <div className="login-page-wrapper">
+      <div className="login-outer-container">
+        
+        {/* HEALTHCARE SHOWCASE (now on the left on desktop, top on mobile) */}
+        <div className="login-showcase-panel">
+          
+          {/* Background Illustration covering the entire panel */}
+          <img
+            src={hospitalIllustration}
+            alt="Hospital Background"
+            className="login-showcase-bg-image"
+          />
 
-      <div className="login-layout">
-        {/* Left branding panel */}
-        <div className="login-info">
-          {/* Heartbeat path SVG overlay in the background */}
-          <div className="info-bg-pattern">
-            <svg width="100%" height="100%" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M-100,300 L200,300 L230,220 L260,380 L290,280 L310,320 L330,300 L500,300 L530,200 L560,400 L590,260 L610,330 L630,300 L900,300" 
-                    stroke="rgba(255, 255, 255, 0.05)" 
-                    strokeWidth="4" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className="heartbeat-line"
-              />
-            </svg>
+          {/* Main Showcase Message */}
+          <div className="showcase-message-container">
+            <h2 className="showcase-title">
+              Manage Healthcare<br />Better, Together
+            </h2>
+            <p className="showcase-desc">
+              MediBook helps hospitals streamline operations, improve patient care and make smarter decisions from one connected platform.
+            </p>
           </div>
 
-          <div className="brand-header animate-fade-in">
-            <div className="brand-logo-container">
-              <div className="brand-logo">
-                <Activity size={28} className="pulse-icon" />
-              </div>
-              <div className="brand-logo-ring"></div>
+          {/* Bottom Features */}
+          <div className="showcase-features">
+            <div className="showcase-feature-item">
+              <ShieldCheck size={16} className="showcase-feature-icon" />
+              <span>Secure Data Protection</span>
             </div>
-
-            <div className="brand-titles">
-              <h1>MediBook</h1>
-              <p className="brand-subtitle">Your healthcare, simplified.</p>
+            <div className="showcase-feature-item">
+              <Workflow size={16} className="showcase-feature-icon" />
+              <span>Integrated Operations</span>
             </div>
-          </div>
-
-          {/* Frosted Testimonial Card */}
-          <div className="healthcare-message animate-slide-up-1">
-            <div className="message-icon-wrapper">
-              <div className="message-icon">
-                <Sparkles size={16} />
-              </div>
-            </div>
-
-            <div className="message-text">
-              <strong>Care made simple</strong>
-              <p>
-                Find trusted doctors, book appointments,
-                and manage your healthcare in one place.
-              </p>
+            <div className="showcase-feature-item">
+              <BarChart3 size={16} className="showcase-feature-icon" />
+              <span>Real-time Reports & Analytics</span>
             </div>
           </div>
 
-          <div className="login-features">
-            <div className="feature-item animate-slide-up-2">
-              <div className="feature-check">
-                <Check size={12} strokeWidth={3} />
-              </div>
-              <p>Find the right doctor</p>
-            </div>
-
-            <div className="feature-item animate-slide-up-3">
-              <div className="feature-check">
-                <Check size={12} strokeWidth={3} />
-              </div>
-              <p>Book appointments easily</p>
-            </div>
-
-            <div className="feature-item animate-slide-up-4">
-              <div className="feature-check">
-                <Check size={12} strokeWidth={3} />
-              </div>
-              <p>Manage your appointments</p>
-            </div>
-          </div>
-
-          <div className="secure-badge animate-fade-in">
-            <ShieldCheck size={14} className="secure-icon" />
-            <span>Your information is secure</span>
-          </div>
         </div>
 
-        {/* Login section */}
-        <div className="login-form-section animate-fade-in-right">
-          <Card>
-            <div className="login-header">
-              <div className="welcome-tag">
-                <Sparkles size={12} className="tag-icon" />
-                <span className="welcome-label">WELCOME BACK</span>
-              </div>
+        {/* AUTHENTICATION PANEL (now on the right on desktop, bottom on mobile) */}
+        <div className="login-auth-panel">
+          <div className="login-auth-header">
+            <div className="login-auth-logo-mark">
+              <HeartPulse size={16} />
+            </div>
+            <span className="login-auth-brand">MediBook</span>
+          </div>
 
-              <h2>Sign in to MediBook</h2>
-              <p className="login-subtext">
-                Enter your details to continue to your account.
+          <div className="login-auth-content">
+            <div className="welcome-section">
+              <h1 className="welcome-title">Welcome to MediBook</h1>
+              <p className="welcome-desc">
+                Sign in to access your healthcare management dashboard.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="login-form">
-              {/* Email */}
-              <div className="form-group">
-                <label htmlFor="email">
-                  Email address
-                </label>
+            {/* Segmented Auth Toggle Switch */}
+            <div className="auth-toggle">
+              <button
+                type="button"
+                className={`auth-toggle-btn ${activeTab === "signin" ? "active" : ""}`}
+                onClick={() => setActiveTab("signin")}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                className={`auth-toggle-btn ${activeTab === "signup" ? "active" : ""}`}
+                onClick={handleSignUpClick}
+              >
+                Sign Up
+              </button>
+            </div>
 
-                <div className="input-with-validation">
-                  <Input
-                    id="email"
-                    type="email"
-                    name="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    autoComplete="email"
-                    required
-                    icon={Mail}
-                  />
-                </div>
+            <form onSubmit={handleSubmit} className="login-form" noValidate>
+              {/* Mobile Number Input */}
+              <FormField
+                label="Mobile Number"
+                placeholder="Enter your mobile number"
+                value={mobile}
+                onChange={handleMobileChange}
+                error={errors.mobile}
+                required
+              />
 
-                {email && !emailValid && (
-                  <span className="field-message error animate-slide-down">
-                    Please enter a valid email address
-                  </span>
-                )}
-              </div>
-
-              {/* Password */}
-              <div className="form-group">
+              {/* Password Input with label-row for forgot password link */}
+              <div className="form-field">
                 <div className="password-label-row">
-                  <label htmlFor="password">
-                    Password
+                  <label htmlFor="password" className="form-label">
+                    Password <span className="form-required">*</span>
                   </label>
-
-                  <button
-                    type="button"
+                  <a
+                    href="#forgot"
                     className="forgot-password-link"
+                    onClick={handleForgotPassword}
                   >
                     Forgot password?
-                  </button>
+                  </a>
                 </div>
-
                 <div className="password-wrapper">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    name="password"
+                    onChange={handlePasswordChange}
                     icon={Lock}
+                    error={!!errors.password}
+                    required
                   />
-
                   <button
                     type="button"
                     className="password-toggle-btn"
@@ -211,90 +216,65 @@ function Login() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-
-                {/* Password strength */}
-                {password && (
-                  <div className="password-strength-container animate-slide-down">
-                    <div className="strength-bar-track">
-                      <div 
-                        className={`strength-bar-fill strength-level-${passwordStrength}`}
-                        style={{ width: `${(passwordStrength / 3) * 100}%` }}
-                      />
-                    </div>
-
-                    <span className={`strength-label-text strength-text-${passwordStrength}`}>
-                      {passwordStrength === 1
-                        ? "Weak password"
-                        : passwordStrength === 2
-                        ? "Good password"
-                        : "Strong password"}
-                    </span>
-                  </div>
+                {errors.password && (
+                  <span className="form-error">{errors.password}</span>
                 )}
               </div>
 
-              {/* Remember me & Options */}
+              {/* Remember Me Checkbox */}
               <div className="form-options">
-                <label className="custom-checkbox-container">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  <span className="checkbox-checkmark"></span>
-                  <span className="checkbox-label">Remember me</span>
-                </label>
+                <Checkbox
+                  label="Remember me"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
               </div>
 
-              {/* Login button */}
-              <Button
-                type="submit"
-                disabled={
-                  loading ||
-                  !email ||
-                  !password ||
-                  !emailValid
-                }
-              >
-                {loading ? (
-                  <span className="login-loading">
-                    <span className="spinner" />
-                    Signing in...
-                  </span>
-                ) : (
-                  <span className="btn-inner-content">
-                    <span>Sign in</span>
-                    <ArrowRight size={16} className="btn-arrow-icon" />
-                  </span>
-                )}
-              </Button>
+              {/* Login Button */}
+              <div className="login-btn-wrapper">
+                <Button type="submit" loading={loading} disabled={loading}>
+                  Sign In
+                </Button>
+              </div>
             </form>
 
-            {/* Social Login Separator & Button */}
-            <div className="social-divider">
-              <span>or sign in with</span>
+            {/* Social / Alternative Login */}
+            <div className="social-login-section">
+              <div className="social-divider">
+                <span>Or continue with</span>
+              </div>
+              <div className="social-buttons">
+                <button type="button" className="social-btn" disabled>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                  </svg>
+                  Google
+                </button>
+                <button type="button" className="social-btn" disabled>
+                  <svg width="18" height="18" viewBox="0 0 23 23" fill="currentColor">
+                    <path d="M0 0h11v11H0z" fill="#F25022"/>
+                    <path d="M12 0h11v11H12z" fill="#7FBA00"/>
+                    <path d="M0 12h11v11H0z" fill="#00A4EF"/>
+                    <path d="M12 12h11v11H12z" fill="#FFB900"/>
+                  </svg>
+                  Microsoft
+                </button>
+              </div>
             </div>
+          </div>
 
-            <div className="social-actions">
-              <button type="button" className="social-btn google-btn">
-                <svg className="social-icon" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                </svg>
-                <span>Continue with Google</span>
-              </button>
+          <div className="login-auth-footer">
+            <span>© 2026 MediBook. All rights reserved.</span>
+            <div className="footer-links">
+              <a href="#terms" onClick={(e) => { e.preventDefault(); alert("Terms of Service..."); }}>Terms of Service</a>
+              <a href="#privacy" onClick={(e) => { e.preventDefault(); alert("Privacy Policy..."); }}>Privacy Policy</a>
             </div>
-
-            <div className="register-link-container">
-              <span>New to MediBook?</span>
-              <button type="button" className="register-btn">
-                Create an account
-              </button>
-            </div>
-          </Card>
+          </div>
         </div>
+
       </div>
     </div>
   );
