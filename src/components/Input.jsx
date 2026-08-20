@@ -12,8 +12,18 @@ function Input({
   success,
 }) {
   return (
-    <div className={`input-container ${Icon ? "has-icon" : ""} ${error ? "has-error" : ""} ${success ? "has-success" : ""}`}>
-      {Icon && <Icon className="input-icon" size={18} />}
+    <div
+      className={`input-container ${Icon ? "has-icon" : ""
+        } ${error ? "has-error" : ""} ${success ? "has-success" : ""
+        }`}
+    >
+      {Icon && (
+        <Icon
+          className="input-icon"
+          size={18}
+        />
+      )}
+
       <input
         type={type}
         id={id}
@@ -25,6 +35,7 @@ function Input({
         required={required}
         className="input"
       />
+
       <span className="input-focus-line"></span>
     </div>
   );
