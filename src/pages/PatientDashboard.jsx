@@ -23,7 +23,8 @@ import {
   Bone,
   Brain,
   ShieldCheck,
-  Lock
+  Lock,
+  Activity
 } from "lucide-react";
 import doctorsData from "../data/doctors";
 import heroIllustration from "../assets/hospital_appointment_illustration.png";
