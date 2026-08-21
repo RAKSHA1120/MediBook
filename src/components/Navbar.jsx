@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import {
     Search,
     Bell,
@@ -20,7 +21,9 @@ function Navbar({
 
             {/* Left - Page / Brand */}
             <div className="navbar-left">
-                <h1 className="navbar-brand">MediBook</h1>
+                <Link to="/patient-dashboard" className="navbar-brand" style={{ textDecoration: "none" }}>
+                    MediBook
+                </Link>
 
                 {!hideTabs && (
                     <nav className="navbar-tabs">
