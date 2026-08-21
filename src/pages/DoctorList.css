@@ -209,9 +209,17 @@
   min-width: 280px;
 }
 
+.filter-search-wrapper .input-container {
+  width: 100%;
+}
+
 .filter-select-wrapper {
   flex: 1;
   min-width: 200px;
+}
+
+.filter-select-wrapper .select-wrapper {
+  width: 100%;
 }
 
 .filter-btn-wrapper {
