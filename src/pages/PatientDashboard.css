@@ -407,15 +407,8 @@
 }
 
 /* ==================================================
-   Two Column Grid & Improvements
+   Layout Section Improvements
    ================================================== */
-
-.dashboard-grid-two-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28px;
-  align-items: start;
-}
 
 /* Upcoming Appointment Section Improved */
 .upcoming-appointment-section-improved {
@@ -562,9 +555,9 @@
 }
 
 .doctors-grid-improved {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
 }
 
 .doctor-card-improved {
@@ -799,9 +792,8 @@
     display: block;
   }
 
-  .dashboard-grid-two-columns {
-    grid-template-columns: 1fr;
-    gap: 24px;
+  .doctors-grid-improved {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .benefits-section {
@@ -878,6 +870,11 @@
 
   .appointment-card-actions button {
     width: 100%;
+  }
+
+  .doctors-grid-improved {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 
