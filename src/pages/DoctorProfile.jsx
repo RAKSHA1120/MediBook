@@ -20,7 +20,8 @@ import {
   Bell,
   Settings,
   HelpCircle,
-  LogOut
+  LogOut,
+  Search
 } from "lucide-react";
 import doctors from "../data/doctors";
 import Navbar from "../components/Navbar";
