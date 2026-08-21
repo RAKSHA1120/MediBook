@@ -399,10 +399,8 @@ function PatientDashboard() {
             </div>
           </section>
 
-          {/* Two-Column Section on Desktop: Upcoming Appointment + Recommended Doctors */}
-          <div className="dashboard-grid-two-columns">
-            {/* Left Column: Upcoming Appointment */}
-            <section className="upcoming-appointment-section-improved">
+          {/* Upcoming Appointment Section (Full Width) */}
+          <section className="upcoming-appointment-section-improved">
               <div className="section-header">
                 <h3 className="section-main-title">Upcoming Appointment</h3>
                 <button className="view-all-link" onClick={handleMyAppointments}>
@@ -521,7 +519,6 @@ function PatientDashboard() {
                 )}
               </div>
             </section>
-          </div>
 
           {/* 6. Benefits Section */}
           <section className="benefits-section">
