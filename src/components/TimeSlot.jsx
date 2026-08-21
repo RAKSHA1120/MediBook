@@ -1,78 +1,81 @@
-import { useState } from "react";
+import { timeSlots } from "../data/appointments";
 
-function TimeSlot() {
-  const [selectedSlot, setSelectedSlot] = useState("");
+/**
+ * TimeSlot
+ *
+ * Displays time slots grouped by period (Morning / Afternoon / Evening).
+ *
+ * Slot states:
+ *   available   → clickable
+ *   selected    → primary blue, highlighted
+ *   booked      → disabled, red tint
+ *   disabled    → disabled, grey (same visual as booked but neutral)
+ *
+ * Props:
+ *   selectedSlot  {object|null}  currently selected slot object
+ *   onTimeSelect  {function}     called with the full slot object on click
+ */
+function TimeSlot({ selectedSlot, onTimeSelect }) {
 
-  const morningSlots = [
-    { time: "09:00 AM", status: "available" },
-    { time: "09:30 AM", status: "available" },
-    { time: "10:00 AM", status: "booked" },
-    { time: "10:30 AM", status: "available" },
-    { time: "11:00 AM", status: "disabled" },
-  ];
-
-  const afternoonSlots = [
-    { time: "02:00 PM", status: "available" },
-    { time: "02:30 PM", status: "available" },
-    { time: "03:00 PM", status: "booked" },
-    { time: "03:30 PM", status: "available" },
-    { time: "04:00 PM", status: "available" },
-  ];
-
-  const handleSlotClick = (slot) => {
-    if (slot.status === "available") {
-      setSelectedSlot(slot.time);
-    }
+  const handleClick = (slot) => {
+    if (!slot.available) return;
+    if (onTimeSelect) onTimeSelect(slot);
   };
 
-  const renderSlots = (slots) => {
-    return slots.map((slot) => (
-      <button
-        key={slot.time}
-        disabled={
-          slot.status === "booked" ||
-          slot.status === "disabled"
-        }
-        className={`time-slot ${selectedSlot === slot.time ? "selected" : slot.status
-          }`}
-        onClick={() => handleSlotClick(slot)}
-      >
-        {slot.time}
+  // Group slots by their label (Morning / Afternoon / Evening)
+  const groups = timeSlots.reduce((acc, slot) => {
+    if (!acc[slot.label]) acc[slot.label] = [];
+    acc[slot.label].push(slot);
+    return acc;
+  }, {});
 
-        {slot.status === "booked" && (
-          <span>Booked</span>
-        )}
-
-        {slot.status === "disabled" && (
-          <span>Unavailable</span>
-        )}
-      </button>
-    ));
+  const getSlotState = (slot) => {
+    if (selectedSlot && selectedSlot.id === slot.id) return "selected";
+    if (!slot.available) return "booked";
+    return "available";
   };
 
   return (
-    <div className="time-slot-container">
+    <div className="timeslot-container">
+      {Object.entries(groups).map(([group, slots]) => (
+        <div key={group} className="timeslot-group">
+          <p className="timeslot-group-label">{group}</p>
 
-      <h2>Select Time</h2>
+          <div
+            className="timeslot-grid"
+            role="listbox"
+            aria-label={`${group} time slots`}
+          >
+            {slots.map((slot) => {
+              const state      = getSlotState(slot);
+              const isSelected = state === "selected";
+              const isBooked   = state === "booked";
 
-      <h3>Morning</h3>
-
-      <div className="slot-grid">
-        {renderSlots(morningSlots)}
-      </div>
-
-      <h3>Afternoon</h3>
-
-      <div className="slot-grid">
-        {renderSlots(afternoonSlots)}
-      </div>
-
-      {selectedSlot && (
-        <p className="selected-time">
-          Selected Time: {selectedSlot}
-        </p>
-      )}
-
+              return (
+                <button
+                  key={slot.id}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  aria-disabled={isBooked}
+                  aria-label={`${slot.time} — ${
+                    isSelected ? "Selected" : isBooked ? "Not available" : "Available"
+                  }`}
+                  disabled={isBooked}
+                  onClick={() => handleClick(slot)}
+                  className={[
+                    "timeslot-chip",
+                    isSelected && "timeslot-chip--selected",
+                    isBooked   && "timeslot-chip--booked",
+                  ].filter(Boolean).join(" ")}
+                >
+                  {slot.time}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

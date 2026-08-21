@@ -1,86 +1,95 @@
-import { useState } from "react";
-import "./DateSelector.css";
+import { appointmentDates } from "../data/appointments";
 
-function DateSelector() {
+/**
+ * DateSelector
+ *
+ * Horizontal scrollable date strip.
+ *
+ * States per chip:
+ *   available → clickable, green "Open" badge
+ *   booked    → disabled, red "Booked" badge, strikethrough date
+ *   selected  → primary blue fill
+ *
+ * Props:
+ *   selectedDate  {object|null}  currently selected date object
+ *   onDateSelect  {function}     called with the full date object on click
+ */
+function DateSelector({ selectedDate, onDateSelect }) {
 
-    const [selectedDate, setSelectedDate] = useState("");
+  const handleClick = (date) => {
+    if (date.status === "booked") return;
+    if (onDateSelect) onDateSelect(date);
+  };
 
-    const dates = [
-        {
-            day: "Mon",
-            date: "18",
-            status: "available"
-        },
-        {
-            day: "Tue",
-            date: "19",
-            status: "available"
-        },
-        {
-            day: "Wed",
-            date: "20",
-            status: "booked"
-        },
-        {
-            day: "Thu",
-            date: "21",
-            status: "available"
-        },
-        {
-            day: "Fri",
-            date: "22",
-            status: "available"
-        }
-    ];
+  const getState = (date) => {
+    if (selectedDate && selectedDate.id === date.id) return "selected";
+    if (date.status === "booked") return "booked";
+    return "available";
+  };
 
-    const handleDateClick = (date) => {
-        if (date.status === "available") {
-            setSelectedDate(date.date);
-        }
-    };
+  return (
+    <div className="date-selector">
+      {/* Month / year label */}
+      <p className="date-selector-month">
+        {appointmentDates[0]?.month}&nbsp;
+        {appointmentDates[0]?.fullDate.slice(0, 4)}
+      </p>
 
-    return (
-        <div className="date-selector">
+      {/* Scrollable strip */}
+      <div
+        className="date-strip"
+        role="listbox"
+        aria-label="Select an appointment date"
+        aria-orientation="horizontal"
+      >
+        {appointmentDates.map((date) => {
+          const state = getState(date);
+          const isSelected = state === "selected";
+          const isBooked   = state === "booked";
 
-            <h2>Select Date</h2>
+          return (
+            <button
+              key={date.id}
+              type="button"
+              role="option"
+              aria-selected={isSelected}
+              aria-disabled={isBooked}
+              aria-label={`${date.day} ${date.date} ${date.month} — ${
+                isSelected ? "Selected" : isBooked ? "Fully booked" : "Available"
+              }`}
+              disabled={isBooked}
+              onClick={() => handleClick(date)}
+              className={[
+                "date-chip",
+                isSelected  && "date-chip--selected",
+                isBooked    && "date-chip--booked",
+                !isSelected && !isBooked && "date-chip--available",
+              ].filter(Boolean).join(" ")}
+            >
+              <span className="date-chip__day">{date.day}</span>
+              <span className="date-chip__num">{date.date}</span>
+              <span className="date-chip__badge">
+                {isSelected ? "Selected" : isBooked ? "Booked" : "Open"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-            <div className="date-list">
-
-                {dates.map((item) => (
-
-                    <button
-                        key={item.date}
-                        disabled={item.status === "booked"}
-                        className={
-                            selectedDate === item.date
-                                ? "date-box selected"
-                                : `date-box ${item.status}`
-                        }
-                        onClick={() => handleDateClick(item)}
-                    >
-
-                        <span>{item.day}</span>
-
-                        <strong>{item.date}</strong>
-
-                        {item.status === "booked" && (
-                            <small>Booked</small>
-                        )}
-
-                    </button>
-
-                ))}
-
-            </div>
-
-            {selectedDate && (
-                <p className="selected-date">
-                    Selected Date: {selectedDate}
-                </p>
-            )}
-
-        </div>
-    );
+      {/* Legend */}
+      <div className="date-selector-legend" aria-hidden="true">
+        <span className="ds-legend-item ds-legend--available">
+          <span className="ds-legend-dot" />Available
+        </span>
+        <span className="ds-legend-item ds-legend--selected">
+          <span className="ds-legend-dot" />Selected
+        </span>
+        <span className="ds-legend-item ds-legend--booked">
+          <span className="ds-legend-dot" />Booked
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export default DateSelector;
