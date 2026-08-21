@@ -11,7 +11,8 @@ const doctors = [
     consultationFee: 800,
     availability: "Available Today",
     gender: "Female",
-    qualification: "MBBS, MD, DM"
+    qualification: "MBBS, MD, DM",
+    availableDays: ["Mon", "Wed", "Fri"]
   },
   {
     id: 2,
@@ -25,7 +26,8 @@ const doctors = [
     consultationFee: 1000,
     availability: "Available Tomorrow",
     gender: "Male",
-    qualification: "MBBS, MD, DNB (Cardiology)"
+    qualification: "MBBS, MD, DNB (Cardiology)",
+    availableDays: ["Tue", "Thu", "Sat"]
   },
   {
     id: 3,
@@ -39,7 +41,8 @@ const doctors = [
     consultationFee: 600,
     availability: "Available Today",
     gender: "Female",
-    qualification: "MBBS, DCH, MD"
+    qualification: "MBBS, DCH, MD",
+    availableDays: ["Mon", "Tue", "Wed", "Thu", "Fri"]
   },
   {
     id: 4,
@@ -53,7 +56,8 @@ const doctors = [
     consultationFee: 500,
     availability: "Available Today",
     gender: "Male",
-    qualification: "MBBS, MD (General Medicine)"
+    qualification: "MBBS, MD (General Medicine)",
+    availableDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
   },
   {
     id: 5,
@@ -67,7 +71,8 @@ const doctors = [
     consultationFee: 700,
     availability: "Available Today",
     gender: "Female",
-    qualification: "MBBS, DDVL"
+    qualification: "MBBS, DDVL",
+    availableDays: ["Mon", "Wed", "Thu"]
   },
   {
     id: 6,
@@ -81,7 +86,8 @@ const doctors = [
     consultationFee: 1200,
     availability: "Available Tomorrow",
     gender: "Male",
-    qualification: "MBBS, MD, DM (Neurology)"
+    qualification: "MBBS, MD, DM (Neurology)",
+    availableDays: ["Tue", "Thu", "Fri"]
   },
   {
     id: 7,
@@ -95,7 +101,8 @@ const doctors = [
     consultationFee: 750,
     availability: "Available Today",
     gender: "Female",
-    qualification: "MBBS, DGO, MS"
+    qualification: "MBBS, DGO, MS",
+    availableDays: ["Mon", "Tue", "Wed", "Fri"]
   },
   {
     id: 8,
@@ -109,7 +116,8 @@ const doctors = [
     consultationFee: 900,
     availability: "Available Today",
     gender: "Male",
-    qualification: "MBBS, MS (Ortho), M.Ch"
+    qualification: "MBBS, MS (Ortho), M.Ch",
+    availableDays: ["Mon", "Wed", "Thu", "Sat"]
   },
   {
     id: 9,
@@ -123,7 +131,8 @@ const doctors = [
     consultationFee: 650,
     availability: "Available Tomorrow",
     gender: "Female",
-    qualification: "MBBS, MD (Dermatology)"
+    qualification: "MBBS, MD (Dermatology)",
+    availableDays: ["Tue", "Wed", "Fri"]
   }
 ];
 

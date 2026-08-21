@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Search,
   MapPin,
@@ -45,6 +45,7 @@ const patient = {
 
 function DoctorList() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState(location.state?.query || "");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
   const [selectedLocation, setSelectedLocation] = useState("All");
@@ -275,7 +276,7 @@ function DoctorList() {
 
                   {/* Card Actions */}
                   <div className="doc-card-footer">
-                    <Button variant="outline" onClick={() => setSelectedDoctorForModal(doc)}>
+                    <Button variant="outline" onClick={() => navigate(`/doctors/${doc.id}`)}>
                       View Profile
                     </Button>
                     <Button variant="primary" onClick={() => handleBookAppointment(doc.name)}>
