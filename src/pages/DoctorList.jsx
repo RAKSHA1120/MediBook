@@ -20,8 +20,6 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import Select from "../components/Select";
 import Toast from "../components/Toast";
-import Modal from "../components/Modal";
-import Card from "../components/Card";
 import "./DoctorList.css";
 
 // Specialties list for filter options
@@ -50,8 +48,7 @@ function DoctorList() {
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
   const [selectedLocation, setSelectedLocation] = useState("All");
 
-  // Detail Modal & Toast States
-  const [selectedDoctorForModal, setSelectedDoctorForModal] = useState(null);
+  // Toast States
   const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
 
   // Generate location options dynamically from mock doctor data
@@ -301,91 +298,6 @@ function DoctorList() {
           )}
         </section>
       </main>
-
-      {/* Doctor Profile Modal */}
-      {selectedDoctorForModal && (
-        <Modal
-          isOpen={true}
-          onClose={() => setSelectedDoctorForModal(null)}
-          title="Doctor Profile"
-          footer={
-            <>
-              <Button variant="outline" onClick={() => setSelectedDoctorForModal(null)}>
-                Close
-              </Button>
-              <Button variant="primary" onClick={() => {
-                const name = selectedDoctorForModal.name;
-                setSelectedDoctorForModal(null);
-                handleBookAppointment(name);
-              }}>
-                Book Appointment
-              </Button>
-            </>
-          }
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px", fontFamily: "var(--font-body)" }}>
-            <div style={{ display: "flex", gap: "16px", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "16px" }}>
-              <div className="doc-avatar" style={{ width: "64px", height: "64px", fontSize: "22px" }}>
-                {getInitials(selectedDoctorForModal.name)}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <h4 style={{ margin: 0, fontSize: "18px", color: "var(--text-heading)", fontFamily: "var(--font-heading)" }}>
-                  {selectedDoctorForModal.name}
-                </h4>
-                <span className="doc-specialty-badge" style={{ marginTop: "4px" }}>
-                  {selectedDoctorForModal.specialty}
-                </span>
-                <span style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>
-                  {selectedDoctorForModal.qualification}
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "13.5px" }}>
-              <div>
-                <span style={{ color: "var(--text-muted)", display: "block", fontSize: "12px" }}>Hospital</span>
-                <strong style={{ color: "var(--text-heading)" }}>{selectedDoctorForModal.hospital}</strong>
-              </div>
-              <div>
-                <span style={{ color: "var(--text-muted)", display: "block", fontSize: "12px" }}>Location</span>
-                <strong style={{ color: "var(--text-heading)" }}>{selectedDoctorForModal.location}</strong>
-              </div>
-              <div>
-                <span style={{ color: "var(--text-muted)", display: "block", fontSize: "12px" }}>Experience</span>
-                <strong style={{ color: "var(--text-heading)" }}>{selectedDoctorForModal.experience} years</strong>
-              </div>
-              <div>
-                <span style={{ color: "var(--text-muted)", display: "block", fontSize: "12px" }}>Consultation Fee</span>
-                <strong style={{ color: "var(--text-heading)" }}>₹{selectedDoctorForModal.consultationFee}</strong>
-              </div>
-              <div>
-                <span style={{ color: "var(--text-muted)", display: "block", fontSize: "12px" }}>Rating & Reviews</span>
-                <strong style={{ color: "var(--text-heading)", display: "flex", alignItems: "center", gap: "4px" }}>
-                  <Star size={13} fill="var(--warning)" style={{ color: "var(--warning)" }} />
-                  {selectedDoctorForModal.rating} ({selectedDoctorForModal.reviewCount} reviews)
-                </strong>
-              </div>
-              <div>
-                <span style={{ color: "var(--text-muted)", display: "block", fontSize: "12px" }}>Availability</span>
-                <strong
-                  className={`doc-availability-text ${
-                    selectedDoctorForModal.availability.toLowerCase().includes("today") ? "today" : "tomorrow"
-                  }`}
-                >
-                  {selectedDoctorForModal.availability}
-                </strong>
-              </div>
-            </div>
-
-            <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
-              <span style={{ color: "var(--text-muted)", display: "block", fontSize: "12px", marginBottom: "6px" }}>About Doctor</span>
-              <p style={{ margin: 0, fontSize: "13px", lineHeight: "1.5", color: "var(--text-primary)" }}>
-                {selectedDoctorForModal.name} is a highly respected specialist in {selectedDoctorForModal.specialty} with over {selectedDoctorForModal.experience} years of clinical experience. Committed to providing exceptional and personalized patient care at {selectedDoctorForModal.hospital}, {selectedDoctorForModal.location}.
-              </p>
-            </div>
-          </div>
-        </Modal>
-      )}
 
       {/* Toast Notification */}
       {toast.show && (
