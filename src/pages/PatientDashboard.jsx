@@ -8,26 +8,14 @@ import {
   Star,
   User,
   CheckCircle,
-  XCircle,
-  CalendarCheck,
   Stethoscope,
-  ChevronRight,
-  Heart,
-  LayoutDashboard,
-  Bell,
-  Settings,
-  HelpCircle,
-  LogOut,
+  Activity,
   Sparkles,
   Baby,
   Bone,
-  Brain,
-  ShieldCheck,
-  Lock,
-  Activity
+  Brain
 } from "lucide-react";
 import doctorsData from "../data/doctors";
-import heroIllustration from "../assets/hospital_appointment_illustration.png";
 import Navbar from "../components/Navbar";
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -152,7 +140,6 @@ function PatientDashboard() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Modal & Toast states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -246,8 +233,7 @@ function PatientDashboard() {
   };
 
   return (
-    <div className="patient-dashboard-layout-fullwidth">
-      {/* 1. Header (Navbar) - Full Width */}
+    <div className="patient-dashboard-page">
       <Navbar
         userName={patient.name}
         userRole={patient.role}
@@ -256,9 +242,8 @@ function PatientDashboard() {
         hideSearch={true}
       />
 
-      {/* Main Content Area - Centered and Full Width */}
-      <main className="patient-dashboard-content-fullwidth">
-        {/* 2. Greeting Section */}
+      <main className="patient-dashboard-content">
+        {/* 1. Greeting Section */}
         <section className="greeting-section">
           <h2 className="greeting-title">
             {getGreeting()}, {patient.name}!
@@ -268,7 +253,7 @@ function PatientDashboard() {
           </p>
         </section>
 
-        {/* 3. Search Bar Section */}
+        {/* 2. Search Bar Section */}
         <section className="search-section">
           <h3 className="search-section-title">Find a doctor</h3>
           <form onSubmit={handleSearchSubmit} className="search-box-container">
@@ -287,15 +272,15 @@ function PatientDashboard() {
           </form>
         </section>
 
-        {/* 4. Specialty Chips */}
-        <section className="specialties-section-chips">
+        {/* 3. Specialty Chips */}
+        <section className="specialties-section">
           <span className="specialties-title">Search by Specialty</span>
           <div className="specialty-chips-container">
             {specialties.map((specialty) => (
               <button
                 key={specialty}
                 className={`specialty-chip ${selectedSpecialty === specialty ? "active" : ""}`}
-                onClick={() => setSelectedSpecialty(selectedSpecialty === specialty ? "All" : specialty)}
+                onClick={() => setSelectedSpecialty(specialty)}
               >
                 {specialty}
               </button>
@@ -303,7 +288,7 @@ function PatientDashboard() {
           </div>
         </section>
 
-        {/* Two-Column Section on Desktop: Upcoming Appointment + Recommended Doctors */}
+        {/* 4. Upcoming Appointment + Recommended Doctors (Two Column Grid) */}
         <div className="dashboard-grid-two-columns">
           {/* Left Column: Upcoming Appointment */}
           <section className="upcoming-appointment-section-improved">
