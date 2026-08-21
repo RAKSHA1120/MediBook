@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import appointments from "../data/appointments";
 import Card from "../components/Card";
+import Button from "../components/Button";
 
 function AppointmentDetails() {
     const { id } = useParams();
@@ -13,58 +14,27 @@ function AppointmentDetails() {
         return <h2>Appointment not found</h2>;
     }
 
-    const handleReschedule = () => {
-        alert("Reschedule feature coming soon");
-    };
-
-    const handleCancel = () => {
-        const confirmCancel = window.confirm(
-            "Are you sure you want to cancel this appointment?"
-        );
-
-        if (confirmCancel) {
-            alert("Appointment cancelled successfully");
-        }
-    };
-
     return (
-        <div>
+        <div style={{
+            padding: "var(--space-2xl)",
+            maxWidth: "900px",
+            margin: "0 auto",
+        }}>
             <h1>Appointment Details</h1>
 
             <Card>
                 <h2>{appointment.doctorName}</h2>
 
-                <p>
-                    <strong>Specialty:</strong>{" "}
-                    {appointment.specialty}
-                </p>
+                <p>{appointment.specialty}</p>
 
-                <p>
-                    <strong>Date:</strong>{" "}
-                    {appointment.date}
-                </p>
+                <p>{appointment.date}</p>
 
-                <p>
-                    <strong>Time:</strong>{" "}
-                    {appointment.time}
-                </p>
+                <p>{appointment.time}</p>
 
-                <p>
-                    <strong>Status:</strong>{" "}
-                    {appointment.status}
-                </p>
-
-                <div>
-                    <button onClick={handleReschedule}>
-                        Reschedule Appointment
-                    </button>
-
-                    <button onClick={handleCancel}>
-                        Cancel Appointment
-                    </button>
-                </div>
+                <p>{appointment.status}</p>
             </Card>
         </div>
+        
     );
 }
 

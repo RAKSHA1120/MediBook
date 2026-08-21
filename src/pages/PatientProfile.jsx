@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Card from "../components/Card";
+import Button from "../components/Button";
 
 function PatientProfile() {
     const [isEditing, setIsEditing] = useState(false);
@@ -27,97 +28,107 @@ function PatientProfile() {
     };
 
     return (
-        <div>
+        <div className="page-container">
+
             <h1>Patient Profile</h1>
 
             <Card>
-                <div>
-                    <div>
-                        <div>Profile Photo</div>
+
+                <div className="profile-header">
+                    <div className="profile-photo">
+                        👤
                     </div>
 
-                    <h2>{patient.name}</h2>
+                    <div>
+                        <h2>{patient.name}</h2>
+                        <p>Patient</p>
+                    </div>
                 </div>
 
-                <div>
-                    <label>Name</label>
-                    <input
-                        type="text"
-                        name="name"
-                        value={patient.name}
-                        onChange={handleChange}
-                        disabled={!isEditing}
-                    />
+                <div className="profile-grid">
+
+                    <div className="form-group">
+                        <label>Name</label>
+                        <input
+                            type="text"
+                            name="name"
+                            value={patient.name}
+                            onChange={handleChange}
+                            disabled={!isEditing}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Mobile</label>
+                        <input
+                            type="text"
+                            name="mobile"
+                            value={patient.mobile}
+                            onChange={handleChange}
+                            disabled={!isEditing}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Email</label>
+                        <input
+                            type="email"
+                            name="email"
+                            value={patient.email}
+                            onChange={handleChange}
+                            disabled={!isEditing}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Date of Birth</label>
+                        <input
+                            type="date"
+                            name="dob"
+                            value={patient.dob}
+                            onChange={handleChange}
+                            disabled={!isEditing}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Gender</label>
+                        <select
+                            name="gender"
+                            value={patient.gender}
+                            onChange={handleChange}
+                            disabled={!isEditing}
+                        >
+                            <option>Male</option>
+                            <option>Female</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Blood Group</label>
+                        <select
+                            name="bloodGroup"
+                            value={patient.bloodGroup}
+                            onChange={handleChange}
+                            disabled={!isEditing}
+                        >
+                            <option>A+</option>
+                            <option>A-</option>
+                            <option>B+</option>
+                            <option>B-</option>
+                            <option>AB+</option>
+                            <option>AB-</option>
+                            <option>O+</option>
+                            <option>O-</option>
+                        </select>
+                    </div>
+
                 </div>
 
-                <div>
-                    <label>Mobile</label>
-                    <input
-                        type="text"
-                        name="mobile"
-                        value={patient.mobile}
-                        onChange={handleChange}
-                        disabled={!isEditing}
-                    />
-                </div>
-
-                <div>
-                    <label>Email</label>
-                    <input
-                        type="email"
-                        name="email"
-                        value={patient.email}
-                        onChange={handleChange}
-                        disabled={!isEditing}
-                    />
-                </div>
-
-                <div>
-                    <label>Date of Birth</label>
-                    <input
-                        type="date"
-                        name="dob"
-                        value={patient.dob}
-                        onChange={handleChange}
-                        disabled={!isEditing}
-                    />
-                </div>
-
-                <div>
-                    <label>Gender</label>
-                    <select
-                        name="gender"
-                        value={patient.gender}
-                        onChange={handleChange}
-                        disabled={!isEditing}
-                    >
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label>Blood Group</label>
-                    <select
-                        name="bloodGroup"
-                        value={patient.bloodGroup}
-                        onChange={handleChange}
-                        disabled={!isEditing}
-                    >
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                    </select>
-                </div>
-
-                <div>
+                <div className="form-group">
                     <label>Address</label>
+
                     <textarea
                         name="address"
                         value={patient.address}
@@ -126,18 +137,22 @@ function PatientProfile() {
                     />
                 </div>
 
-                <div>
+                <div className="profile-actions">
+
                     {!isEditing ? (
-                        <button onClick={() => setIsEditing(true)}>
-                            Edit
-                        </button>
+                        <Button onClick={() => setIsEditing(true)}>
+                            Edit Profile
+                        </Button>
                     ) : (
-                        <button onClick={handleSave}>
-                            Save
-                        </button>
+                        <Button onClick={handleSave}>
+                            Save Profile
+                        </Button>
                     )}
+
                 </div>
+
             </Card>
+
         </div>
     );
 }
