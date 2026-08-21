@@ -388,6 +388,30 @@
   min-width: 0;
 }
 
+.navbar-menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  align-items: center;
+  justify-content: center;
+  margin-right: -8px;
+}
+
+.navbar-menu-toggle:hover {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+@media (max-width: 1024px) {
+  .navbar-menu-toggle {
+    display: flex;
+  }
+}
+
 /* Brand */
 
 .navbar-brand {

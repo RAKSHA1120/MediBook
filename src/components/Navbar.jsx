@@ -7,6 +7,7 @@ import {
     Users,
     CalendarDays,
     Stethoscope,
+    Menu,
 } from "lucide-react";
 
 function Navbar({
@@ -15,12 +16,19 @@ function Navbar({
     avatarLetter = "R",
     hideTabs = false,
     hideSearch = false,
+    onMenuClick,
+    searchPlaceholder = "Search patients...",
 }) {
     return (
         <header className="navbar">
 
             {/* Left - Page / Brand */}
             <div className="navbar-left">
+                {onMenuClick && (
+                    <button className="navbar-menu-toggle" onClick={onMenuClick} aria-label="Toggle Menu">
+                        <Menu size={20} />
+                    </button>
+                )}
                 <Link to="/patient-dashboard" className="navbar-brand" style={{ textDecoration: "none" }}>
                     MediBook
                 </Link>
@@ -60,7 +68,7 @@ function Navbar({
 
                         <input
                             type="text"
-                            placeholder="Search patients..."
+                            placeholder={searchPlaceholder}
                         />
 
                         <span className="search-shortcut">
