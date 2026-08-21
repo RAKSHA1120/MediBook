@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   Calendar,
@@ -91,6 +92,7 @@ const specialties = [
 ];
 
 function PatientDashboard() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
   
@@ -144,7 +146,7 @@ function PatientDashboard() {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    showNotification("Search Completed", `Showing results for "${searchQuery}"`, "info");
+    navigate("/doctors", { state: { query: searchQuery } });
   };
 
   const handleBookAppointment = (doctorName) => {
