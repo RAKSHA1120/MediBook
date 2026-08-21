@@ -48,6 +48,16 @@ const patient = {
   avatarLetter: "R"
 };
 
+// Specialty mapping for popular search chips
+const specialtyMapping = {
+  "Dentist": "Dentist",
+  "Cardiologist": "Cardiology",
+  "Dermatologist": "Dermatology",
+  "Pediatrician": "Pediatrics",
+  "Gynecologist": "Gynecology",
+  "Orthopedic": "Orthopedics"
+};
+
 function DoctorList() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -181,12 +191,13 @@ function DoctorList() {
 
   // Handle Popular Search chip click
   const handlePopularSearchClick = (spec) => {
+    const mappedSpec = specialtyMapping[spec] || spec;
     setSearchVal("");
-    setSpecialtyVal(spec);
+    setSpecialtyVal(mappedSpec);
     setLocationVal("All");
     
     setSearchQuery("");
-    setSelectedSpecialty(spec);
+    setSelectedSpecialty(mappedSpec);
     setSelectedLocation("All");
     setCurrentPage(1);
   };
@@ -382,15 +393,19 @@ function DoctorList() {
           <section className="popular-searches-section">
             <span className="popular-searches-label">Popular Searches:</span>
             <div className="popular-chips-container">
-              {["Dentist", "Cardiologist", "Dermatologist", "Pediatrician", "Gynecologist", "Orthopedic"].map((spec) => (
-                <button
-                  key={spec}
-                  className={`popular-chip ${selectedSpecialty.toLowerCase() === spec.toLowerCase() ? "active" : ""}`}
-                  onClick={() => handlePopularSearchClick(spec)}
-                >
-                  {spec}
-                </button>
-              ))}
+              {["Dentist", "Cardiologist", "Dermatologist", "Pediatrician", "Gynecologist", "Orthopedic"].map((spec) => {
+                const mapped = specialtyMapping[spec] || spec;
+                const isActive = selectedSpecialty.toLowerCase() === mapped.toLowerCase();
+                return (
+                  <button
+                    key={spec}
+                    className={`popular-chip ${isActive ? "active" : ""}`}
+                    onClick={() => handlePopularSearchClick(spec)}
+                  >
+                    {spec}
+                  </button>
+                );
+              })}
             </div>
           </section>
 
