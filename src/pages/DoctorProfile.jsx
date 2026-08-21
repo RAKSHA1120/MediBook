@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
   MapPin,
@@ -31,12 +31,13 @@ const patient = {
 };
 
 function DoctorProfile() {
-  const { doctorId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
 
-  // Parse doctor ID safely (mock IDs are integers, useParams returns string)
-  const doctor = doctors.find((doc) => doc.id === parseInt(doctorId, 10));
+  // Get selected doctor from navigation state, fallback to first mock doctor if direct link visited
+  const doctorFromState = location.state?.doctor;
+  const doctor = doctorFromState || doctors[0] || null;
 
   // Trigger toast notifications
   const showNotification = (title, message, type = "success") => {

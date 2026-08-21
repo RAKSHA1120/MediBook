@@ -273,7 +273,7 @@ function DoctorList() {
 
                   {/* Card Actions */}
                   <div className="doc-card-footer">
-                    <Button variant="outline" onClick={() => navigate(`/doctors/${doc.id}`)}>
+                    <Button variant="outline" onClick={() => navigate("/doctor-profile", { state: { doctor: doc } })}>
                       View Profile
                     </Button>
                     <Button variant="primary" onClick={() => handleBookAppointment(doc.name)}>

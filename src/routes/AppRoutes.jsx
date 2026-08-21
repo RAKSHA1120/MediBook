@@ -12,7 +12,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/patient-dashboard" element={<PatientDashboard />} />
       <Route path="/doctors" element={<DoctorList />} />
-      <Route path="/doctors/:doctorId" element={<DoctorProfile />} />
+      <Route path="/doctor-profile" element={<DoctorProfile />} />
       <Route
         path="/design-system"
         element={<DesignSystem />}
