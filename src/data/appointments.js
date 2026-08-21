@@ -1,4 +1,4 @@
-const appointments = [
+const defaultAppointments = [
     {
         id: "APT001",
         doctorName: "Dr. Priya Sharma",
@@ -32,5 +32,8 @@ const appointments = [
         status: "Cancelled"
     }
 ];
+
+const storedAppointments = localStorage.getItem("medibook_appointments");
+const appointments = storedAppointments ? JSON.parse(storedAppointments) : defaultAppointments;
 
 export default appointments;

@@ -2,6 +2,7 @@ import { useState } from "react";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import "./BookAppointment.css";
+import appointments from "../data/appointments";
 
 function BookAppointment() {
     const [specialty, setSpecialty] = useState("");
@@ -17,7 +18,24 @@ function BookAppointment() {
             return;
         }
 
+        const newAppointment = {
+            id: `APT${Date.now()}`,
+            doctorName: doctor,
+            specialty: specialty,
+            date: date,
+            time: time,
+            status: "Upcoming"
+        };
+
+        appointments.push(newAppointment);
+        localStorage.setItem("medibook_appointments", JSON.stringify(appointments));
+
         alert("Appointment booked successfully!");
+        
+        setSpecialty("");
+        setDoctor("");
+        setDate("");
+        setTime("");
     };
 
     return (
