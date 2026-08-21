@@ -8,7 +8,13 @@ import {
     Stethoscope,
 } from "lucide-react";
 
-function Navbar() {
+function Navbar({
+    userName = "Raksha N",
+    userRole = "Admin",
+    avatarLetter = "R",
+    hideTabs = false,
+    hideSearch = false,
+}) {
     return (
         <header className="navbar">
 
@@ -16,45 +22,49 @@ function Navbar() {
             <div className="navbar-left">
                 <h1 className="navbar-brand">MediBook</h1>
 
-                <nav className="navbar-tabs">
-                    <button className="navbar-tab active">
-                        <LayoutDashboard size={18} />
-                        <span>Dashboard</span>
-                    </button>
+                {!hideTabs && (
+                    <nav className="navbar-tabs">
+                        <button className="navbar-tab active">
+                            <LayoutDashboard size={18} />
+                            <span>Dashboard</span>
+                        </button>
 
-                    <button className="navbar-tab">
-                        <Users size={18} />
-                        <span>Patients</span>
-                    </button>
+                        <button className="navbar-tab">
+                            <Users size={18} />
+                            <span>Patients</span>
+                        </button>
 
-                    <button className="navbar-tab">
-                        <CalendarDays size={18} />
-                        <span>Appointments</span>
-                    </button>
+                        <button className="navbar-tab">
+                            <CalendarDays size={18} />
+                            <span>Appointments</span>
+                        </button>
 
-                    <button className="navbar-tab">
-                        <Stethoscope size={18} />
-                        <span>Doctors</span>
-                    </button>
-                </nav>
+                        <button className="navbar-tab">
+                            <Stethoscope size={18} />
+                            <span>Doctors</span>
+                        </button>
+                    </nav>
+                )}
             </div>
 
             {/* Right */}
             <div className="navbar-right">
 
                 {/* Search */}
-                <div className="navbar-search">
-                    <Search size={18} />
+                {!hideSearch && (
+                    <div className="navbar-search">
+                        <Search size={18} />
 
-                    <input
-                        type="text"
-                        placeholder="Search patients..."
-                    />
+                        <input
+                            type="text"
+                            placeholder="Search patients..."
+                        />
 
-                    <span className="search-shortcut">
-                        Ctrl + K
-                    </span>
-                </div>
+                        <span className="search-shortcut">
+                            Ctrl + K
+                        </span>
+                    </div>
+                )}
 
                 {/* Notification */}
                 <button
@@ -72,12 +82,12 @@ function Navbar() {
                 <button className="navbar-profile">
 
                     <span className="profile-avatar">
-                        R
+                        {avatarLetter}
                     </span>
 
                     <span className="profile-info">
-                        <strong>Raksha N</strong>
-                        <small>Admin</small>
+                        <strong>{userName}</strong>
+                        <small>{userRole}</small>
                     </span>
 
                     <ChevronDown size={16} />
