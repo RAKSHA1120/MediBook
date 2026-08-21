@@ -246,319 +246,187 @@ function PatientDashboard() {
   };
 
   return (
-    <div className="patient-dashboard-layout">
-      {/* 1. Left Sidebar */}
-      <aside className={`patient-sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div className="patient-sidebar-brand">
-          <Heart className="brand-logo-icon" size={24} />
-          <span>MediBook</span>
-        </div>
+    <div className="patient-dashboard-layout-fullwidth">
+      {/* 1. Header (Navbar) - Full Width */}
+      <Navbar
+        userName={patient.name}
+        userRole={patient.role}
+        avatarLetter={patient.avatarLetter}
+        hideTabs={true}
+        hideSearch={true}
+      />
 
-        <nav className="patient-sidebar-nav">
-          <button className="patient-sidebar-item active" onClick={() => setIsSidebarOpen(false)}>
-            <LayoutDashboard size={18} />
-            <span>Dashboard</span>
-          </button>
-          
-          <button className="patient-sidebar-item" onClick={() => { navigate("/doctors"); setIsSidebarOpen(false); }}>
-            <Search size={18} />
-            <span>Find Doctor</span>
-          </button>
+      {/* Main Content Area - Centered and Full Width */}
+      <main className="patient-dashboard-content-fullwidth">
+        {/* 2. Greeting Section */}
+        <section className="greeting-section">
+          <h2 className="greeting-title">
+            {getGreeting()}, {patient.name}!
+          </h2>
+          <p className="greeting-subtitle">
+            Find the right doctor and manage your appointments with ease.
+          </p>
+        </section>
 
-          <button className="patient-sidebar-item" onClick={() => { handleMyAppointments(); setIsSidebarOpen(false); }}>
-            <Calendar size={18} />
-            <span>My Appointments</span>
-          </button>
+        {/* 3. Search Bar Section */}
+        <section className="search-section">
+          <h3 className="search-section-title">Find a doctor</h3>
+          <form onSubmit={handleSearchSubmit} className="search-box-container">
+            <div className="search-input-wrapper">
+              <Input
+                type="text"
+                placeholder="Search doctors, specialties or hospitals..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                icon={Search}
+              />
+            </div>
+            <div className="search-btn">
+              <Button type="submit">Search</Button>
+            </div>
+          </form>
+        </section>
 
-          <button className="patient-sidebar-item" onClick={() => { handleNotifications(); setIsSidebarOpen(false); }}>
-            <Bell size={18} />
-            <span>Notifications</span>
-          </button>
-
-          <button className="patient-sidebar-item" onClick={() => { handleProfile(); setIsSidebarOpen(false); }}>
-            <User size={18} />
-            <span>Profile</span>
-          </button>
-
-          <button className="patient-sidebar-item" onClick={() => { handleSettings(); setIsSidebarOpen(false); }}>
-            <Settings size={18} />
-            <span>Settings</span>
-          </button>
-
-          <button className="patient-sidebar-item" onClick={() => { handleSupport(); setIsSidebarOpen(false); }}>
-            <HelpCircle size={18} />
-            <span>Help & Support</span>
-          </button>
-        </nav>
-
-        <div className="patient-sidebar-footer">
-          <div className="support-card">
-            <span className="support-card-title">Need Help?</span>
-            <p className="support-card-text">Our support team is available 24/7 to answer your queries.</p>
-            <Button variant="primary" size="sm" className="btn-support" onClick={handleSupport}>
-              Contact Support
-            </Button>
+        {/* 4. Specialty Chips */}
+        <section className="specialties-section-chips">
+          <span className="specialties-title">Search by Specialty</span>
+          <div className="specialty-chips-container">
+            {specialties.map((specialty) => (
+              <button
+                key={specialty}
+                className={`specialty-chip ${selectedSpecialty === specialty ? "active" : ""}`}
+                onClick={() => setSelectedSpecialty(selectedSpecialty === specialty ? "All" : specialty)}
+              >
+                {specialty}
+              </button>
+            ))}
           </div>
+        </section>
 
-          <button className="patient-sidebar-item logout" onClick={() => navigate("/login")}>
-            <LogOut size={18} />
-            <span>Logout</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* Sidebar Backdrop for Mobile */}
-      {isSidebarOpen && (
-        <div className="sidebar-backdrop" onClick={() => setIsSidebarOpen(false)}></div>
-      )}
-
-      {/* Main Content Area */}
-      <div className="patient-dashboard-main">
-        <Navbar
-          userName={patient.name}
-          userRole={patient.role}
-          avatarLetter={patient.avatarLetter}
-          hideTabs={true}
-          hideSearch={false}
-          searchPlaceholder="Search doctors..."
-          onMenuClick={() => setIsSidebarOpen(true)}
-        />
-
-        <main className="patient-dashboard-content">
-          {/* 2. Greeting Section */}
-          <section className="greeting-section">
-            <h2 className="greeting-title">
-              {getGreeting()}, {patient.name}!
-            </h2>
-            <p className="greeting-subtitle">
-              Find the right doctor and manage your appointments with ease.
-            </p>
-          </section>
-
-          {/* 3. Hero Banner */}
-          <section className="hero-banner">
-            <div className="hero-banner-content">
-              <h2 className="hero-banner-title">Your Health is Our Priority</h2>
-              <p className="hero-banner-description">
-                Book appointments with trusted doctors and get the best care.
-              </p>
-              <div className="hero-banner-action">
-                <Button variant="primary" onClick={() => navigate("/doctors")}>
-                  Find Doctors
-                </Button>
-              </div>
-            </div>
-            <div className="hero-banner-illustration">
-              <img src={heroIllustration} alt="Healthcare illustration" />
-            </div>
-          </section>
-
-          {/* 4. Search Bar Section */}
-          <section className="search-section">
-            <h3 className="search-section-title">Find a doctor</h3>
-            <form onSubmit={handleSearchSubmit} className="search-box-container">
-              <div className="search-input-wrapper">
-                <Input
-                  type="text"
-                  placeholder="Search doctors, specialties or hospitals..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  icon={Search}
-                />
-              </div>
-              <div className="search-btn">
-                <Button type="submit">Search</Button>
-              </div>
-            </form>
-          </section>
-
-          {/* 5. Improved Top Specialties */}
-          <section className="specialties-section-improved">
+        {/* Two-Column Section on Desktop: Upcoming Appointment + Recommended Doctors */}
+        <div className="dashboard-grid-two-columns">
+          {/* Left Column: Upcoming Appointment */}
+          <section className="upcoming-appointment-section-improved">
             <div className="section-header">
-              <h3 className="section-main-title">Top Specialties</h3>
-              <button className="view-all-link" onClick={() => setSelectedSpecialty("All")}>
+              <h3 className="section-main-title">Upcoming Appointment</h3>
+              <button className="view-all-link" onClick={handleMyAppointments}>
                 View All
               </button>
             </div>
-            <div className="specialty-cards-container">
-              {specialties.filter((s) => s !== "All").map((specialty) => (
-                <div
-                  key={specialty}
-                  className={`specialty-card ${selectedSpecialty === specialty ? "active" : ""}`}
-                  onClick={() => setSelectedSpecialty(selectedSpecialty === specialty ? "All" : specialty)}
-                >
-                  <div className="specialty-icon-wrapper">
-                    {getSpecialtyIcon(specialty)}
+            <div className="appointment-card-improved">
+              <div className="appointment-card-top">
+                <div className="appointment-doctor-info">
+                  <div className="appointment-doctor-avatar">
+                    {upcomingAppointment.initials}
                   </div>
-                  <div className="specialty-card-info">
-                    <span className="specialty-card-name">{specialty}</span>
-                    <span className="specialty-card-count">{specialtyCounts[specialty] || 50} Doctors</span>
+                  <div className="appointment-doctor-details">
+                    <h4 className="appointment-doctor-name">{upcomingAppointment.doctorName}</h4>
+                    <span className="appointment-doctor-specialty">{upcomingAppointment.specialty}</span>
+                    <span className="appointment-hospital">
+                      <MapPin size={12} style={{ marginRight: "4px", display: "inline-block", verticalAlign: "middle" }} />
+                      {upcomingAppointment.hospital}
+                    </span>
                   </div>
                 </div>
-              ))}
+                <div className={`status-badge-improved ${upcomingAppointment.status.toLowerCase()}`}>
+                  <CheckCircle size={12} />
+                  {upcomingAppointment.status}
+                </div>
+              </div>
+
+              <div className="appointment-card-middle">
+                <div className="appointment-schedule-item">
+                  <Calendar size={16} />
+                  <span>{upcomingAppointment.date}</span>
+                </div>
+                <div className="appointment-schedule-item">
+                  <Clock size={16} />
+                  <span>{upcomingAppointment.time}</span>
+                </div>
+              </div>
+
+              <div className="appointment-card-actions">
+                <Button variant="primary" onClick={() => setIsModalOpen(true)}>
+                  View Details
+                </Button>
+                <Button variant="outline" onClick={handleRescheduleAppointment}>
+                  Reschedule
+                </Button>
+                <Button variant="outline" className="btn-cancel" onClick={handleCancelAppointment}>
+                  Cancel
+                </Button>
+              </div>
             </div>
           </section>
 
-          {/* Two-Column Section on Desktop: Upcoming Appointment + Recommended Doctors */}
-          <div className="dashboard-grid-two-columns">
-            {/* Left Column: Upcoming Appointment */}
-            <section className="upcoming-appointment-section-improved">
-              <div className="section-header">
-                <h3 className="section-main-title">Upcoming Appointment</h3>
-                <button className="view-all-link" onClick={handleMyAppointments}>
-                  View All
-                </button>
-              </div>
-              <div className="appointment-card-improved">
-                <div className="appointment-card-top">
-                  <div className="appointment-doctor-info">
-                    <div className="appointment-doctor-avatar">
-                      {upcomingAppointment.initials}
-                    </div>
-                    <div className="appointment-doctor-details">
-                      <h4 className="appointment-doctor-name">{upcomingAppointment.doctorName}</h4>
-                      <span className="appointment-doctor-specialty">{upcomingAppointment.specialty}</span>
-                      <span className="appointment-hospital">
-                        <MapPin size={12} style={{ marginRight: "4px", display: "inline-block", verticalAlign: "middle" }} />
-                        {upcomingAppointment.hospital}
-                      </span>
-                    </div>
-                  </div>
-                  <div className={`status-badge-improved ${upcomingAppointment.status.toLowerCase()}`}>
-                    <CheckCircle size={12} />
-                    {upcomingAppointment.status}
-                  </div>
-                </div>
-
-                <div className="appointment-card-middle">
-                  <div className="appointment-schedule-item">
-                    <Calendar size={16} />
-                    <span>{upcomingAppointment.date}</span>
-                  </div>
-                  <div className="appointment-schedule-item">
-                    <Clock size={16} />
-                    <span>{upcomingAppointment.time}</span>
-                  </div>
-                </div>
-
-                <div className="appointment-card-actions">
-                  <Button variant="primary" onClick={() => setIsModalOpen(true)}>
-                    View Details
-                  </Button>
-                  <Button variant="outline" onClick={handleRescheduleAppointment}>
-                    Reschedule
-                  </Button>
-                  <Button variant="outline" className="btn-cancel" onClick={handleCancelAppointment}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </section>
-
-            {/* Right Column: Recommended Doctors */}
-            <section className="recommended-doctors-section-improved">
-              <div className="section-header">
-                <h3 className="section-main-title">Recommended Doctors</h3>
-                <button className="view-all-link" onClick={() => navigate("/doctors")}>
-                  View All
-                </button>
-              </div>
-              <div className="doctors-grid-improved">
-                {filteredDoctors.length > 0 ? (
-                  filteredDoctors.map((doctor) => (
-                    <div key={doctor.id} className="doctor-card-improved" onClick={() => handleDoctorClick(doctor.id)}>
-                      <div className="doctor-card-header">
-                        <div className="doctor-avatar">
-                          {doctor.initials}
-                        </div>
-                        <div className="doctor-meta">
-                          <h4 className="doctor-name">{doctor.name}</h4>
-                          <span className="doctor-specialty">{doctor.specialty}</span>
-                        </div>
+          {/* Right Column: Recommended Doctors */}
+          <section className="recommended-doctors-section-improved">
+            <div className="section-header">
+              <h3 className="section-main-title">Recommended Doctors</h3>
+              <button className="view-all-link" onClick={() => navigate("/doctors")}>
+                View All
+              </button>
+            </div>
+            <div className="doctors-grid-improved">
+              {filteredDoctors.length > 0 ? (
+                filteredDoctors.map((doctor) => (
+                  <div key={doctor.id} className="doctor-card-improved" onClick={() => handleDoctorClick(doctor.id)}>
+                    <div className="doctor-card-header">
+                      <div className="doctor-avatar">
+                        {doctor.initials}
                       </div>
-                      
-                      <div className="doctor-card-body">
-                        <div className="doctor-detail-row">
-                          <span>Experience</span>
-                          <strong>{doctor.experience}</strong>
-                        </div>
-                        <div className="doctor-detail-row">
-                          <span>Rating</span>
-                          <span className="doctor-rating">
-                            <Star size={14} fill="var(--warning)" className="rating-star-icon" />
-                            {doctor.rating} ({doctor.reviewCount} reviews)
-                          </span>
-                        </div>
-                        <div className="doctor-detail-row">
-                          <span>Consultation Fee</span>
-                          <strong>₹{doctor.consultationFee}</strong>
-                        </div>
-                        <div className="doctor-detail-row">
-                          <span>Availability</span>
-                          <span className="doctor-availability">
-                            <span className="availability-dot"></span>
-                            {doctor.availability}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="doctor-card-footer" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="primary" onClick={() => handleBookAppointment(doctor.name)}>
-                          Book Appointment
-                        </Button>
+                      <div className="doctor-meta">
+                        <h4 className="doctor-name">{doctor.name}</h4>
+                        <span className="doctor-specialty">{doctor.specialty}</span>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="no-doctors-found">
-                    <Stethoscope size={40} className="no-doctors-icon" />
-                    <h4>No Doctors Found</h4>
-                    <p>We couldn't find any doctors matching "{searchQuery}" under the "{selectedSpecialty}" specialty filter.</p>
-                    <Button variant="secondary" onClick={() => { setSelectedSpecialty("All"); setSearchQuery(""); }}>
-                      Clear Filters
-                    </Button>
+                    
+                    <div className="doctor-card-body">
+                      <div className="doctor-detail-row">
+                        <span>Experience</span>
+                        <strong>{doctor.experience}</strong>
+                      </div>
+                      <div className="doctor-detail-row">
+                        <span>Rating</span>
+                        <span className="doctor-rating">
+                          <Star size={14} fill="var(--warning)" className="rating-star-icon" />
+                          {doctor.rating} ({doctor.reviewCount} reviews)
+                        </span>
+                      </div>
+                      <div className="doctor-detail-row">
+                        <span>Consultation Fee</span>
+                        <strong>₹{doctor.consultationFee}</strong>
+                      </div>
+                      <div className="doctor-detail-row">
+                        <span>Availability</span>
+                        <span className="doctor-availability">
+                          <span className="availability-dot"></span>
+                          {doctor.availability}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="doctor-card-footer" onClick={(e) => e.stopPropagation()}>
+                      <Button variant="primary" onClick={() => handleBookAppointment(doctor.name)}>
+                        Book Appointment
+                      </Button>
+                    </div>
                   </div>
-                )}
-              </div>
-            </section>
-          </div>
-
-          {/* 6. Benefits Section */}
-          <section className="benefits-section">
-            <div className="benefit-card">
-              <div className="benefit-icon-wrapper">
-                <CalendarCheck size={24} />
-              </div>
-              <h4 className="benefit-title">Easy Booking</h4>
-              <p className="benefit-description">Book appointments in just a few taps</p>
-            </div>
-
-            <div className="benefit-card">
-              <div className="benefit-icon-wrapper">
-                <ShieldCheck size={24} />
-              </div>
-              <h4 className="benefit-title">Trusted Doctors</h4>
-              <p className="benefit-description">Verified and experienced doctors</p>
-            </div>
-
-            <div className="benefit-card">
-              <div className="benefit-icon-wrapper">
-                <Clock size={24} />
-              </div>
-              <h4 className="benefit-title">Save Time</h4>
-              <p className="benefit-description">Quick scheduling and reminders</p>
-            </div>
-
-            <div className="benefit-card">
-              <div className="benefit-icon-wrapper">
-                <Lock size={24} />
-              </div>
-              <h4 className="benefit-title">Safe & Secure</h4>
-              <p className="benefit-description">Your data is protected</p>
+                ))
+              ) : (
+                <div className="no-doctors-found">
+                  <Stethoscope size={40} className="no-doctors-icon" />
+                  <h4>No Doctors Found</h4>
+                  <p>We couldn't find any doctors matching "{searchQuery}" under the "{selectedSpecialty}" specialty filter.</p>
+                  <Button variant="secondary" onClick={() => { setSelectedSpecialty("All"); setSearchQuery(""); }}>
+                    Clear Filters
+                  </Button>
+                </div>
+              )}
             </div>
           </section>
-        </main>
-      </div>
+        </div>
+      </main>
 
       {/* Appointment Detail Modal (Reusing existing Modal component) */}
       <Modal
