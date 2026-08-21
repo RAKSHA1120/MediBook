@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Lock,
   Eye,
@@ -22,6 +23,7 @@ const loginUser = {
 };
 
 function Login() {
+  const navigate = useNavigate();
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -80,7 +82,7 @@ function Login() {
     // Simulate authentication processing
     setTimeout(() => {
       setLoading(false);
-      alert("Login successful!");
+      navigate("/patient-dashboard");
     }, 1200);
   };
 
