@@ -216,8 +216,8 @@ function DoctorList() {
     }, 4000);
   };
 
-  const handleBookAppointment = (doctorName) => {
-    showNotification("Appointment Booking", `Initiating booking flow for ${doctorName}...`, "success");
+  const handleBookAppointment = (doc) => {
+    navigate("/book-appointment", { state: { doctor: doc } });
   };
 
   const handleMyAppointments = () => {
@@ -512,7 +512,7 @@ function DoctorList() {
                       <Button variant="outline" onClick={() => navigate("/doctor-profile", { state: { doctor: doc } })}>
                         View Profile
                       </Button>
-                      <Button variant="primary" onClick={() => handleBookAppointment(doc.name)}>
+                      <Button variant="primary" onClick={() => handleBookAppointment(doc)}>
                         Book
                       </Button>
                     </div>

@@ -131,11 +131,7 @@ function DoctorProfile() {
 
   const handleBookAppointment = () => {
     if (doctor) {
-      showNotification(
-        "Appointment Booking",
-        `Initiating booking flow for ${doctor.name} at ${selectedSlot}. Redirecting soon...`,
-        "success"
-      );
+      navigate("/book-appointment", { state: { doctor } });
     }
   };
 

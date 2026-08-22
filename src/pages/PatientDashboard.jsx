@@ -233,8 +233,9 @@ function PatientDashboard() {
     navigate("/doctors", { state: { query: searchQuery } });
   };
 
-  const handleBookAppointment = (doctorName) => {
-    showNotification("Appointment Booking", `Booking flow for ${doctorName} is coming soon.`, "info");
+  const handleBookAppointment = (docId) => {
+    const fullDoc = doctorsData.find(d => d.id === docId) || doctorsData[0];
+    navigate("/book-appointment", { state: { doctor: fullDoc } });
   };
 
   const handleCancelAppointment = () => {
@@ -501,7 +502,7 @@ function PatientDashboard() {
                       </div>
 
                       <div className="doctor-card-footer" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="primary" onClick={() => handleBookAppointment(doctor.name)}>
+                        <Button variant="primary" onClick={() => handleBookAppointment(doctor.id)}>
                           Book Appointment
                         </Button>
                       </div>
