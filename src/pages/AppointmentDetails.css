@@ -1,0 +1,245 @@
+/* AppointmentDetails.css */
+.details-page {
+  padding: 32px;
+  background-color: transparent;
+  min-height: 100vh;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-heading);
+  text-decoration: none;
+  margin-bottom: 24px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+
+.details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.details-header-text h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 4px;
+}
+
+.details-header-text p {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.details-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.info-section {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.info-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+
+.info-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--surface);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.info-value.paid {
+  color: var(--success);
+}
+
+/* Hospital Info */
+.hospital-content {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.hospital-img {
+  width: 140px;
+  height: 140px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.hospital-details h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 8px;
+}
+
+.hospital-details p {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.hospital-location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.hospital-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-left: 1px solid var(--border);
+  padding-left: 24px;
+  flex: 1;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-heading);
+  font-weight: 500;
+}
+
+.contact-item.open {
+  color: var(--success);
+}
+
+/* Important Notes */
+.notes-section {
+  background: #eff6ff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 32px;
+}
+
+.notes-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e40af;
+  margin-bottom: 12px;
+}
+
+.notes-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #1e3a8a;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Actions Section */
+.actions-section {
+  margin-top: 32px;
+}
+
+.actions-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-bottom: 16px;
+}
+
+.actions-grid {
+  display: flex;
+  gap: 16px;
+}
+
+.action-card-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-card-btn.reschedule {
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+
+.action-card-btn.reschedule:hover {
+  background: #eff6ff;
+}
+
+.action-card-btn.cancel-full {
+  border: 1px solid #fca5a5;
+  color: var(--error);
+  background: #fef2f2;
+}
+
+.action-card-btn.cancel-full:hover {
+  background: #fee2e2;
+}
+
+.action-card-btn span {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.action-card-btn small {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+
+h1, h2, h3, h4, .page-title, .section-title, .profile-name { font-family: var(--font-heading) !important; }

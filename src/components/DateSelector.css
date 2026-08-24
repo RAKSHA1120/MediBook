@@ -1,0 +1,184 @@
+.date-selector-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.date-selector-list {
+  display: flex;
+  gap: var(--space-sm);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 4px 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.date-selector-list::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.scroll-btn:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary-light);
+  transform: scale(1.05);
+}
+
+.scroll-btn:active {
+  transform: scale(0.95);
+}
+
+.date-item-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  max-width: 80px;
+  width: 80px;
+  flex-shrink: 0;
+  padding: var(--space-sm) 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.date-item-card:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.date-item-card.selected {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(47, 111, 163, 0.25);
+  transform: translateY(-2px);
+}
+
+.date-item-card.booked {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.date-month {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.date-item-card.selected .date-month {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.date-num {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-heading);
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
+.date-item-card.selected .date-num {
+  color: #ffffff;
+}
+
+.date-item-card.booked .date-num {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.date-day {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.date-item-card.selected .date-day {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.date-item-card.booked .date-day {
+  color: var(--text-muted);
+}
+
+.date-state-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 4px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  width: 100%;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.state-available {
+  background: rgba(34, 160, 107, 0.1);
+  color: var(--success);
+}
+
+.state-booked {
+  background: rgba(214, 69, 69, 0.1);
+  color: var(--error);
+}
+
+.state-selected {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+@media (max-width: 480px) {
+  .date-item-card {
+    min-width: 74px;
+    max-width: 74px;
+    width: 74px;
+    padding: var(--space-sm) 2px;
+  }
+  .date-num {
+    font-size: 18px;
+  }
+  .scroll-btn {
+    width: 30px;
+    height: 30px;
+  }
+}

@@ -131,24 +131,20 @@ function DoctorProfile() {
 
   const handleBookAppointment = () => {
     if (doctor) {
-      showNotification(
-        "Appointment Booking",
-        `Initiating booking flow for ${doctor.name} at ${selectedSlot}. Redirecting soon...`,
-        "success"
-      );
+      navigate("/book-appointment", { state: { doctor } });
     }
   };
 
   const handleMyAppointments = () => {
-    showNotification("My Appointments", "Opening your appointment records...", "info");
+    navigate("/appointments");
   };
 
   const handleNotifications = () => {
-    showNotification("Notifications", "Opening notifications panel...", "info");
+    navigate("/notifications");
   };
 
   const handleProfile = () => {
-    showNotification("Profile Settings", "Opening patient profile editor...", "info");
+    navigate("/profile");
   };
 
   const handleSettings = () => {
@@ -161,8 +157,9 @@ function DoctorProfile() {
 
   // Generate initials for avatar
   const getInitials = (name) => {
-    return name
-      .split(" ")
+      if (!name || typeof name.split !== 'function') return "DR";
+      return name
+        .split(" ")
       .filter((n) => n.toLowerCase() !== "dr.")
       .map((n) => n[0])
       .join("")
@@ -247,12 +244,12 @@ function DoctorProfile() {
   } specialist currently practicing at ${doctor.hospital} in ${doctor.location}. With over ${
     doctor.experience
   } years of professional medical experience, they are dedicated to delivering patient-centric, empathetic healthcare. Dr. ${
-    doctor.name.split(" ").pop()
+    (doctor?.name || '').split(" ").pop()
   } completed their ${
     doctor.qualification
   } from leading medical institutions and is committed to using modern diagnostics and compassionate clinical practices to treat patient conditions.`;
 
-  const educationList = doctor.qualification.split(",").map((deg) => deg.trim());
+  const educationList = (doctor?.qualification || '').split(",").map((deg) => deg.trim());
   const expertiseTags = specialtyExpertise[doctor.specialty] || specialtyExpertise["General Physician"];
 
   return (

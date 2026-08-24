@@ -175,7 +175,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: #f8fafc;
+  background: transparent;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 20px;
@@ -333,7 +333,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #f8fafc;
+  background: transparent;
   padding: 14px 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
@@ -660,3 +660,6 @@
     font-size: 22px;
   }
 }
+
+
+h1, h2, h3, h4, .page-title, .section-title, .profile-name { font-family: var(--font-heading) !important; }

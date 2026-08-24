@@ -1,18 +1,16 @@
 import { useState } from "react";
-import Card from "../components/Card";
-import Button from "../components/Button";
+import "./PatientProfile.css";
 
 function PatientProfile() {
     const [isEditing, setIsEditing] = useState(false);
-
     const [patient, setPatient] = useState({
-        name: "Santhosh S",
-        mobile: "9655983149",
-        email: "santhosh323454@gmail.com",
-        dob: "2005-06-15",
-        gender: "Male",
-        bloodGroup: "B+",
-        address: "Anthiyur, Tamil Nadu"
+        name: "Priya Sharma",
+        mobile: "+91 98765 43210",
+        email: "priyasharma@email.com",
+        dob: "1998-08-15",
+        gender: "Female",
+        bloodGroup: "O+",
+        address: "12, Park Street, Anna Nagar,\nChennai - 600040, Tamil Nadu, India"
     });
 
     const handleChange = (e) => {
@@ -24,135 +22,176 @@ function PatientProfile() {
 
     const handleSave = () => {
         setIsEditing(false);
-        alert("Profile saved successfully");
+        alert("Profile saved successfully!");
     };
 
     return (
-        <div className="page-container">
+        <div className="profile-page">
+            <div className="profile-page-header">
+                <h1>Patient Profile</h1>
+                <p>View and manage your personal information</p>
+            </div>
 
-            <h1>Patient Profile</h1>
-
-            <Card>
-
-                <div className="profile-header">
-                    <div className="profile-photo">
-                        👤
-                    </div>
-
-                    <div>
-                        <h2>{patient.name}</h2>
-                        <p>Patient</p>
+            {/* Profile Top Card */}
+            <div className="profile-top-card">
+                <div className="profile-avatar-container">
+                    <img src="https://i.pravatar.cc/150?u=priyasharma" alt="Profile" className="profile-avatar-img" />
+                    <button className="avatar-cam-btn">📷</button>
+                </div>
+                <div className="profile-top-info">
+                    <h2>
+                        {patient.name}
+                        <span className="verified-badge">✓ Verified</span>
+                    </h2>
+                    <div className="profile-contacts">
+                        <span className="contact-line">📞 {patient.mobile}</span>
+                        <span className="contact-line">✉️ {patient.email}</span>
                     </div>
                 </div>
+            </div>
 
-                <div className="profile-grid">
+            {/* Personal Information Card */}
+            <div className="profile-info-card">
+                <div className="info-card-header">
+                    <h3>👤 Personal Information</h3>
+                    {!isEditing && (
+                        <button className="edit-btn" onClick={() => setIsEditing(true)}>
+                            ✏️ Edit
+                        </button>
+                    )}
+                </div>
 
+                <div className="form-grid">
                     <div className="form-group">
-                        <label>Name</label>
-                        <input
-                            type="text"
-                            name="name"
-                            value={patient.name}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                        />
+                        <label>Full Name</label>
+                        <div className="input-with-icon">
+                            <span className="input-icon">👤</span>
+                            <input
+                                type="text"
+                                name="name"
+                                value={patient.name}
+                                onChange={handleChange}
+                                disabled={!isEditing}
+                            />
+                        </div>
                     </div>
 
                     <div className="form-group">
-                        <label>Mobile</label>
-                        <input
-                            type="text"
-                            name="mobile"
-                            value={patient.mobile}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                        />
+                        <label>Mobile Number</label>
+                        <div className="input-with-icon">
+                            <span className="input-icon">📞</span>
+                            <input
+                                type="text"
+                                name="mobile"
+                                value={patient.mobile}
+                                onChange={handleChange}
+                                disabled={!isEditing}
+                            />
+                        </div>
                     </div>
 
                     <div className="form-group">
-                        <label>Email</label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={patient.email}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                        />
+                        <label>Email Address</label>
+                        <div className="input-with-icon">
+                            <span className="input-icon">✉️</span>
+                            <input
+                                type="email"
+                                name="email"
+                                value={patient.email}
+                                onChange={handleChange}
+                                disabled={!isEditing}
+                            />
+                        </div>
                     </div>
 
                     <div className="form-group">
                         <label>Date of Birth</label>
-                        <input
-                            type="date"
-                            name="dob"
-                            value={patient.dob}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                        />
+                        <div className="input-with-icon">
+                            <span className="input-icon">📅</span>
+                            <input
+                                type="date"
+                                name="dob"
+                                value={patient.dob}
+                                onChange={handleChange}
+                                disabled={!isEditing}
+                            />
+                        </div>
                     </div>
 
                     <div className="form-group">
                         <label>Gender</label>
-                        <select
-                            name="gender"
-                            value={patient.gender}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                        >
-                            <option>Male</option>
-                            <option>Female</option>
-                            <option>Other</option>
-                        </select>
+                        <div className="input-with-icon">
+                            <span className="input-icon">👤</span>
+                            <select
+                                name="gender"
+                                value={patient.gender}
+                                onChange={handleChange}
+                                disabled={!isEditing}
+                            >
+                                <option>Male</option>
+                                <option>Female</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div className="form-group">
                         <label>Blood Group</label>
-                        <select
-                            name="bloodGroup"
-                            value={patient.bloodGroup}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                        >
-                            <option>A+</option>
-                            <option>A-</option>
-                            <option>B+</option>
-                            <option>B-</option>
-                            <option>AB+</option>
-                            <option>AB-</option>
-                            <option>O+</option>
-                            <option>O-</option>
-                        </select>
+                        <div className="input-with-icon">
+                            <span className="input-icon">💧</span>
+                            <select
+                                name="bloodGroup"
+                                value={patient.bloodGroup}
+                                onChange={handleChange}
+                                disabled={!isEditing}
+                            >
+                                <option>A+</option>
+                                <option>A-</option>
+                                <option>B+</option>
+                                <option>B-</option>
+                                <option>AB+</option>
+                                <option>AB-</option>
+                                <option>O+</option>
+                                <option>O-</option>
+                            </select>
+                        </div>
                     </div>
 
+                    <div className="form-group full-width">
+                        <label>Address</label>
+                        <div className="input-with-icon">
+                            <span className="input-icon" style={{ top: '14px' }}>📍</span>
+                            <textarea
+                                name="address"
+                                value={patient.address}
+                                onChange={handleChange}
+                                disabled={!isEditing}
+                            />
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <div className="form-group">
-                    <label>Address</label>
-
-                    <textarea
-                        name="address"
-                        value={patient.address}
-                        onChange={handleChange}
-                        disabled={!isEditing}
-                    />
+            {/* Safe Box */}
+            <div className="safe-box">
+                <span className="safe-icon">🛡️</span>
+                <div className="safe-text">
+                    <h4>Your Information is Safe</h4>
+                    <p>We keep your personal information secure and confidential.<br/>It is only used to enhance your healthcare experience.</p>
                 </div>
+            </div>
 
+            {/* Actions */}
+            {isEditing && (
                 <div className="profile-actions">
-
-                    {!isEditing ? (
-                        <Button onClick={() => setIsEditing(true)}>
-                            Edit Profile
-                        </Button>
-                    ) : (
-                        <Button onClick={handleSave}>
-                            Save Profile
-                        </Button>
-                    )}
-
+                    <button className="btn-cancel" onClick={() => setIsEditing(false)}>
+                        Cancel
+                    </button>
+                    <button className="btn-save" onClick={handleSave}>
+                        💾 Save Changes
+                    </button>
                 </div>
-
-            </Card>
-
+            )}
         </div>
     );
 }
