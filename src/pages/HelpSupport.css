@@ -1,0 +1,290 @@
+/* ==================================================
+   Help & Support Page Styling - MediBook Patient Portal
+   ================================================== */
+
+.help-support-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+/* Card Containers */
+.help-card-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.help-card-title {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.help-card-subtitle {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin: -12px 0 0 0;
+}
+
+/* Search Hero Box */
+.help-search-card {
+  background: linear-gradient(135deg, #0e7490 0%, #0369a1 100%);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(14, 116, 144, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.help-search-title {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.help-search-subtitle {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: -8px 0 0 0;
+}
+
+.help-search-input-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+}
+
+.help-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+.help-search-input {
+  width: 100%;
+  padding: 12px 16px 12px 42px;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  color: var(--text-primary);
+  background: #ffffff;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  outline: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.help-search-input:focus {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+/* Category Grid */
+.help-topics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.help-topic-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+}
+
+.help-topic-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.help-topic-card.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.help-topic-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.help-topic-name {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+.help-topic-desc {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Accordion FAQ Styling */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faq-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.faq-item.expanded {
+  border-color: var(--primary-light);
+}
+
+.faq-header {
+  width: 100%;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-heading);
+  transition: background 0.15s ease;
+}
+
+.faq-header:hover {
+  background: var(--primary-soft);
+}
+
+.faq-icon-wrap {
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.faq-body {
+  padding: 0 20px 18px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  border-top: 1px solid transparent;
+}
+
+.faq-item.expanded .faq-body {
+  border-top-color: var(--border-light, #f1f5f9);
+  padding-top: 14px;
+}
+
+/* Contact Support Grid */
+.contact-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.contact-info-item {
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-light);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contact-info-label {
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--primary);
+}
+
+.contact-info-value {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+/* Responsive Constraints */
+@media (max-width: 900px) {
+  .help-topics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .contact-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .help-support-page {
+    padding: 16px 12px 32px;
+    gap: 16px;
+  }
+
+  .help-search-card {
+    padding: 20px 16px;
+  }
+
+  .help-search-title {
+    font-size: 19px;
+  }
+
+  .help-topics-grid {
+    grid-template-columns: 1fr;
+  }
+}

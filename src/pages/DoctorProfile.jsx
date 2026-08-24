@@ -27,6 +27,7 @@ import doctors from "../data/doctors";
 import Navbar from "../components/Navbar";
 import Button from "../components/Button";
 import Toast from "../components/Toast";
+import PageHeader from "../components/PageHeader";
 import "./DoctorProfile.css";
 
 // Patient info for Navbar
@@ -136,29 +137,30 @@ function DoctorProfile() {
   };
 
   const handleMyAppointments = () => {
-    showNotification("My Appointments", "Opening your appointment records...", "info");
+    navigate("/my-appointments");
   };
 
   const handleNotifications = () => {
-    showNotification("Notifications", "Opening notifications panel...", "info");
+    navigate("/notifications");
   };
 
   const handleProfile = () => {
-    showNotification("Profile Settings", "Opening patient profile editor...", "info");
+    navigate("/profile");
   };
 
   const handleSettings = () => {
-    showNotification("Settings", "Opening system settings...", "info");
+    navigate("/settings");
   };
 
   const handleSupport = () => {
-    showNotification("Help & Support", "Connecting to MediBook Support...", "success");
+    navigate("/help-support");
   };
 
   // Generate initials for avatar
   const getInitials = (name) => {
-    return name
-      .split(" ")
+      if (!name || typeof name.split !== 'function') return "DR";
+      return name
+        .split(" ")
       .filter((n) => n.toLowerCase() !== "dr.")
       .map((n) => n[0])
       .join("")
@@ -243,12 +245,12 @@ function DoctorProfile() {
   } specialist currently practicing at ${doctor.hospital} in ${doctor.location}. With over ${
     doctor.experience
   } years of professional medical experience, they are dedicated to delivering patient-centric, empathetic healthcare. Dr. ${
-    doctor.name.split(" ").pop()
+    (doctor?.name || '').split(" ").pop()
   } completed their ${
     doctor.qualification
   } from leading medical institutions and is committed to using modern diagnostics and compassionate clinical practices to treat patient conditions.`;
 
-  const educationList = doctor.qualification.split(",").map((deg) => deg.trim());
+  const educationList = (doctor?.qualification || '').split(",").map((deg) => deg.trim());
   const expertiseTags = specialtyExpertise[doctor.specialty] || specialtyExpertise["General Physician"];
 
   return (
@@ -331,22 +333,18 @@ function DoctorProfile() {
         />
 
         <main className="doctors-content">
-          {/* Top Header Row */}
-          <section className="profile-top-controls">
-            <button className="btn-back-link" onClick={() => navigate("/doctors")}>
-              <ArrowLeft size={16} />
-              Back to Doctors
-            </button>
-            <div className="verified-badge-container">
-              <span>MediBook Verified</span>
-              <ShieldCheck size={16} className="verified-icon" />
-            </div>
-          </section>
-
-          {/* Page Heading */}
-          <section className="doctors-page-header">
-            <h2 className="doctors-page-title">Doctor Profile</h2>
-          </section>
+          {/* Page Header */}
+          <PageHeader
+            title="Doctor Profile"
+            onBack={() => navigate("/doctors")}
+            backLabel="Back to Doctors"
+            action={
+              <div className="verified-badge-container">
+                <span>MediBook Verified</span>
+                <ShieldCheck size={16} className="verified-icon" />
+              </div>
+            }
+          />
 
           {/* Doctor Summary Card */}
           <section className="profile-summary-card">

@@ -33,7 +33,10 @@ import DateSelector from "../components/DateSelector";
 import TimeSlot, { TimeSlotGroup } from "../components/TimeSlot";
 import BookingSummary from "../components/BookingSummary";
 import Toast from "../components/Toast";
+import { addNotification } from "../data/notifications";
 import "./AppointmentBooking.css";
+
+import { useAppointments } from "../context/AppointmentContext";
 
 // Patient info for Navbar
 const patient = {
@@ -45,6 +48,7 @@ const patient = {
 function AppointmentBooking() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isSlotBooked, addAppointment } = useAppointments();
 
   // Sidebar Open State for Mobile
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -78,7 +82,7 @@ function AppointmentBooking() {
 
   // Generate initials for avatar
   const getInitials = (name = "") => {
-    if (!name) return "DR";
+    if (!name || typeof name.split !== 'function') return "DR";
     return name
       .split(" ")
       .filter((n) => n.toLowerCase() !== "dr.")
@@ -132,17 +136,21 @@ function AppointmentBooking() {
     return list;
   }, []);
 
-  // Get booked slots map for this doctor
-  const bookedSlotsMap = useMemo(() => {
-    return getMockBookedAppointments(doctor?.id || 1);
-  }, [doctor?.id]);
-
   // Get disabled slots map for this doctor
   const disabledSlotsMap = useMemo(() => {
     return getMockDisabledAppointments(doctor?.id || 1);
   }, [doctor?.id]);
 
-  // Check if a date is booked/unavailable
+  // All time slots list
+  const allTimeSlots = useMemo(() => {
+    return [
+      ...(TIME_SLOTS?.Morning || []),
+      ...(TIME_SLOTS?.Afternoon || []),
+      ...(TIME_SLOTS?.Evening || [])
+    ];
+  }, []);
+
+  // Check if a date is booked/unavailable (only if ALL slots for doctor are booked)
   const isDateBooked = (dateString) => {
     const dateObj = dates.find((d) => d.dateString === dateString);
     if (!dateObj) return true;
@@ -157,21 +165,13 @@ function AppointmentBooking() {
       return true; // Not working -> Booked/Unavailable
     }
 
-    // 2. Check if all slots are booked
-    const bookedForDate = bookedSlotsMap[dateString] || [];
-    const totalSlotsCount = 
-      (TIME_SLOTS?.Morning?.length || 0) + 
-      (TIME_SLOTS?.Afternoon?.length || 0) +
-      (TIME_SLOTS?.Evening?.length || 0);
+    // 2. Check if ALL slots for this date are booked
+    const bookedCount = allTimeSlots.reduce((count, slotTime) => {
+      return isSlotBooked(doctor.id, dateString, slotTime) ? count + 1 : count;
+    }, 0);
 
-    return bookedForDate.length >= totalSlotsCount;
+    return bookedCount > 0 && bookedCount >= allTimeSlots.length;
   };
-
-  // Get list of booked slots for the currently selected date
-  const currentBookedSlots = useMemo(() => {
-    if (!selectedDate) return [];
-    return bookedSlotsMap[selectedDate] || [];
-  }, [selectedDate, bookedSlotsMap]);
 
   // Get list of disabled slots for the currently selected date
   const currentDisabledSlots = useMemo(() => {
@@ -182,7 +182,7 @@ function AppointmentBooking() {
   // Calculate status for each individual time slot
   const getSlotStatus = (time) => {
     if (selectedSlot === time) return "selected";
-    if (currentBookedSlots.includes(time)) return "booked";
+    if (isSlotBooked(doctor.id, selectedDate, time)) return "booked";
     if (currentDisabledSlots.includes(time)) return "disabled";
     return "available";
   };
@@ -205,9 +205,48 @@ function AppointmentBooking() {
   const handleConfirmAppointment = () => {
     if (!selectedDate || !selectedSlot) return;
 
+    // Check again if slot is booked
+    if (isSlotBooked(doctor.id, selectedDate, selectedSlot)) {
+      showNotification(
+        "Slot Unavailable",
+        "This time slot has already been booked. Please select another slot.",
+        "error"
+      );
+      return;
+    }
+
     const yyyymmdd = selectedDate.replace(/-/g, "");
     const randomSuffix = Math.floor(100 + Math.random() * 900).toString();
     const generatedAptId = `MB-APT-${yyyymmdd}-${randomSuffix}`;
+
+    const newAppt = {
+      id: generatedAptId,
+      doctorId: doctor.id,
+      doctorName: doctor.name,
+      specialty: doctor.specialty,
+      hospital: doctor.hospital,
+      location: doctor.location || "Chennai",
+      consultationFee: doctor.consultationFee || 800,
+      date: selectedDate,
+      formattedDate: formatReadableDate(selectedDate),
+      time: selectedSlot,
+      status: "confirmed",
+      createdAt: new Date().toISOString()
+    };
+    
+    const result = addAppointment(newAppt);
+    if (!result.success) {
+      showNotification("Booking Failed", result.message, "error");
+      return;
+    }
+
+    addNotification({
+      type: "appointment",
+      subType: "confirmed",
+      title: "Appointment Confirmed",
+      message: `Your appointment with ${doctor.name} on ${formatReadableDate(selectedDate)} at ${selectedSlot} has been confirmed.`,
+      appointmentId: generatedAptId
+    });
 
     navigate("/booking-success", {
       state: {
@@ -225,23 +264,23 @@ function AppointmentBooking() {
   };
 
   const handleMyAppointments = () => {
-    showNotification("My Appointments", "Opening your appointment records...", "info");
+    navigate("/my-appointments");
   };
 
   const handleNotifications = () => {
-    showNotification("Notifications", "Opening notifications panel...", "info");
+    navigate("/notifications");
   };
 
   const handleProfile = () => {
-    showNotification("Profile Settings", "Opening patient profile editor...", "info");
+    navigate("/profile");
   };
 
   const handleSettings = () => {
-    showNotification("Settings", "Opening system settings...", "info");
+    navigate("/settings");
   };
 
   const handleSupport = () => {
-    showNotification("Help & Support", "Connecting to MediBook Support...", "success");
+    navigate("/help-support");
   };
 
   return (

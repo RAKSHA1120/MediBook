@@ -1,0 +1,174 @@
+/* ==================================================
+   NotificationCard Component Styles - MediBook
+   ================================================== */
+
+.notification-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.notification-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-light);
+}
+
+.notification-card.unread {
+  background: #f8fafc;
+  border-left: 4px solid var(--primary);
+}
+
+.notification-icon-bubble {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Icon Bubble Color Variants */
+.notification-icon-bubble.type-confirmed {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+.notification-icon-bubble.type-rescheduled {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.notification-icon-bubble.type-cancelled {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.notification-icon-bubble.type-reminder {
+  background-color: #e0f2fe;
+  color: #0284c7;
+}
+
+.notification-icon-bubble.type-system {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+.notification-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.notification-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.notification-title-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notification-title {
+  font-family: var(--font-heading);
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.notification-card.unread .notification-title {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.unread-dot-badge {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.notification-message {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.notification-card.unread .notification-message {
+  color: var(--text-primary);
+}
+
+.notification-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.notification-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notification-action-link {
+  font-weight: 600;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s;
+}
+
+.notification-card:hover .notification-action-link {
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .notification-card {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .notification-icon-bubble {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+  }
+
+  .notification-title {
+    font-size: 14.5px;
+  }
+
+  .notification-message {
+    font-size: 13.5px;
+  }
+}

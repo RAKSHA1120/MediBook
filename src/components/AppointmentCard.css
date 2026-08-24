@@ -1,0 +1,163 @@
+/* ==================================================
+   AppointmentCard Component Styling - MediBook
+   ================================================== */
+
+.appointment-card-component {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+
+.appointment-card-component:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.appt-card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.appt-card-doc-info {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.appt-card-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--primary-light);
+  flex-shrink: 0;
+}
+
+.appt-card-doc-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.appt-card-doc-name {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.appt-card-doc-spec {
+  font-size: 13.5px;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.appt-card-hospital {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.appt-card-hospital span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.appt-card-middle-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--background);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.appt-grid-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.appt-grid-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.appt-grid-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.appt-grid-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.appt-grid-value {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.appt-card-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .appt-card-middle-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .appt-card-top-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .appt-card-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .appt-card-actions button {
+    width: 100%;
+  }
+}
