@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-import { Routes, Route } from "react-router-dom";
-
-function AppRoutes() {
-  return (
-    <Routes>
-      <Route path="/" element={<h1>MediBook Home</h1>} />
-    </Routes>
-=======
 import { Routes, Route, Navigate } from "react-router-dom";
 import ErrorBoundary from "../components/ErrorBoundary";
 import DesignSystem from "../pages/DesignSystem";
@@ -45,7 +36,6 @@ function AppRoutes() {
         <Route path="/notifications" element={<PatientLayout><Notifications /></PatientLayout>} />
       </Routes>
     </ErrorBoundary>
->>>>>>> santhosh-work
   );
 }
 
