@@ -67,7 +67,7 @@ function BookingSuccess() {
   };
 
   const handleViewAppointment = () => {
-    showNotification("My Appointments", "Navigating to your appointment records...", "info");
+    navigate("/appointments");
     setTimeout(() => {
       navigate("/patient-dashboard");
     }, 1000);
@@ -106,12 +106,12 @@ function BookingSuccess() {
             <span>My Appointments</span>
           </button>
 
-          <button className="patient-sidebar-item" onClick={() => { showNotification("Notifications", "Opening notifications...", "info"); setIsSidebarOpen(false); }}>
+          <button className="patient-sidebar-item" onClick={() => { navigate("/notifications"); setIsSidebarOpen(false); }}>
             <Bell size={18} />
             <span>Notifications</span>
           </button>
 
-          <button className="patient-sidebar-item" onClick={() => { showNotification("Profile", "Opening profile...", "info"); setIsSidebarOpen(false); }}>
+          <button className="patient-sidebar-item" onClick={() => { navigate("/profile"); setIsSidebarOpen(false); }}>
             <User size={18} />
             <span>Profile</span>
           </button>

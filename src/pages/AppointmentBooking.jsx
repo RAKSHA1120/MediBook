@@ -78,7 +78,7 @@ function AppointmentBooking() {
 
   // Generate initials for avatar
   const getInitials = (name = "") => {
-    if (!name) return "DR";
+    if (!name || typeof name.split !== 'function') return "DR";
     return name
       .split(" ")
       .filter((n) => n.toLowerCase() !== "dr.")
@@ -209,7 +209,26 @@ function AppointmentBooking() {
     const randomSuffix = Math.floor(100 + Math.random() * 900).toString();
     const generatedAptId = `MB-APT-${yyyymmdd}-${randomSuffix}`;
 
-    navigate("/booking-success", {
+    
+      // Save to localStorage
+      const newAppt = {
+        id: generatedAptId,
+        doctorName: doctor.name,
+        specialty: doctor.specialty,
+        date: selectedDate,
+        time: selectedSlot,
+        status: "Upcoming"
+      };
+      
+      try {
+        const stored = localStorage.getItem("medibook_appointments");
+        let appts = stored ? JSON.parse(stored) : [];
+        appts.push(newAppt);
+        localStorage.setItem("medibook_appointments", JSON.stringify(appts));
+      } catch(e) {}
+
+      navigate("/booking-success", {
+
       state: {
         appointmentId: generatedAptId,
         doctor,
@@ -225,15 +244,15 @@ function AppointmentBooking() {
   };
 
   const handleMyAppointments = () => {
-    showNotification("My Appointments", "Opening your appointment records...", "info");
+    navigate("/appointments");
   };
 
   const handleNotifications = () => {
-    showNotification("Notifications", "Opening notifications panel...", "info");
+    navigate("/notifications");
   };
 
   const handleProfile = () => {
-    showNotification("Profile Settings", "Opening patient profile editor...", "info");
+    navigate("/profile");
   };
 
   const handleSettings = () => {

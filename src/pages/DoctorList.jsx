@@ -221,15 +221,15 @@ function DoctorList() {
   };
 
   const handleMyAppointments = () => {
-    showNotification("My Appointments", "Opening your appointment records...", "info");
+    navigate("/appointments");
   };
 
   const handleNotifications = () => {
-    showNotification("Notifications", "Opening notifications panel...", "info");
+    navigate("/notifications");
   };
 
   const handleProfile = () => {
-    showNotification("Profile Settings", "Opening patient profile editor...", "info");
+    navigate("/profile");
   };
 
   const handleSettings = () => {
@@ -241,8 +241,9 @@ function DoctorList() {
   };
 
   const getInitials = (name) => {
-    return name
-      .split(" ")
+      if (!name || typeof name.split !== 'function') return "DR";
+      return name
+        .split(" ")
       .filter((n) => n.toLowerCase() !== "dr.")
       .map((n) => n[0])
       .join("")

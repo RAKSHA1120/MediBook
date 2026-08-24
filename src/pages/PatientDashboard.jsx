@@ -165,15 +165,15 @@ function PatientDashboard() {
   };
 
   const handleMyAppointments = () => {
-    showNotification("My Appointments", "Opening your appointment records...", "info");
+    navigate("/appointments");
   };
 
   const handleNotifications = () => {
-    showNotification("Notifications", "Opening notifications panel...", "info");
+    navigate("/notifications");
   };
 
   const handleProfile = () => {
-    showNotification("Profile Settings", "Opening patient profile editor...", "info");
+    navigate("/profile");
   };
 
   const handleSettings = () => {

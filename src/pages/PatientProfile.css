@@ -1,0 +1,307 @@
+
+.profile-page {
+    padding: var(--space-xl);
+    max-width: 1000px;
+    margin: 0;
+}
+
+.profile-page-header {
+    margin-bottom: var(--space-xl);
+}
+
+.profile-page-header h1 {
+    font-size: 32px;
+    margin-bottom: 4px;
+}
+
+.profile-page-header p {
+    color: var(--text-muted);
+}
+
+/* --- Top Card --- */
+.profile-top-card {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xl);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--space-xl);
+    border: 1px solid var(--border);
+}
+
+.profile-avatar-container {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.profile-avatar-img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--primary);
+    transition: transform 0.3s ease;
+}
+
+.profile-avatar-img:hover {
+    transform: scale(1.05);
+}
+
+.avatar-cam-btn {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    border: 3px solid var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+    font-size: 16px;
+}
+
+.avatar-cam-btn:hover {
+    background: var(--primary-hover);
+    transform: scale(1.1);
+}
+
+.profile-top-info h2 {
+    font-size: 28px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.verified-badge {
+    font-size: 13px;
+    background: var(--success-light);
+    color: var(--success);
+    padding: 4px 10px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 700;
+}
+
+.profile-contacts {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.contact-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-primary);
+    font-size: 15px;
+}
+
+/* --- Info Card --- */
+.profile-info-card {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    margin-bottom: var(--space-xl);
+}
+
+.info-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xl);
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid var(--border);
+}
+
+.info-card-header h3 {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-heading);
+}
+
+.edit-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--surface);
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.edit-btn:hover {
+    background: var(--primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-heading);
+}
+
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--text-muted);
+    transition: color 0.3s ease;
+}
+
+.input-with-icon input,
+.input-with-icon select,
+.input-with-icon textarea {
+    width: 100%;
+    padding: 14px 14px 14px 44px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    color: var(--text-heading);
+    background: var(--background);
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.input-with-icon textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.input-with-icon input:disabled,
+.input-with-icon select:disabled,
+.input-with-icon textarea:disabled {
+    background: #F1F5F9;
+    color: var(--text-muted);
+    cursor: not-allowed;
+    border-color: #E2E8F0;
+}
+
+.input-with-icon input:focus,
+.input-with-icon select:focus,
+.input-with-icon textarea:focus {
+    border-color: var(--primary);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+/* --- Safe Box --- */
+.safe-box {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+    background: var(--success-light);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-lg);
+    color: var(--success);
+    border: 1px solid #A7F3D0;
+    margin-bottom: var(--space-xl);
+}
+
+.safe-icon {
+    font-size: 24px;
+}
+
+.safe-text h4 {
+    margin-bottom: 4px;
+    color: #065F46;
+}
+
+.safe-text p {
+    font-size: 14px;
+    color: #064E3B;
+}
+
+/* --- Actions --- */
+.profile-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-md);
+}
+
+.btn-cancel, .btn-save {
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 15px;
+    transition: all 0.2s;
+}
+
+.btn-cancel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+}
+
+.btn-cancel:hover {
+    background: var(--background);
+    color: var(--text-heading);
+}
+
+.btn-save {
+    background: var(--primary);
+    border: 1px solid var(--primary);
+    color: white;
+}
+
+.btn-save:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 768px) {
+    .profile-top-card {
+        flex-direction: column;
+        text-align: center;
+        padding: var(--space-lg);
+    }
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    .profile-contacts {
+        align-items: center;
+    }
+}

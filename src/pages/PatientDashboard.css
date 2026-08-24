@@ -897,3 +897,6 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+h1, h2, h3, h4, .page-title, .section-title, .profile-name { font-family: var(--font-heading) !important; }
