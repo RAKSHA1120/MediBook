@@ -14,7 +14,6 @@ import {
   AlertTriangle,
   Receipt
 } from "lucide-react";
-import defaultAppointments from "../data/patientAppointments";
 import doctors from "../data/doctors";
 import Button from "../components/Button";
 import Modal from "../components/Modal";

@@ -17,7 +17,6 @@ import {
   Sunset,
   CalendarDays
 } from "lucide-react";
-import defaultAppointments from "../data/patientAppointments";
 import doctors from "../data/doctors";
 import { TIME_SLOTS, getMockBookedAppointments, getMockDisabledAppointments } from "../data/appointments";
 import Button from "../components/Button";
@@ -31,6 +30,7 @@ import PrimaryButton from "../components/PrimaryButton";
 import SecondaryButton from "../components/SecondaryButton";
 import { addNotification } from "../data/notifications";
 import { useAppointments } from "../context/AppointmentContext";
+import "./AppointmentDetails.css";
 
 function AppointmentDetails() {
   const { id } = useParams();
