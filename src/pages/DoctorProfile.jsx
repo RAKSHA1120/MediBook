@@ -27,6 +27,7 @@ import doctors from "../data/doctors";
 import Navbar from "../components/Navbar";
 import Button from "../components/Button";
 import Toast from "../components/Toast";
+import PageHeader from "../components/PageHeader";
 import "./DoctorProfile.css";
 
 // Patient info for Navbar
@@ -136,7 +137,7 @@ function DoctorProfile() {
   };
 
   const handleMyAppointments = () => {
-    navigate("/appointments");
+    navigate("/my-appointments");
   };
 
   const handleNotifications = () => {
@@ -148,11 +149,11 @@ function DoctorProfile() {
   };
 
   const handleSettings = () => {
-    showNotification("Settings", "Opening system settings...", "info");
+    navigate("/settings");
   };
 
   const handleSupport = () => {
-    showNotification("Help & Support", "Connecting to MediBook Support...", "success");
+    navigate("/help-support");
   };
 
   // Generate initials for avatar
@@ -332,22 +333,18 @@ function DoctorProfile() {
         />
 
         <main className="doctors-content">
-          {/* Top Header Row */}
-          <section className="profile-top-controls">
-            <button className="btn-back-link" onClick={() => navigate("/doctors")}>
-              <ArrowLeft size={16} />
-              Back to Doctors
-            </button>
-            <div className="verified-badge-container">
-              <span>MediBook Verified</span>
-              <ShieldCheck size={16} className="verified-icon" />
-            </div>
-          </section>
-
-          {/* Page Heading */}
-          <section className="doctors-page-header">
-            <h2 className="doctors-page-title">Doctor Profile</h2>
-          </section>
+          {/* Page Header */}
+          <PageHeader
+            title="Doctor Profile"
+            onBack={() => navigate("/doctors")}
+            backLabel="Back to Doctors"
+            action={
+              <div className="verified-badge-container">
+                <span>MediBook Verified</span>
+                <ShieldCheck size={16} className="verified-icon" />
+              </div>
+            }
+          />
 
           {/* Doctor Summary Card */}
           <section className="profile-summary-card">

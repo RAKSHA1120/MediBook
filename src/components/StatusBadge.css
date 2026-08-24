@@ -1,0 +1,54 @@
+/* ==================================================
+   StatusBadge Component Styling - MediBook
+   ================================================== */
+
+.status-badge-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 100px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* Status Variations */
+.status-badge-capsule.status-upcoming,
+.status-badge-capsule.status-confirmed {
+  background: rgba(34, 160, 107, 0.1);
+  color: var(--success);
+}
+
+.status-badge-capsule.status-completed {
+  background: rgba(47, 111, 163, 0.1);
+  color: var(--primary);
+}
+
+.status-badge-capsule.status-cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.status-badge-capsule.status-available {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.status-badge-capsule.status-booked {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.status-badge-capsule.status-selected {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.status-badge-capsule.status-disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  border: 1px dashed #cbd5e1;
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Search,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Button from "../components/Button";
+import { getStoredPatientProfile, getPatientInitials } from "../data/patientProfile";
 import "../pages/PatientDashboard.css"; // Ensure styles are loaded
 
 function PatientLayout({ children }) {
@@ -19,11 +20,27 @@ function PatientLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const patient = {
-    name: "Santhosh",
-    role: "Patient",
-    avatarLetter: "S"
-  };
+  const [patient, setPatient] = useState(() => {
+    try {
+      const p = getStoredPatientProfile();
+      return p || { name: "Raksha", role: "Patient" };
+    } catch (e) {
+      return { name: "Raksha", role: "Patient" };
+    }
+  });
+
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      try {
+        const p = getStoredPatientProfile();
+        if (p) setPatient(p);
+      } catch (e) {}
+    };
+    window.addEventListener("medibook_profile_updated", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("medibook_profile_updated", handleProfileUpdate);
+    };
+  }, []);
 
   const isActive = (path) => location.pathname.startsWith(path);
 
@@ -47,7 +64,7 @@ function PatientLayout({ children }) {
             <span>Find Doctor</span>
           </button>
 
-          <button className={`patient-sidebar-item ${isActive("/appointments") ? "active" : ""}`} onClick={() => navigate("/appointments")}>
+          <button className={`patient-sidebar-item ${isActive("/my-appointments") || isActive("/appointments") ? "active" : ""}`} onClick={() => navigate("/my-appointments")}>
             <Calendar size={18} />
             <span>My Appointments</span>
           </button>
@@ -62,12 +79,12 @@ function PatientLayout({ children }) {
             <span>Profile</span>
           </button>
 
-          <button className="patient-sidebar-item" onClick={() => {}}>
+          <button className={`patient-sidebar-item ${isActive("/settings") ? "active" : ""}`} onClick={() => navigate("/settings")}>
             <Settings size={18} />
             <span>Settings</span>
           </button>
 
-          <button className="patient-sidebar-item" onClick={() => {}}>
+          <button className={`patient-sidebar-item ${isActive("/help-support") ? "active" : ""}`} onClick={() => navigate("/help-support")}>
             <HelpCircle size={18} />
             <span>Help & Support</span>
           </button>
@@ -77,7 +94,7 @@ function PatientLayout({ children }) {
           <div className="support-card">
             <span className="support-card-title">Need Help?</span>
             <p className="support-card-text">Our support team is available 24/7 to answer your queries.</p>
-            <Button variant="primary" size="sm" className="btn-support" onClick={() => {}}>
+            <Button variant="primary" size="sm" className="btn-support" onClick={() => navigate("/help-support", { state: { openModal: true } })}>
               Contact Support
             </Button>
           </div>
@@ -97,9 +114,9 @@ function PatientLayout({ children }) {
       <div className="patient-dashboard-main">
         {/* Top Navbar */}
         <Navbar
-          userName={patient.name}
-          userRole={patient.role}
-          avatarLetter={patient.avatarLetter}
+          userName={patient?.name || "Raksha"}
+          userRole={patient?.role || "Patient"}
+          avatarLetter={getPatientInitials(patient?.name)}
           hideTabs={true}
           hideSearch={false}
           onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}

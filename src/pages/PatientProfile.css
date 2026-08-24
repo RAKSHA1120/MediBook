@@ -1,307 +1,256 @@
+/* ==================================================
+   Patient Profile Page Styling - MediBook
+   ================================================== */
 
-.profile-page {
-    padding: var(--space-xl);
-    max-width: 1000px;
-    margin: 0;
+.patient-profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
+/* Page Header */
 .profile-page-header {
-    margin-bottom: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.profile-page-header h1 {
-    font-size: 32px;
-    margin-bottom: 4px;
+.profile-page-title {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0;
 }
 
-.profile-page-header p {
-    color: var(--text-muted);
+.profile-page-subtitle {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--text-muted);
+  margin: 0;
 }
 
-/* --- Top Card --- */
-.profile-top-card {
-    background: var(--surface);
-    border-radius: var(--radius-xl);
-    padding: var(--space-xl);
-    display: flex;
-    align-items: center;
-    gap: var(--space-xl);
-    box-shadow: var(--shadow-md);
-    margin-bottom: var(--space-xl);
-    border: 1px solid var(--border);
+/* Profile Overview Top Card */
+.profile-overview-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
-.profile-avatar-container {
-    position: relative;
-    flex-shrink: 0;
+.overview-left-block {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
-.profile-avatar-img {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    object-fit: cover;
-    box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--primary);
-    transition: transform 0.3s ease;
+.profile-avatar-circle {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--primary-light);
+  flex-shrink: 0;
 }
 
-.profile-avatar-img:hover {
-    transform: scale(1.05);
+.overview-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.avatar-cam-btn {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--primary);
-    color: white;
-    border: 3px solid var(--surface);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: var(--shadow-sm);
-    transition: all 0.2s ease;
-    font-size: 16px;
+.overview-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.avatar-cam-btn:hover {
-    background: var(--primary-hover);
-    transform: scale(1.1);
+.overview-name {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0;
 }
 
-.profile-top-info h2 {
-    font-size: 28px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.role-badge {
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.verified-badge {
-    font-size: 13px;
-    background: var(--success-light);
-    color: var(--success);
-    padding: 4px 10px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-weight: 700;
+.overview-contact-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 
-.profile-contacts {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-top: 12px;
+.meta-icon-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.contact-line {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-primary);
-    font-size: 15px;
+.overview-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
-/* --- Info Card --- */
-.profile-info-card {
-    background: var(--surface);
-    border-radius: var(--radius-xl);
-    padding: var(--space-xl);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border);
-    margin-bottom: var(--space-xl);
+/* Content Sections (Personal Info & Address) */
+.profile-section-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.info-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-xl);
-    padding-bottom: var(--space-md);
-    border-bottom: 1px solid var(--border);
+.section-header-title {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
 }
 
-.info-card-header h3 {
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--text-heading);
+.section-header-title svg {
+  color: var(--primary);
 }
 
-.edit-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: var(--surface);
-    border: 1px solid var(--primary);
-    color: var(--primary);
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 14px;
-    transition: all 0.3s ease;
+/* Grid Layouts */
+.profile-grid-2col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px 24px;
 }
 
-.edit-btn:hover {
-    background: var(--primary);
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-sm);
+.profile-grid-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px 24px;
 }
 
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-lg);
+.profile-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+.profile-field-group.full-width {
+  grid-column: 1 / -1;
 }
 
-.form-group label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-heading);
+.field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
-.input-with-icon {
-    position: relative;
-    display: flex;
-    align-items: center;
+.field-value-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-heading);
+  padding: 10px 14px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  min-height: 42px;
+  display: flex;
+  align-items: center;
 }
 
-.input-icon {
-    position: absolute;
-    left: 14px;
-    color: var(--text-muted);
-    transition: color 0.3s ease;
+.field-input,
+.field-select {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
 }
 
-.input-with-icon input,
-.input-with-icon select,
-.input-with-icon textarea {
-    width: 100%;
-    padding: 14px 14px 14px 44px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    font-size: 15px;
-    color: var(--text-heading);
-    background: var(--background);
-    transition: all 0.3s ease;
-    font-family: inherit;
+.field-input:focus,
+.field-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
-.input-with-icon textarea {
-    min-height: 80px;
-    resize: vertical;
+.field-input.has-error,
+.field-select.has-error {
+  border-color: #ef4444;
+  background-color: #fef2f2;
 }
 
-.input-with-icon input:disabled,
-.input-with-icon select:disabled,
-.input-with-icon textarea:disabled {
-    background: #F1F5F9;
-    color: var(--text-muted);
-    cursor: not-allowed;
-    border-color: #E2E8F0;
+.field-error-text {
+  font-size: 12px;
+  color: #ef4444;
+  font-weight: 500;
+  margin-top: 2px;
 }
 
-.input-with-icon input:focus,
-.input-with-icon select:focus,
-.input-with-icon textarea:focus {
-    border-color: var(--primary);
-    background: var(--surface);
-    box-shadow: 0 0 0 3px var(--primary-soft);
-}
-
-.full-width {
-    grid-column: 1 / -1;
-}
-
-/* --- Safe Box --- */
-.safe-box {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-md);
-    background: var(--success-light);
-    padding: var(--space-md) var(--space-lg);
-    border-radius: var(--radius-lg);
-    color: var(--success);
-    border: 1px solid #A7F3D0;
-    margin-bottom: var(--space-xl);
-}
-
-.safe-icon {
-    font-size: 24px;
-}
-
-.safe-text h4 {
-    margin-bottom: 4px;
-    color: #065F46;
-}
-
-.safe-text p {
-    font-size: 14px;
-    color: #064E3B;
-}
-
-/* --- Actions --- */
-.profile-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--space-md);
-}
-
-.btn-cancel, .btn-save {
-    padding: 12px 24px;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    font-size: 15px;
-    transition: all 0.2s;
-}
-
-.btn-cancel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-}
-
-.btn-cancel:hover {
-    background: var(--background);
-    color: var(--text-heading);
-}
-
-.btn-save {
-    background: var(--primary);
-    border: 1px solid var(--primary);
-    color: white;
-}
-
-.btn-save:hover {
-    background: var(--primary-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-sm);
-}
-
+/* ==================================================
+   Responsive Adjustments
+   ================================================== */
 @media (max-width: 768px) {
-    .profile-top-card {
-        flex-direction: column;
-        text-align: center;
-        padding: var(--space-lg);
-    }
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-    .profile-contacts {
-        align-items: center;
-    }
+  .profile-overview-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .overview-left-block {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .overview-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .overview-actions button {
+    width: 100%;
+  }
+
+  .profile-grid-2col,
+  .profile-grid-3col {
+    grid-template-columns: 1fr;
+  }
 }

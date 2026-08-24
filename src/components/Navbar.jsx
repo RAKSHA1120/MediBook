@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
     Search,
     Bell,
@@ -9,6 +10,7 @@ import {
     Stethoscope,
     Menu,
 } from "lucide-react";
+import { getUnreadCount } from "../data/notifications";
 
 function Navbar({
     userName = "Raksha N",
@@ -17,8 +19,21 @@ function Navbar({
     hideTabs = false,
     hideSearch = false,
     onMenuClick,
+    onNotificationClick,
     searchPlaceholder = "Search patients...",
 }) {
+    const navigate = useNavigate();
+    const [unreadCount, setUnreadCount] = useState(() => getUnreadCount());
+
+    useEffect(() => {
+        const handleNotifUpdate = () => {
+            setUnreadCount(getUnreadCount());
+        };
+        window.addEventListener("medibook_notifications_updated", handleNotifUpdate);
+        return () => {
+            window.removeEventListener("medibook_notifications_updated", handleNotifUpdate);
+        };
+    }, []);
     return (
         <header className="navbar">
 
@@ -81,12 +96,21 @@ function Navbar({
                 <button
                     className="navbar-icon-button"
                     title="Notifications"
+                    onClick={() => {
+                        if (onNotificationClick) {
+                            onNotificationClick();
+                        } else {
+                            navigate("/notifications");
+                        }
+                    }}
                 >
                     <Bell size={20} />
 
-                    <span className="notification-badge">
-                        3
-                    </span>
+                    {unreadCount > 0 && (
+                        <span className="notification-badge">
+                            {unreadCount}
+                        </span>
+                    )}
                 </button>
 
                 {/* Profile */}

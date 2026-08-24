@@ -27,6 +27,10 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import Select from "../components/Select";
 import Toast from "../components/Toast";
+import DoctorCard from "../components/DoctorCard";
+import SearchBox from "../components/SearchBox";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
 import "./DoctorList.css";
 
 // Specialties list for filter options
@@ -221,7 +225,7 @@ function DoctorList() {
   };
 
   const handleMyAppointments = () => {
-    navigate("/appointments");
+    navigate("/my-appointments");
   };
 
   const handleNotifications = () => {
@@ -233,11 +237,11 @@ function DoctorList() {
   };
 
   const handleSettings = () => {
-    showNotification("Settings", "Opening system settings...", "info");
+    navigate("/settings");
   };
 
   const handleSupport = () => {
-    showNotification("Help & Support", "Connecting to MediBook Support...", "success");
+    navigate("/help-support");
   };
 
   const getInitials = (name) => {
@@ -331,25 +335,21 @@ function DoctorList() {
         />
 
         <main className="doctors-content">
-          {/* Page Title & Subtitle */}
-          <section className="doctors-page-header">
-            <h2 className="doctors-page-title">Find Doctor</h2>
-            <p className="doctors-page-subtitle">
-              Search and book an appointment with trusted doctors.
-            </p>
-          </section>
+          {/* Page Header */}
+          <PageHeader
+            title="Find Doctor"
+            subtitle="Search and book an appointment with trusted doctors."
+          />
 
           {/* Filters Panel */}
           <section className="filters-bar">
             <form onSubmit={handleSearchSubmit} className="filters-row">
-              {/* Search Input */}
+              {/* Search Box Component */}
               <div className="filter-search-wrapper">
-                <Input
-                  type="text"
-                  placeholder="Search doctors..."
+                <SearchBox
                   value={searchVal}
-                  onChange={(e) => setSearchVal(e.target.value)}
-                  icon={Search}
+                  onChange={(val) => setSearchVal(val)}
+                  placeholder="Search doctors..."
                 />
               </div>
 
@@ -439,99 +439,23 @@ function DoctorList() {
             {paginatedDoctors.length > 0 ? (
               <div className="doctors-list-grid">
                 {paginatedDoctors.map((doc) => (
-                  <div key={doc.id} className="doc-list-card">
-                    {/* Card Header */}
-                    <div className="doc-card-header">
-                      <div className="doc-avatar-container">
-                        <div className="doc-avatar">
-                          {getInitials(doc.name)}
-                        </div>
-                        <span
-                          className={`doc-availability-dot ${
-                            doc.availability.toLowerCase().includes("tomorrow") ? "tomorrow" : ""
-                          }`}
-                        ></span>
-                      </div>
-
-                      <div className="doc-header-details">
-                        <h4 className="doc-name">{doc.name}</h4>
-                        <span className="doc-specialty-badge">{doc.specialty}</span>
-                        <span className="doc-qualification">
-                          <GraduationCap
-                            size={13}
-                            style={{ marginRight: "4px", display: "inline-block", verticalAlign: "middle" }}
-                          />
-                          {doc.qualification}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Card Info Rows */}
-                    <div className="doc-card-body">
-                      <div className="doc-info-row">
-                        <Building2 size={15} className="doc-info-icon" />
-                        <span>{doc.hospital}</span>
-                      </div>
-
-                      <div className="doc-info-row">
-                        <MapPin size={15} className="doc-info-icon" />
-                        <span>{doc.location}</span>
-                      </div>
-
-                      <div className="doc-info-row">
-                        <Briefcase size={15} className="doc-info-icon" />
-                        <span>{doc.experience} years experience</span>
-                      </div>
-
-                      <div className="doc-info-row">
-                        <Star size={15} className="doc-rating-star" />
-                        <div className="doc-rating-container">
-                          <span className="doc-rating-value">{doc.rating}</span>
-                          <span className="doc-reviews-count">({doc.reviewCount} reviews)</span>
-                        </div>
-                      </div>
-
-                      <div className="doc-info-row" style={{ justifyContent: "space-between" }}>
-                        <span>Consultation Fee:</span>
-                        <span className="doc-fee-value">₹{doc.consultationFee}</span>
-                      </div>
-
-                      <div className="doc-info-row" style={{ justifyContent: "space-between" }}>
-                        <span>Availability:</span>
-                        <span
-                          className={`doc-availability-text ${
-                            doc.availability.toLowerCase().includes("today") ? "today" : "tomorrow"
-                          }`}
-                        >
-                          {doc.availability}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Card Actions */}
-                    <div className="doc-card-footer">
-                      <Button variant="outline" onClick={() => navigate("/doctor-profile", { state: { doctor: doc } })}>
-                        View Profile
-                      </Button>
-                      <Button variant="primary" onClick={() => handleBookAppointment(doc)}>
-                        Book
-                      </Button>
-                    </div>
-                  </div>
+                  <DoctorCard
+                    key={doc.id}
+                    doctor={doc}
+                    onViewProfile={(d) => navigate("/doctor-profile", { state: { doctor: d } })}
+                    onBook={(d) => handleBookAppointment(d)}
+                  />
                 ))}
               </div>
             ) : (
-              /* Empty State */
-              <div className="empty-state">
-                <Stethoscope size={48} className="empty-state-icon" />
-                <h3 className="empty-state-title">No doctors found</h3>
-                <p className="empty-state-desc">
-                  We couldn't find any medical specialists matching your search queries or filter choices. Try changing or clearing your filters.
-                </p>
-                <Button variant="primary" onClick={handleClearFilters}>
-                  Clear All Filters
-                </Button>
-              </div>
+              /* Reusable Empty State */
+              <EmptyState
+                title="No Doctors Found"
+                description="We couldn't find any medical specialists matching your search queries or filter choices."
+                icon={Stethoscope}
+                actionLabel="Clear All Filters"
+                onAction={handleClearFilters}
+              />
             )}
           </section>
 

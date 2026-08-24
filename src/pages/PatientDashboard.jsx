@@ -28,12 +28,17 @@ import {
 } from "lucide-react";
 import doctorsData from "../data/doctors";
 import heroIllustration from "../assets/hospital_appointment_illustration.png";
+import { useAppointments } from "../context/AppointmentContext";
 import Navbar from "../components/Navbar";
 import Button from "../components/Button";
 import Input from "../components/Input";
 import Toast from "../components/Toast";
 import Modal from "../components/Modal";
 import Tooltip from "../components/Tooltip";
+import DoctorCard from "../components/DoctorCard";
+import AppointmentCard from "../components/AppointmentCard";
+import SearchBox from "../components/SearchBox";
+import EmptyState from "../components/EmptyState";
 import "./PatientDashboard.css";
 
 // Local patient object
@@ -43,15 +48,15 @@ const patient = {
   avatarLetter: "R"
 };
 
-// Local upcoming appointment mock data
-const upcomingAppointment = {
-  doctorName: "Dr. Sarah Johnson",
-  specialty: "Cardiologist",
-  date: "August 25, 2026",
+// Default fallback upcoming appointment mock data
+const defaultUpcomingAppointment = {
+  doctorName: "Dr. Emily Carter",
+  specialty: "Cardiology",
+  date: "August 26, 2026",
   time: "10:30 AM",
   hospital: "MediCare Hospital",
   status: "Confirmed",
-  initials: "SJ"
+  initials: "EC"
 };
 
 // Recommended doctors mock data
@@ -150,6 +155,7 @@ const getSpecialtyIcon = (specialty) => {
 
 function PatientDashboard() {
   const navigate = useNavigate();
+  const { appointments } = useAppointments();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -164,8 +170,39 @@ function PatientDashboard() {
     navigate("/doctor-profile", { state: { doctor: fullDoc } });
   };
 
+  // Dynamic upcoming appointment from AppointmentContext
+  const upcomingAppointment = useMemo(() => {
+    const upcoming = appointments.find(
+      (a) => a.status && (a.status.toLowerCase() === "upcoming" || a.status.toLowerCase() === "confirmed")
+    );
+    if (upcoming) {
+      const doc = doctorsData.find((d) => String(d.id) === String(upcoming.doctorId)) || {};
+      const docName = upcoming.doctorName || doc.name || "Dr. Emily Carter";
+      const initials = docName
+        .split(" ")
+        .filter((n) => n.toLowerCase() !== "dr.")
+        .map((n) => n[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase() || "EC";
+
+      return {
+        id: upcoming.id,
+        doctorName: docName,
+        specialty: upcoming.specialty || doc.specialty || "Cardiology",
+        date: upcoming.formattedDate || upcoming.date || "August 26, 2026",
+        time: upcoming.time || "10:30 AM",
+        hospital: upcoming.hospital || doc.hospital || "MediCare Hospital",
+        status: "Confirmed",
+        initials
+      };
+    }
+
+    return defaultUpcomingAppointment;
+  }, [appointments]);
+
   const handleMyAppointments = () => {
-    navigate("/appointments");
+    navigate("/my-appointments");
   };
 
   const handleNotifications = () => {
@@ -177,11 +214,11 @@ function PatientDashboard() {
   };
 
   const handleSettings = () => {
-    showNotification("Settings", "Opening system settings...", "info");
+    navigate("/settings");
   };
 
   const handleSupport = () => {
-    showNotification("Help & Support", "Connecting to MediBook Support...", "success");
+    navigate("/help-support");
   };
 
   // Get dynamic greeting based on time of day
@@ -402,124 +439,59 @@ function PatientDashboard() {
 
           {/* Upcoming Appointment Section (Full Width) */}
           <section className="upcoming-appointment-section-improved">
-              <div className="section-header">
-                <h3 className="section-main-title">Upcoming Appointment</h3>
-                <button className="view-all-link" onClick={handleMyAppointments}>
-                  View All
-                </button>
-              </div>
-              <div className="appointment-card-improved">
-                <div className="appointment-card-top">
-                  <div className="appointment-doctor-info">
-                    <div className="appointment-doctor-avatar">
-                      {upcomingAppointment.initials}
-                    </div>
-                    <div className="appointment-doctor-details">
-                      <h4 className="appointment-doctor-name">{upcomingAppointment.doctorName}</h4>
-                      <span className="appointment-doctor-specialty">{upcomingAppointment.specialty}</span>
-                      <span className="appointment-hospital">
-                        <MapPin size={12} style={{ marginRight: "4px", display: "inline-block", verticalAlign: "middle" }} />
-                        {upcomingAppointment.hospital}
-                      </span>
-                    </div>
-                  </div>
-                  <div className={`status-badge-improved ${upcomingAppointment.status.toLowerCase()}`}>
-                    <CheckCircle size={12} />
-                    {upcomingAppointment.status}
-                  </div>
-                </div>
+            <div className="section-header">
+              <h3 className="section-main-title">Upcoming Appointment</h3>
+              <button className="view-all-link" onClick={handleMyAppointments}>
+                View All
+              </button>
+            </div>
 
-                <div className="appointment-card-middle">
-                  <div className="appointment-schedule-item">
-                    <Calendar size={16} />
-                    <span>{upcomingAppointment.date}</span>
-                  </div>
-                  <div className="appointment-schedule-item">
-                    <Clock size={16} />
-                    <span>{upcomingAppointment.time}</span>
-                  </div>
-                </div>
+            {upcomingAppointment ? (
+              <AppointmentCard
+                appointment={upcomingAppointment}
+                onView={() => setIsModalOpen(true)}
+                onReschedule={handleRescheduleAppointment}
+                onCancel={handleCancelAppointment}
+              />
+            ) : (
+              <EmptyState
+                title="No Upcoming Appointment"
+                description="You don't have any active appointments scheduled."
+                actionLabel="Find a Doctor"
+                onAction={() => navigate("/doctors")}
+              />
+            )}
+          </section>
 
-                <div className="appointment-card-actions">
-                  <Button variant="primary" onClick={() => setIsModalOpen(true)}>
-                    View Details
-                  </Button>
-                  <Button variant="outline" onClick={handleRescheduleAppointment}>
-                    Reschedule
-                  </Button>
-                  <Button variant="outline" className="btn-cancel" onClick={handleCancelAppointment}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </section>
-
-            {/* Right Column: Recommended Doctors */}
-            <section className="recommended-doctors-section-improved">
-              <div className="section-header">
-                <h3 className="section-main-title">Recommended Doctors</h3>
-                <button className="view-all-link" onClick={() => navigate("/doctors")}>
-                  View All
-                </button>
-              </div>
-              <div className="doctors-grid-improved">
-                {filteredDoctors.length > 0 ? (
-                  filteredDoctors.map((doctor) => (
-                    <div key={doctor.id} className="doctor-card-improved" onClick={() => handleDoctorClick(doctor.id)}>
-                      <div className="doctor-card-header">
-                        <div className="doctor-avatar">
-                          {doctor.initials}
-                        </div>
-                        <div className="doctor-meta">
-                          <h4 className="doctor-name">{doctor.name}</h4>
-                          <span className="doctor-specialty">{doctor.specialty}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="doctor-card-body">
-                        <div className="doctor-detail-row">
-                          <span>Experience</span>
-                          <strong>{doctor.experience}</strong>
-                        </div>
-                        <div className="doctor-detail-row">
-                          <span>Rating</span>
-                          <span className="doctor-rating">
-                            <Star size={14} fill="var(--warning)" className="rating-star-icon" />
-                            {doctor.rating} ({doctor.reviewCount} reviews)
-                          </span>
-                        </div>
-                        <div className="doctor-detail-row">
-                          <span>Consultation Fee</span>
-                          <strong>₹{doctor.consultationFee}</strong>
-                        </div>
-                        <div className="doctor-detail-row">
-                          <span>Availability</span>
-                          <span className="doctor-availability">
-                            <span className="availability-dot"></span>
-                            {doctor.availability}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="doctor-card-footer" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="primary" onClick={() => handleBookAppointment(doctor.id)}>
-                          Book Appointment
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="no-doctors-found">
-                    <Stethoscope size={40} className="no-doctors-icon" />
-                    <h4>No Doctors Found</h4>
-                    <p>We couldn't find any doctors matching "{searchQuery}" under the "{selectedSpecialty}" specialty filter.</p>
-                    <Button variant="secondary" onClick={() => { setSelectedSpecialty("All"); setSearchQuery(""); }}>
-                      Clear Filters
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </section>
+          {/* Right Column: Recommended Doctors */}
+          <section className="recommended-doctors-section-improved">
+            <div className="section-header">
+              <h3 className="section-main-title">Recommended Doctors</h3>
+              <button className="view-all-link" onClick={() => navigate("/doctors")}>
+                View All
+              </button>
+            </div>
+            <div className="doctors-grid-improved" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
+              {filteredDoctors.length > 0 ? (
+                filteredDoctors.map((doctor) => (
+                  <DoctorCard
+                    key={doctor.id}
+                    doctor={doctor}
+                    onViewProfile={(d) => handleDoctorClick(d.id)}
+                    onBook={(d) => handleBookAppointment(d.id)}
+                  />
+                ))
+              ) : (
+                <EmptyState
+                  title="No Doctors Found"
+                  description={`We couldn't find any doctors matching "${searchQuery}".`}
+                  icon={Stethoscope}
+                  actionLabel="Clear Filters"
+                  onAction={() => { setSelectedSpecialty("All"); setSearchQuery(""); }}
+                />
+              )}
+            </div>
+          </section>
 
           {/* 6. Benefits Section */}
           <section className="benefits-section">

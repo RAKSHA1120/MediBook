@@ -67,10 +67,7 @@ function BookingSuccess() {
   };
 
   const handleViewAppointment = () => {
-    navigate("/appointments");
-    setTimeout(() => {
-      navigate("/patient-dashboard");
-    }, 1000);
+    navigate("/my-appointments");
   };
 
   const handleGoToDashboard = () => {
@@ -78,7 +75,7 @@ function BookingSuccess() {
   };
 
   const handleSupport = () => {
-    showNotification("Help & Support", "Connecting to MediBook Support...", "success");
+    navigate("/help-support");
   };
 
   return (
