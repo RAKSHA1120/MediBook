@@ -23,15 +23,13 @@ function AppRoutes() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         
-        {/* These pages already have their own layout (from Raksha's code) */}
-        <Route path="/patient-dashboard" element={<PatientDashboard />} />
-        <Route path="/doctors" element={<DoctorList />} />
-        <Route path="/doctor-profile" element={<DoctorProfile />} />
-        <Route path="/book-appointment" element={<AppointmentBooking />} />
-        <Route path="/booking-success" element={<BookingSuccess />} />
-        <Route path="/design-system" element={<DesignSystem />} />
-        
-        {/* These pages use the wrapper layout */}
+        {/* All Patient Pages Wrapped in PatientLayout */}
+        <Route path="/patient-dashboard" element={<PatientLayout><PatientDashboard /></PatientLayout>} />
+        <Route path="/doctors" element={<PatientLayout><DoctorList /></PatientLayout>} />
+        <Route path="/doctor-profile" element={<PatientLayout><DoctorProfile /></PatientLayout>} />
+        <Route path="/book-appointment" element={<PatientLayout><AppointmentBooking /></PatientLayout>} />
+        <Route path="/booking-success" element={<PatientLayout><BookingSuccess /></PatientLayout>} />
+
         <Route path="/my-appointments" element={<PatientLayout><MyAppointments /></PatientLayout>} />
         <Route path="/appointments" element={<PatientLayout><MyAppointments /></PatientLayout>} />
         <Route path="/appointments/:id" element={<PatientLayout><AppointmentDetails /></PatientLayout>} />
@@ -40,6 +38,8 @@ function AppRoutes() {
         <Route path="/notifications" element={<PatientLayout><Notifications /></PatientLayout>} />
         <Route path="/settings" element={<PatientLayout><Settings /></PatientLayout>} />
         <Route path="/help-support" element={<PatientLayout><HelpSupport /></PatientLayout>} />
+
+        <Route path="/design-system" element={<DesignSystem />} />
       </Routes>
     </ErrorBoundary>
   );
