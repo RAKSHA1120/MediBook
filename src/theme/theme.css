@@ -1,72 +1,92 @@
-
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap");
 
 :root {
-   /* Typography */
-   --font-heading: "Outfit", sans-serif;
+   /* ================================
+     Typography
+  ================================= */
+
+   --font-heading: "IBM Plex Serif", serif;
    --font-body: "Inter", sans-serif;
 
-   /* Colors: Premium Teal / Indigo */
-   --primary: #0D9488;          /* Premium Teal */
-   --primary-hover: #0F766E;
-   --primary-light: #5EEAD4;
-   --primary-soft: #CCFBF1;
-   
-   --secondary: #4F46E5;        /* Deep Indigo */
-   --secondary-light: #818CF8;
+   /* ================================
+     Colors
+     Soft Healthcare Blue
+  ================================= */
 
-   --background: #F8FAFC;       /* Soft modern gray */
+   --primary: #2f6fa3;
+   --primary-hover: #275d89;
+   --primary-light: #6ec0ff;
+   --primary-soft: #abe1ff;
+
+   --background: #f4fafd;
    --surface: #ffffff;
-   --surface-glass: rgba(255, 255, 255, 0.85);
+   --surface-glass: #ffffff;
 
-   --text-heading: #0F172A;
-   --text-primary: #334155;
-   --text-muted: #64748B;
+   --text-heading: #172033;
+   --text-primary: #52657a;
+   --text-muted: #94a3b8;
 
-   --border: #E2E8F0;
+   --border: #d9e7f0;
 
-   --success: #10B981;
-   --success-light: #D1FAE5;
-   --warning: #F59E0B;
-   --warning-light: #FEF3C7;
-   --error: #EF4444;
-   --error-light: #FEE2E2;
+   --success: #22a06b;
+   --warning: #f59e0b;
+   --error: #d64545;
 
-   /* Border Radius */
+   /* ================================
+     Border Radius
+  ================================= */
+
+   /* Radius */
    --radius-sm: 8px;
    --radius-md: 12px;
-   --radius-lg: 16px;
-   --radius-xl: 24px;
+   --radius-lg: 20px;
+   --radius-xl: 28px;
 
-   /* Shadows - Modern Neumorphic */
-   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
-   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+   /* ================================
+     Shadows
+  ================================= */
 
-   /* Spacing */
+   --shadow-sm: 0 1px 3px rgba(23, 32, 51, 0.08);
+   --shadow-md: 0 4px 12px rgba(23, 32, 51, 0.1);
+
+   /* ================================
+     Spacing
+  ================================= */
+
    --space-xs: 4px;
    --space-sm: 8px;
    --space-md: 16px;
    --space-lg: 24px;
    --space-xl: 32px;
-   --space-2xl: 48px;
+   --space-2xl: 40px;
 
-   /* Component Sizes */
-   --input-height: 48px;
-   --button-height: 48px;
-   --input-padding-x: 16px;
-   --button-padding-x: 24px;
+   /* ================================
+     Component Sizes
+  ================================= */
 
-   --icon-sm: 18px;
-   --icon-md: 22px;
-   --icon-lg: 26px;
+   --input-height: 44px;
+   --button-height: 44px;
+
+   --input-padding-x: 14px;
+   --button-padding-x: 18px;
+
+   /* ================================
+     Icon Sizes
+  ================================= */
+
+   --icon-sm: 16px;
+   --icon-md: 20px;
+   --icon-lg: 24px;
+
    --icon-stroke: 2px;
 }
 
+/* ================================
+   Global Reset
+================================ */
+
 * {
    box-sizing: border-box;
-   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 html {
@@ -80,27 +100,49 @@ body {
    min-height: 100vh;
    background: var(--background);
    color: var(--text-primary);
-   line-height: 1.6;
 }
 
-h1, h2, h3, h4, h5, h6 {
+/* ================================
+   Typography
+================================ */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
    margin: 0;
    font-family: var(--font-heading);
    color: var(--text-heading);
-   font-weight: 700;
-   letter-spacing: -0.02em;
 }
 
 p {
    margin: 0;
 }
 
-button, input, textarea, select {
+/* ================================
+   Form Elements
+================================ */
+
+button,
+input,
+textarea,
+select {
    font-family: var(--font-body);
-   outline: none;
 }
 
 button {
    cursor: pointer;
 }
 
+/* ================================
+   Responsive
+================================ */
+
+@media (max-width: 768px) {
+   :root {
+      --space-lg: 20px;
+      --space-xl: 24px;
+   }
+}
