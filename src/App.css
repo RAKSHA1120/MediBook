@@ -412,19 +412,7 @@
   }
 }
 
-/* Brand */
 
-.navbar-brand {
-  margin: 0;
-
-  font-family: var(--font-heading);
-  font-size: 24px;
-  font-weight: 700;
-
-  color: var(--text-heading);
-
-  white-space: nowrap;
-}
 
 /* =================================
    Navigation Tabs
@@ -503,69 +491,6 @@
   gap: 12px;
 
   flex-shrink: 0;
-}
-
-/* =================================
-   Search
-================================= */
-
-.navbar-search {
-  width: 230px;
-  height: 36px;
-
-  display: flex;
-  align-items: center;
-
-  gap: 8px;
-
-  padding: 0 10px;
-
-  background: var(--surface);
-
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-
-.navbar-search svg {
-  flex-shrink: 0;
-
-  color: var(--text-muted);
-
-  width: 17px;
-  height: 17px;
-}
-
-.navbar-search input {
-  width: 100%;
-
-  border: none;
-  outline: none;
-
-  background: transparent;
-
-  color: var(--text-primary);
-
-  font-family: var(--font-body);
-  font-size: 13px;
-}
-
-.navbar-search input::placeholder {
-  color: var(--text-muted);
-}
-
-/* Search shortcut */
-
-.search-shortcut {
-  flex-shrink: 0;
-
-  padding: 3px 6px;
-
-  border: 1px solid var(--border);
-  border-radius: 6px;
-
-  color: var(--text-muted);
-
-  font-size: 10px;
 }
 
 /* =================================
@@ -713,10 +638,6 @@
 ================================= */
 
 @media (max-width: 1000px) {
-  .navbar-search {
-    width: 200px;
-  }
-
   .navbar-tab span {
     display: none;
   }
@@ -736,22 +657,6 @@
 
   .navbar-left {
     gap: 12px;
-  }
-
-  .navbar-brand {
-    font-size: 22px;
-  }
-
-  .navbar-search {
-    width: 40px;
-    padding: 0;
-
-    justify-content: center;
-  }
-
-  .navbar-search input,
-  .search-shortcut {
-    display: none;
   }
 
   .profile-info {

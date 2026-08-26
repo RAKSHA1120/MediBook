@@ -284,85 +284,8 @@ function AppointmentBooking() {
   };
 
   return (
-    <div className="doctors-page-layout">
-      {/* 1. Left Sidebar */}
-      <aside className={`patient-sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div className="patient-sidebar-brand">
-          <Heart className="brand-logo-icon" size={24} />
-          <span>MediBook</span>
-        </div>
-
-        <nav className="patient-sidebar-nav">
-          <button className="patient-sidebar-item" onClick={() => navigate("/patient-dashboard")}>
-            <LayoutDashboard size={18} />
-            <span>Dashboard</span>
-          </button>
-          
-          <button className="patient-sidebar-item active" onClick={() => { navigate("/doctors"); setIsSidebarOpen(false); }}>
-            <Search size={18} />
-            <span>Find Doctor</span>
-          </button>
-
-          <button className="patient-sidebar-item" onClick={() => { handleMyAppointments(); setIsSidebarOpen(false); }}>
-            <CalendarDays size={18} />
-            <span>My Appointments</span>
-          </button>
-
-          <button className="patient-sidebar-item" onClick={() => { handleNotifications(); setIsSidebarOpen(false); }}>
-            <Bell size={18} />
-            <span>Notifications</span>
-          </button>
-
-          <button className="patient-sidebar-item" onClick={() => { handleProfile(); setIsSidebarOpen(false); }}>
-            <User size={18} />
-            <span>Profile</span>
-          </button>
-
-          <button className="patient-sidebar-item" onClick={() => { handleSettings(); setIsSidebarOpen(false); }}>
-            <Settings size={18} />
-            <span>Settings</span>
-          </button>
-
-          <button className="patient-sidebar-item" onClick={() => { handleSupport(); setIsSidebarOpen(false); }}>
-            <HelpCircle size={18} />
-            <span>Help & Support</span>
-          </button>
-        </nav>
-
-        <div className="patient-sidebar-footer">
-          <div className="support-card">
-            <span className="support-card-title">Need Help?</span>
-            <p className="support-card-text">Our support team is available 24/7 to answer your queries.</p>
-            <Button variant="primary" size="sm" className="btn-support" onClick={handleSupport}>
-              Contact Support
-            </Button>
-          </div>
-
-          <button className="patient-sidebar-item logout" onClick={() => navigate("/login")}>
-            <LogOut size={18} />
-            <span>Logout</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* Sidebar Backdrop for Mobile Drawer */}
-      {isSidebarOpen && (
-        <div className="sidebar-backdrop" onClick={() => setIsSidebarOpen(false)}></div>
-      )}
-
-      {/* Main Content Area */}
-      <div className="doctors-page-main">
-        {/* Navbar */}
-        <Navbar
-          userName={patient.name}
-          userRole={patient.role}
-          avatarLetter={patient.avatarLetter}
-          hideTabs={true}
-          hideSearch={true}
-          onMenuClick={() => setIsSidebarOpen(true)}
-        />
-
-        <main className="doctors-content">
+    <>
+      <main className="doctors-content">
           {/* Top Header Row */}
           <section className="profile-top-controls">
             <button className="btn-back-link" onClick={() => navigate("/doctor-profile", { state: { doctor } })}>
@@ -549,7 +472,6 @@ function AppointmentBooking() {
             </div>
           )}
         </main>
-      </div>
 
       {/* Floating Toast Notification */}
       {toast.show && (
@@ -562,7 +484,7 @@ function AppointmentBooking() {
           />
         </div>
       )}
-    </div>
+    </>
   );
 }
 

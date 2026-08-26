@@ -15,7 +15,8 @@ import {
   Sunrise,
   Sun,
   Sunset,
-  CalendarDays
+  CalendarDays,
+  Printer
 } from "lucide-react";
 import doctors from "../data/doctors";
 import { TIME_SLOTS, getMockBookedAppointments, getMockDisabledAppointments } from "../data/appointments";
@@ -28,8 +29,10 @@ import StatusBadge from "../components/StatusBadge";
 import PageHeader from "../components/PageHeader";
 import PrimaryButton from "../components/PrimaryButton";
 import SecondaryButton from "../components/SecondaryButton";
+import AppointmentSlip from "../components/AppointmentSlip";
 import { addNotification } from "../data/notifications";
 import { useAppointments } from "../context/AppointmentContext";
+import { getStoredPatientProfile } from "../data/patientProfile";
 import "./AppointmentDetails.css";
 
 function AppointmentDetails() {
@@ -48,8 +51,12 @@ function AppointmentDetails() {
   const [newSelectedSlot, setNewSelectedSlot] = useState("");
   const [showRescheduleConfirmModal, setShowRescheduleConfirmModal] = useState(false);
 
-  // Cancel Modal State
+  // Cancel & Slip Modal States
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showSlipModal, setShowSlipModal] = useState(false);
+
+  // Patient Profile Data
+  const patient = useMemo(() => getStoredPatientProfile(), []);
 
   // Toast State
   const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
@@ -405,7 +412,16 @@ function AppointmentDetails() {
           </div>
 
           {/* Action Buttons Footer */}
-          <div className="details-actions-container">
+          <div className="details-actions-container no-print">
+            <Button
+              variant="outline"
+              className="btn-action-slip"
+              onClick={() => setShowSlipModal(true)}
+            >
+              <Printer size={16} style={{ marginRight: "6px" }} />
+              Print Appointment Slip
+            </Button>
+
             {statusNorm === "upcoming" ? (
               <>
                 <Button
@@ -673,6 +689,20 @@ function AppointmentDetails() {
                 Cancel Appointment
               </Button>
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Appointment Confirmation Pass Modal */}
+      {showSlipModal && (
+        <Modal
+          isOpen={showSlipModal}
+          onClose={() => setShowSlipModal(false)}
+          title="Appointment Confirmation Pass"
+          maxWidth="680px"
+        >
+          <div style={{ padding: "12px 0" }}>
+            <AppointmentSlip appointment={currentAppt} patient={patient} />
           </div>
         </Modal>
       )}
