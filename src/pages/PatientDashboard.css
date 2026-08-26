@@ -17,7 +17,16 @@
   flex-direction: column;
 }
 
-.patient-dashboard-content {
+/* Reusable Master Patient Page Content Container */
+.patient-page-content,
+.patient-dashboard-content,
+.doctors-content,
+.my-appointments-page,
+.appointment-details-page,
+.notifications-page,
+.patient-profile-page,
+.settings-page,
+.help-support-page {
   flex: 1;
   max-width: 1200px;
   width: 100%;
@@ -26,6 +35,7 @@
   display: flex;
   flex-direction: column;
   gap: 28px;
+  box-sizing: border-box;
 }
 
 /* ==================================================
@@ -815,7 +825,15 @@
 
 /* Mobile Breakpoint (up to 768px) */
 @media (max-width: 768px) {
-  .patient-dashboard-content {
+  .patient-page-content,
+  .patient-dashboard-content,
+  .doctors-content,
+  .my-appointments-page,
+  .appointment-details-page,
+  .notifications-page,
+  .patient-profile-page,
+  .settings-page,
+  .help-support-page {
     padding: 16px;
     gap: 20px;
   }
@@ -931,7 +949,15 @@
 
 /* Tiny Mobile (up to 480px) */
 @media (max-width: 480px) {
-  .patient-dashboard-content {
+  .patient-page-content,
+  .patient-dashboard-content,
+  .doctors-content,
+  .my-appointments-page,
+  .appointment-details-page,
+  .notifications-page,
+  .patient-profile-page,
+  .settings-page,
+  .help-support-page {
     padding: 12px;
     gap: 16px;
   }

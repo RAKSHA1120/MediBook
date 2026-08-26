@@ -3,10 +3,7 @@
    ================================================== */
 
 .my-appointments-page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  width: 100%;
+  /* Inherits master .patient-page-content layout specs */
 }
 
 /* Page Header */

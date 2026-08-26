@@ -18,6 +18,7 @@ function Navbar({
   hideTabs = false,
   onMenuClick,
   onNotificationClick,
+  onProfileClick,
 }) {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(() => getUnreadCount());
@@ -91,7 +92,17 @@ function Navbar({
         </button>
 
         {/* Profile */}
-        <button className="navbar-profile">
+        <button
+          className="navbar-profile"
+          title="View Patient Profile"
+          onClick={() => {
+            if (onProfileClick) {
+              onProfileClick();
+            } else {
+              navigate("/profile");
+            }
+          }}
+        >
           <span className="profile-avatar">
             {avatarLetter}
           </span>

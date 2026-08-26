@@ -3,12 +3,7 @@
    ================================================== */
 
 .help-support-page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 24px 20px 48px;
+  /* Inherits master .patient-page-content layout specs */
 }
 
 /* Card Containers */
@@ -271,11 +266,6 @@
 }
 
 @media (max-width: 640px) {
-  .help-support-page {
-    padding: 16px 12px 32px;
-    gap: 16px;
-  }
-
   .help-search-card {
     padding: 20px 16px;
   }

@@ -3,13 +3,7 @@
    ================================================== */
 
 .appointment-details-page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  width: 100%;
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 32px 24px 48px;
+  /* Inherits master .patient-page-content layout specs */
 }
 
 /* Page Header & Navigation */

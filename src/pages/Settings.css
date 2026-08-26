@@ -3,12 +3,7 @@
    ================================================== */
 
 .settings-page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  max-width: 920px;
-  margin: 0 auto;
-  padding: 24px 20px 48px;
+  /* Inherits master .patient-page-content layout specs */
 }
 
 /* Card Sections */
@@ -280,11 +275,6 @@ input:checked + .switch-slider:before {
 }
 
 @media (max-width: 640px) {
-  .settings-page {
-    padding: 16px 12px 32px;
-    gap: 16px;
-  }
-
   .settings-grid-2col {
     grid-template-columns: 1fr;
   }

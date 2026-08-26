@@ -18,14 +18,7 @@
 }
 
 .doctors-content {
-  flex: 1;
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 24px 24px 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
+  /* Inherits master .patient-page-content layout specs */
 }
 
 /* ==================================================
