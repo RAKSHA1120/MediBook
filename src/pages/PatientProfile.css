@@ -3,12 +3,7 @@
    ================================================== */
 
 .patient-profile-page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  width: 100%;
-  max-width: 1000px;
-  margin: 0 auto;
+  /* Inherits master .patient-page-content layout specs */
 }
 
 /* Page Header */
