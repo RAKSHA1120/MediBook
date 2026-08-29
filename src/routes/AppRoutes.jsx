@@ -7,6 +7,14 @@ import DoctorList from "../pages/DoctorList";
 import DoctorProfile from "../pages/DoctorProfile";
 import AppointmentBooking from "../pages/AppointmentBooking";
 import BookingSuccess from "../pages/BookingSuccess";
+import Dashboard from "../pages/Dashboard";
+import DashboardLayout from "../layouts/DashboardLayout";
+import DoctorAppointments from "../pages/DoctorAppointments";
+import DoctorPatients from "../pages/DoctorPatients";
+import DoctorPatientDetails from "../pages/DoctorPatientDetails";
+import DoctorSchedule from "../pages/DoctorSchedule";
+import DoctorNotifications from "../pages/DoctorNotifications";
+import DoctorSettings from "../pages/DoctorSettings";
 
 import PatientLayout from "../layouts/PatientLayout";
 import MyAppointments from "../pages/MyAppointments";
@@ -15,6 +23,18 @@ import PatientProfile from "../pages/PatientProfile";
 import Notifications from "../pages/Notifications";
 import Settings from "../pages/Settings";
 import HelpSupport from "../pages/HelpSupport";
+
+import AdminLayout from "../layouts/AdminLayout";
+import AdminDashboard from "../pages/AdminDashboard";
+import AdminDoctors from "../pages/AdminDoctors";
+import AdminPatients from "../pages/AdminPatients";
+import AdminAppointments from "../pages/AdminAppointments";
+import AdminAppointmentDetails from "../pages/AdminAppointmentDetails";
+import AdminNotifications from "../pages/AdminNotifications";
+import AdminReports from "../pages/AdminReports";
+import AdminProfile from "../pages/AdminProfile";
+import AdminSettings from "../pages/AdminSettings";
+import AdminHelpSupport from "../pages/AdminHelpSupport";
 
 function AppRoutes() {
   return (
@@ -40,6 +60,29 @@ function AppRoutes() {
         <Route path="/help-support" element={<PatientLayout><HelpSupport /></PatientLayout>} />
 
         <Route path="/design-system" element={<DesignSystem />} />
+
+        {/* Doctor Routes */}
+        <Route path="/doctor/dashboard" element={<PatientLayout><Dashboard /></PatientLayout>} />
+        <Route path="/doctor/appointments" element={<PatientLayout><DoctorAppointments /></PatientLayout>} />
+        <Route path="/doctor/patients" element={<PatientLayout><DoctorPatients /></PatientLayout>} />
+        <Route path="/doctor/patients/:id" element={<PatientLayout><DoctorPatientDetails /></PatientLayout>} />
+        <Route path="/doctor/schedule" element={<PatientLayout><DoctorSchedule /></PatientLayout>} />
+        <Route path="/doctor/notifications" element={<PatientLayout><DoctorNotifications /></PatientLayout>} />
+        <Route path="/doctor/profile" element={<PatientLayout><DoctorProfile /></PatientLayout>} />
+        <Route path="/doctor/settings" element={<PatientLayout><DoctorSettings /></PatientLayout>} />
+
+        {/* All Admin Pages Wrapped in AdminLayout */}
+        <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+        <Route path="/admin/doctors" element={<AdminLayout><AdminDoctors /></AdminLayout>} />
+        <Route path="/admin/patients" element={<AdminLayout><AdminPatients /></AdminLayout>} />
+        <Route path="/admin/appointments" element={<AdminLayout><AdminAppointments /></AdminLayout>} />
+        <Route path="/admin/appointments/:id" element={<AdminLayout><AdminAppointmentDetails /></AdminLayout>} />
+        <Route path="/admin/notifications" element={<AdminLayout><AdminNotifications /></AdminLayout>} />
+        <Route path="/admin/reports" element={<AdminLayout><AdminReports /></AdminLayout>} />
+        <Route path="/admin/profile" element={<AdminLayout><AdminProfile /></AdminLayout>} />
+        <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
+        <Route path="/admin/help" element={<AdminLayout><AdminHelpSupport /></AdminLayout>} />
+
       </Routes>
     </ErrorBoundary>
   );

@@ -11,10 +11,13 @@ import {
   LogOut,
   Heart,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Users,
+  CalendarClock
 } from "lucide-react";
 import Button from "./Button";
 import { getStoredNotifications } from "../data/notifications";
+import { getCurrentUser, clearCurrentUser } from "../utils/storage";
 import "./PatientSidebar.css";
 
 function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) {
@@ -49,7 +52,10 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
     return false;
   };
 
-  const navItems = [
+  const user = getCurrentUser();
+  const isDoctor = user && user.role === "doctor";
+
+  const patientItems = [
     { path: "/patient-dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/doctors", label: "Find Doctor", icon: Search },
     { path: "/my-appointments", label: "My Appointments", icon: Calendar, altPath: "/appointments" },
@@ -58,6 +64,18 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
     { path: "/settings", label: "Settings", icon: Settings },
     { path: "/help-support", label: "Help & Support", icon: HelpCircle }
   ];
+
+  const doctorItems = [
+    { path: "/doctor/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/doctor/appointments", label: "My Appointments", icon: Calendar },
+    { path: "/doctor/patients", label: "Patients", icon: Users },
+    { path: "/doctor/schedule", label: "Schedule", icon: CalendarClock },
+    { path: "/doctor/notifications", label: "Notifications", icon: Bell, showBadge: true },
+    { path: "/doctor/profile", label: "Profile", icon: User },
+    { path: "/doctor/settings", label: "Settings", icon: Settings }
+  ];
+
+  const navItems = isDoctor ? doctorItems : patientItems;
 
   const handleNavClick = (path) => {
     navigate(path);
@@ -95,7 +113,7 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
         <div className="patient-sidebar-brand">
           <div
             className="brand-logo-group"
-            onClick={() => handleNavClick("/patient-dashboard")}
+            onClick={() => handleNavClick(isDoctor ? "/doctor/dashboard" : "/patient-dashboard")}
             title="MediBook Home"
           >
             <Heart className="brand-logo-icon" size={24} />
@@ -176,6 +194,7 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
             className="patient-sidebar-item logout"
             onClick={() => {
               if (setIsMobileOpen) setIsMobileOpen(false);
+              clearCurrentUser();
               navigate("/login");
             }}
             title={!isExpanded ? "Logout" : undefined}

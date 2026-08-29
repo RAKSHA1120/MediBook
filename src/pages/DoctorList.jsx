@@ -21,7 +21,7 @@ import {
   ChevronRight,
   Calendar
 } from "lucide-react";
-import doctors from "../data/doctors";
+import { getDoctors, getCurrentUser } from "../utils/storage";
 import Navbar from "../components/Navbar";
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -45,12 +45,7 @@ const specialtyOptions = [
   { value: "Gynecology", label: "Gynecology" }
 ];
 
-// Patient info for Navbar
-const patient = {
-  name: "Raksha",
-  role: "Patient",
-  avatarLetter: "R"
-};
+// Patient info for Navbar (dynamic from current user now)
 
 // Specialty mapping for popular search chips
 const specialtyMapping = {
@@ -78,14 +73,20 @@ function DoctorList() {
   const [searchQuery, setSearchQuery] = useState(location.state?.query || "");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
   const [selectedLocation, setSelectedLocation] = useState("All");
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  
+  const [doctorsList, setDoctorsList] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    setDoctorsList(getDoctors());
+    setCurrentUser(getCurrentUser());
+  }, []);
 
   // Sorting and Pagination states
   const [sortBy, setSortBy] = useState("Relevance");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 6;
-
-  // Toast States
-  const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
 
   // Update filter values if incoming router state changes
   useEffect(() => {
@@ -97,16 +98,16 @@ function DoctorList() {
 
   // Generate location options dynamically from mock doctor data
   const locationOptions = useMemo(() => {
-    const uniqueLocations = Array.from(new Set(doctors.map((d) => d.location)));
+    const uniqueLocations = Array.from(new Set(doctorsList.map((d) => d.location)));
     return [
       { value: "All", label: "All Locations" },
       ...uniqueLocations.map((loc) => ({ value: loc, label: loc }))
     ];
-  }, []);
+  }, [doctorsList]);
 
   // Combined filtering logic using useMemo
   const filteredDoctors = useMemo(() => {
-    return doctors.filter((doc) => {
+    return doctorsList.filter((doc) => {
       // 1. Search filter: Match against name, specialty, or hospital
       const query = searchQuery.trim().toLowerCase();
       const matchesSearch =
@@ -131,7 +132,7 @@ function DoctorList() {
 
       return matchesSearch && matchesSpecialty && matchesLocation;
     });
-  }, [searchQuery, selectedSpecialty, selectedLocation]);
+  }, [doctorsList, searchQuery, selectedSpecialty, selectedLocation]);
 
   // Sorting logic using useMemo
   const sortedDoctors = useMemo(() => {

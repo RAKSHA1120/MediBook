@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import PatientSidebar from "../components/PatientSidebar";
-import { getStoredPatientProfile, getPatientInitials } from "../data/patientProfile";
+import { getCurrentUser } from "../utils/storage";
+import { getPatientInitials } from "../data/patientProfile";
 import "../pages/PatientDashboard.css";
 
 function PatientLayout({ children }) {
@@ -15,10 +16,10 @@ function PatientLayout({ children }) {
 
   const [patient, setPatient] = useState(() => {
     try {
-      const p = getStoredPatientProfile();
-      return p || { name: "Raksha", role: "Patient" };
+      const p = getCurrentUser();
+      return p || null;
     } catch (e) {
-      return { name: "Raksha", role: "Patient" };
+      return null;
     }
   });
 
@@ -29,13 +30,13 @@ function PatientLayout({ children }) {
   useEffect(() => {
     const handleProfileUpdate = () => {
       try {
-        const p = getStoredPatientProfile();
+        const p = getCurrentUser();
         if (p) setPatient(p);
       } catch (e) {}
     };
-    window.addEventListener("medibook_profile_updated", handleProfileUpdate);
+    window.addEventListener("medibook_current_user_updated", handleProfileUpdate);
     return () => {
-      window.removeEventListener("medibook_profile_updated", handleProfileUpdate);
+      window.removeEventListener("medibook_current_user_updated", handleProfileUpdate);
     };
   }, []);
 

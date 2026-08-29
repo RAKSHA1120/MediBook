@@ -1,135 +1,184 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import appointments from "../data/appointments";
+import { getAppointments, updateAppointmentStatus, getCurrentUser } from "../utils/storage";
 import Card from "../components/Card";
+import Button from "../components/Button";
+import StatusBadge from "../components/StatusBadge";
+import { Users, CalendarCheck, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import "../pages/AdminShared.css";
 
 function Dashboard() {
-    const upcoming = appointments.find(
-        (appointment) => appointment.status === "Upcoming"
-    );
+    const [appointments, setAppointments] = useState([]);
+    const [currentUser, setCurrentUser] = useState(null);
 
-    const upcomingCount = appointments.filter(
-        (appointment) => appointment.status === "Upcoming"
-    ).length;
+    useEffect(() => {
+        const user = getCurrentUser();
+        setCurrentUser(user);
+        if (user) {
+            const allAppts = getAppointments();
+            let myAppts = allAppts.filter(a => a.doctorId === user.refId || a.doctorId === user.id || a.doctorName?.includes(user.name));
+            
+            // Auto-inject demo appointments for new doctors so the dashboard isn't completely empty for testing
+            if (myAppts.length === 0) {
+                const d = new Date();
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                const localToday = `${yyyy}-${mm}-${dd}`;
 
-    const completedCount = appointments.filter(
-        (appointment) => appointment.status === "Completed"
-    ).length;
+                const demoAppts = [
+                    {
+                        id: `APT-DEMO-1-${Date.now()}`,
+                        patientId: "P_1",
+                        patientName: "Raksha",
+                        patient: "Raksha",
+                        doctorId: user.refId || user.id,
+                        doctorName: user.name,
+                        date: localToday,
+                        time: "10:30 AM",
+                        type: "General Checkup",
+                        status: "Upcoming"
+                    },
+                    {
+                        id: `APT-DEMO-2-${Date.now()}`,
+                        patientId: "P_2",
+                        patientName: "Amit Patel",
+                        patient: "Amit Patel",
+                        doctorId: user.refId || user.id,
+                        doctorName: user.name,
+                        date: localToday,
+                        time: "02:00 PM",
+                        type: "Follow-up",
+                        status: "Pending"
+                    }
+                ];
+                
+                // Save to localStorage
+                const updatedAppts = [...allAppts, ...demoAppts];
+                localStorage.setItem("medibook_appointments", JSON.stringify(updatedAppts));
+                myAppts = demoAppts;
+                window.dispatchEvent(new Event("medibook_appointments_updated"));
+            }
+            
+            setAppointments(myAppts);
+        }
+    }, []);
 
-    const cancelledCount = appointments.filter(
-        (appointment) => appointment.status === "Cancelled"
-    ).length;
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    const todaysAppointments = appointments.filter(a => a.date === todayStr || String(a.date).toLowerCase().includes("today"));
+    const upcomingCount = appointments.filter(a => a.status === "Upcoming").length;
+    const completedCount = appointments.filter(a => a.status === "Completed").length;
+    const pendingCount = appointments.filter(a => a.status === "Pending").length;
+
+    const handleStatusChange = (id, newStatus) => {
+        updateAppointmentStatus(id, newStatus);
+        setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
+    };
 
     return (
-        <div className="page-container">
+        <main className="patient-dashboard-content">
+            <section className="greeting-section">
+                <h2 className="greeting-title">
+                    Welcome back, Dr. {currentUser?.name?.replace(/^(dr\.|dr\s)/i, '') || "Doctor"}!
+                </h2>
+                <p className="greeting-subtitle">Here is an overview of your schedule and patients.</p>
+            </section>
 
-            <div className="dashboard-header">
-                <div>
-                    <h1>Welcome back, Santhosh 👋</h1>
-                    <p>Manage your healthcare appointments easily.</p>
+            <section className="benefits-section" style={{ marginTop: "0" }}>
+                <div className="benefit-card">
+                    <div className="benefit-icon-wrapper">
+                        <CalendarCheck size={24} />
+                    </div>
+                    <h4 className="benefit-title">{todaysAppointments.length}</h4>
+                    <p className="benefit-description">Today's Appointments</p>
                 </div>
-            </div>
-
-            {upcoming && (
-                <Card>
-                    <div className="upcoming-header">
-                        <div>
-                            <p className="section-label">
-                                Upcoming Appointment
-                            </p>
-
-                            <h2>{upcoming.doctorName}</h2>
-
-                            <p className="specialty">
-                                {upcoming.specialty}
-                            </p>
-                        </div>
-
-                        <span className="status status-upcoming">
-                            {upcoming.status}
-                        </span>
+                <div className="benefit-card">
+                    <div className="benefit-icon-wrapper">
+                        <Clock size={24} />
                     </div>
-
-                    <div className="appointment-details">
-                        <span>📅 {upcoming.date}</span>
-                        <span>🕐 {upcoming.time}</span>
+                    <h4 className="benefit-title">{upcomingCount}</h4>
+                    <p className="benefit-description">Upcoming Appointments</p>
+                </div>
+                <div className="benefit-card">
+                    <div className="benefit-icon-wrapper">
+                        <CheckCircle2 size={24} />
                     </div>
-
-                    <Link
-                        to={`/appointments/${upcoming.id}`}
-                        className="view-button"
-                    >
-                        View Appointment
-                    </Link>
-                </Card>
-            )}
-
-            <div className="dashboard-stats">
-
-                <Card>
-                    <div className="stat-card">
-                        <span className="stat-number">
-                            {appointments.length}
-                        </span>
-                        <span className="stat-label">
-                            My Appointments
-                        </span>
+                    <h4 className="benefit-title">{completedCount}</h4>
+                    <p className="benefit-description">Completed Appointments</p>
+                </div>
+                <div className="benefit-card">
+                    <div className="benefit-icon-wrapper">
+                        <AlertCircle size={24} />
                     </div>
-                </Card>
+                    <h4 className="benefit-title">{pendingCount}</h4>
+                    <p className="benefit-description">Pending Appointments</p>
+                </div>
+            </section>
 
-                <Card>
-                    <div className="stat-card">
-                        <span className="stat-number">
-                            {upcomingCount}
-                        </span>
-                        <span className="stat-label">
-                            Upcoming
-                        </span>
+            <section className="dashboard-main-info-grid" style={{ gridTemplateColumns: '1fr' }}>
+                <div className="next-appointment-column">
+                    <div className="section-header">
+                        <h3 className="section-main-title">Today's Appointments</h3>
+                        <Link to="/doctor/appointments" className="view-all-link">View All</Link>
                     </div>
-                </Card>
-
-                <Card>
-                    <div className="stat-card">
-                        <span className="stat-number">
-                            {completedCount}
-                        </span>
-                        <span className="stat-label">
-                            Completed
-                        </span>
+                    <div className="admin-table-card">
+                        {todaysAppointments.length === 0 ? (
+                            <p className="text-gray" style={{ padding: '24px', textAlign: 'center' }}>No appointments scheduled for today.</p>
+                        ) : (
+                            <div className="table-responsive">
+                                <table className="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Patient</th>
+                                            <th>Time</th>
+                                            <th>Reason</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {todaysAppointments.map((apt) => (
+                                            <tr key={apt.id}>
+                                                <td>
+                                                    <div className="user-info-cell">
+                                                        <div className="user-avatar">{(apt.patientName || apt.patient || "P").charAt(0)}</div>
+                                                        <div className="user-details">
+                                                            <span className="user-name">{apt.patientName || apt.patient}</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="nowrap">{apt.time}</td>
+                                                <td>{apt.type}</td>
+                                                <td className="nowrap"><StatusBadge status={apt.status} /></td>
+                                                <td>
+                                                    <select 
+                                                        className="field-select" 
+                                                        value={apt.status} 
+                                                        onChange={(e) => handleStatusChange(apt.id, e.target.value)}
+                                                        style={{ padding: '6px 10px', borderRadius: '4px', border: '1px solid var(--border)', minWidth: '110px', fontSize: '13px' }}
+                                                    >
+                                                        <option value="Upcoming">Upcoming</option>
+                                                        <option value="Confirmed">Confirmed</option>
+                                                        <option value="Completed">Completed</option>
+                                                        <option value="Cancelled">Cancelled</option>
+                                                        <option value="Pending">Pending</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
-                </Card>
-
-                <Card>
-                    <div className="stat-card">
-                        <span className="stat-number">
-                            {cancelledCount}
-                        </span>
-                        <span className="stat-label">
-                            Cancelled
-                        </span>
-                    </div>
-                </Card>
-
-            </div>
-
-            <div className="dashboard-actions">
-
-                <Link
-                    to="/appointments"
-                    className="dashboard-action"
-                >
-                    View My Appointments
-                </Link>
-
-                <Link
-                    to="/profile"
-                    className="dashboard-action secondary"
-                >
-                    View My Profile
-                </Link>
-
-            </div>
-
-        </div>
+                </div>
+            </section>
+        </main>
     );
 }
 

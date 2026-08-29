@@ -1,3 +1,5 @@
+import { getCurrentUser, setCurrentUser } from "../utils/storage";
+
 // Default Patient Profile Data
 export const DEFAULT_PATIENT_PROFILE = {
   name: "Raksha",
@@ -27,24 +29,38 @@ export const getPatientInitials = (name) => {
 
 // Retrieve stored profile or fallback to default
 export const getStoredPatientProfile = () => {
-  try {
-    const stored = localStorage.getItem(PATIENT_PROFILE_STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return { ...DEFAULT_PATIENT_PROFILE, ...parsed };
-    }
-  } catch (e) {
-    console.error("Error reading stored patient profile:", e);
+  const user = getCurrentUser();
+  if (!user) return DEFAULT_PATIENT_PROFILE;
+  
+  // Combine user details with stored additional profile data
+  const extraDataStr = localStorage.getItem(`medibook_profile_${user.id}`);
+  let extraData = {};
+  if (extraDataStr) {
+     try {
+       extraData = JSON.parse(extraDataStr);
+     } catch (e) {}
   }
-  return DEFAULT_PATIENT_PROFILE;
+  
+  return { 
+     ...DEFAULT_PATIENT_PROFILE, 
+     ...extraData,
+     name: user.name, 
+     phone: user.mobile, 
+     role: user.role 
+  };
 };
 
 // Save profile to localStorage and notify subscribers
 export const savePatientProfile = (profileData) => {
-  try {
-    localStorage.setItem(PATIENT_PROFILE_STORAGE_KEY, JSON.stringify(profileData));
-    window.dispatchEvent(new Event("medibook_profile_updated"));
-  } catch (e) {
-    console.error("Error saving patient profile:", e);
+  const user = getCurrentUser();
+  if (user) {
+    const updatedUser = { ...user, name: profileData.name, mobile: profileData.phone };
+    setCurrentUser(updatedUser);
+    
+    // Save extra data separately
+    try {
+      localStorage.setItem(`medibook_profile_${user.id}`, JSON.stringify(profileData));
+    } catch (e) {}
   }
+  window.dispatchEvent(new Event("medibook_profile_updated"));
 };

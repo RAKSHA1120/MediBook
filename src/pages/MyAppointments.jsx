@@ -14,7 +14,7 @@ import {
   AlertTriangle,
   Receipt
 } from "lucide-react";
-import doctors from "../data/doctors";
+import { getDoctors } from "../utils/storage";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
@@ -49,11 +49,12 @@ function MyAppointments() {
   // Helper to resolve Doctor information
   const getDoctorInfo = (appt) => {
     let doc = null;
+    const doctorsList = getDoctors();
     if (appt.doctorId) {
-      doc = doctors.find((d) => String(d.id) === String(appt.doctorId));
+      doc = doctorsList.find((d) => String(d.id) === String(appt.doctorId));
     }
     if (!doc && appt.doctorName) {
-      doc = doctors.find((d) => d.name.toLowerCase() === appt.doctorName.toLowerCase());
+      doc = doctorsList.find((d) => d.name.toLowerCase() === appt.doctorName.toLowerCase());
     }
 
     const name = appt.doctorName || doc?.name || "Dr. Emily Carter";

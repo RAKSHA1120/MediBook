@@ -1,516 +1,124 @@
-import { useState, useMemo } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  MapPin,
-  Star,
-  Clock,
-  Briefcase,
-  GraduationCap,
-  Building2,
-  Stethoscope,
-  Calendar,
-  User,
-  Heart,
-  ChevronRight,
-  ShieldCheck,
-  AlertCircle,
-  Activity,
-  LayoutDashboard,
-  Bell,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Search
-} from "lucide-react";
-import doctors from "../data/doctors";
-import Navbar from "../components/Navbar";
-import Button from "../components/Button";
-import Toast from "../components/Toast";
+import { useState, useEffect } from "react";
+import { User, Save } from "lucide-react";
+import { getCurrentUser, getDoctors, updateDoctor, getUsers, setCurrentUser as updateStoredCurrentUser } from "../utils/storage";
 import PageHeader from "../components/PageHeader";
-import "./DoctorProfile.css";
-
-// Patient info for Navbar
-const patient = {
-  name: "Raksha",
-  role: "Patient",
-  avatarLetter: "R"
-};
-
-// Specialties mapping to mock expertise tags
-const specialtyExpertise = {
-  "Cardiology": [
-    "Coronary Artery Disease",
-    "Hypertension",
-    "Heart Failure",
-    "Arrhythmia",
-    "Angioplasty",
-    "Preventive Cardiology",
-    "Echocardiography"
-  ],
-  "Pediatrics": [
-    "General Pediatrics",
-    "Child Development",
-    "Immunization",
-    "Pediatric Nutrition",
-    "Neonatology",
-    "Asthma & Allergies"
-  ],
-  "Dermatology": [
-    "Acne Treatment",
-    "Skin Cancer Screening",
-    "Eczema & Psoriasis",
-    "Laser Surgery",
-    "Anti-aging",
-    "Dermatopathology"
-  ],
-  "Neurology": [
-    "Stroke Management",
-    "Epilepsy",
-    "Migraine & Headaches",
-    "Parkinson's Disease",
-    "Alzheimer's Care",
-    "Neuromuscular Disorders"
-  ],
-  "Orthopedics": [
-    "Joint Replacement",
-    "Sports Injuries",
-    "Fracture Care",
-    "Spine Disorders",
-    "Arthroscopy",
-    "Pediatric Orthopedics"
-  ],
-  "Gynecology": [
-    "Prenatal Care",
-    "Minimally Invasive Surgery",
-    "Menopause Management",
-    "Infertility Evaluation",
-    "Pelvic Health"
-  ],
-  "General Physician": [
-    "Chronic Disease Management",
-    "Preventive Care",
-    "Annual Physicals",
-    "Common Cold & Flu",
-    "Diabetes Management",
-    "Hypertension Control"
-  ]
-};
-
-const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const availableTimeSlots = ["09:00 AM", "10:30 AM", "12:00 PM", "04:00 PM", "05:30 PM"];
+import Card from "../components/Card";
+import Input from "../components/Input";
+import Button from "../components/Button";
 
 function DoctorProfile() {
-  const location = useLocation();
-  const navigate = useNavigate();
+    const [profile, setProfile] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({});
 
-  // Sidebar Open State
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  // Slot Selection State
-  const [selectedSlot, setSelectedSlot] = useState("10:30 AM");
-
-  // Toast States
-  const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
-
-  // Retrieve selected doctor from navigation state
-  const doctorFromState = location.state?.doctor;
-  const doctor = doctorFromState || doctors[0] || null;
-
-  // Trigger floating notifications
-  const showNotification = (title, message, type = "success") => {
-    setToast({
-      show: true,
-      type,
-      title,
-      message
-    });
-    setTimeout(() => {
-      setToast((prev) => ({ ...prev, show: false }));
-    }, 4000);
-  };
-
-  const handleBookAppointment = () => {
-    if (doctor) {
-      navigate("/book-appointment", { state: { doctor } });
-    }
-  };
-
-  const handleMyAppointments = () => {
-    navigate("/my-appointments");
-  };
-
-  const handleNotifications = () => {
-    navigate("/notifications");
-  };
-
-  const handleProfile = () => {
-    navigate("/profile");
-  };
-
-  const handleSettings = () => {
-    navigate("/settings");
-  };
-
-  const handleSupport = () => {
-    navigate("/help-support");
-  };
-
-  // Generate initials for avatar
-  const getInitials = (name) => {
-      if (!name || typeof name.split !== 'function') return "DR";
-      return name
-        .split(" ")
-      .filter((n) => n.toLowerCase() !== "dr.")
-      .map((n) => n[0])
-      .join("")
-      .substring(0, 2)
-      .toUpperCase();
-  };
-
-  // Generate tomorrow's date representation dynamically
-  const getTomorrowDateString = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "short",
-      day: "numeric"
-    });
-  };
-
-  // Calculate weekday status based on doctors data availability array
-  const getDayStatus = (dayName) => {
-    const isAvail = doctor?.availableDays?.some(
-      (d) => d.toLowerCase() === dayName.toLowerCase() || d.toLowerCase().startsWith(dayName.toLowerCase().slice(0, 3))
-    );
-    if (isAvail) {
-      return { status: "Available", class: "status-available" };
-    }
-    if (dayName === "Saturday") {
-      return { status: "Limited Slots", class: "status-limited" };
-    }
-    return { status: "Not Available", class: "status-unavailable" };
-  };
-
-  // Handle "Doctor not found" safely
-  if (!doctor) {
-    return (
-      <main className="doctors-content">
-        <div className="empty-state">
-          <AlertCircle size={48} className="empty-state-icon" />
-          <h3 className="empty-state-title">Doctor profile not found</h3>
-          <p className="empty-state-desc">
-            The doctor profile you are trying to view does not exist or has been removed from our listings.
-          </p>
-          <Button variant="primary" onClick={() => navigate("/doctors")}>
-            Back to Doctors Directory
-          </Button>
-        </div>
-      </main>
-    );
-  }
-
-  // Generate biographical details dynamically
-  const doctorBio = `${doctor.name} is a highly accomplished ${
-    doctor.specialty
-  } specialist currently practicing at ${doctor.hospital} in ${doctor.location}. With over ${
-    doctor.experience
-  } years of professional medical experience, they are dedicated to delivering patient-centric, empathetic healthcare. Dr. ${
-    (doctor?.name || '').split(" ").pop()
-  } completed their ${
-    doctor.qualification
-  } from leading medical institutions and is committed to using modern diagnostics and compassionate clinical practices to treat patient conditions.`;
-
-  const educationList = (doctor?.qualification || '').split(",").map((deg) => deg.trim());
-  const expertiseTags = specialtyExpertise[doctor.specialty] || specialtyExpertise["General Physician"];
-
-  return (
-    <>
-      <main className="doctors-content">
-          {/* Page Header */}
-          <PageHeader
-            title="Doctor Profile"
-            onBack={() => navigate("/doctors")}
-            backLabel="Back to Doctors"
-            action={
-              <div className="verified-badge-container">
-                <span>MediBook Verified</span>
-                <ShieldCheck size={16} className="verified-icon" />
-              </div>
+    useEffect(() => {
+        const user = getCurrentUser();
+        if (user) {
+            const doctors = getDoctors();
+            const myProfile = doctors.find(d => d.id === user.refId);
+            if (myProfile) {
+                setProfile(myProfile);
+                setFormData(myProfile);
             }
-          />
+        }
+    }, []);
 
-          {/* Doctor Summary Card */}
-          <section className="profile-summary-card">
-            {/* Left summary details */}
-            <div className="summary-left-side">
-              <div className="profile-avatar-container large">
-                <div className="doc-avatar large-avatar">
-                  {getInitials(doctor.name)}
-                </div>
-                <span
-                  className={`doc-availability-dot large-dot ${
-                    doctor.availability.toLowerCase().includes("tomorrow") ? "tomorrow" : ""
-                  }`}
-                ></span>
-              </div>
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
-              <div className="summary-info-details">
-                <h3 className="profile-doc-name">{doctor.name}</h3>
-                <span className="profile-specialty-badge">{doctor.specialty}</span>
+    const handleSave = (e) => {
+        e.preventDefault();
+        // Update in doctors store
+        updateDoctor(profile.id, formData);
+        
+        // Also update currentUser context if name changed
+        const user = getCurrentUser();
+        if (user) {
+            const users = getUsers();
+            const userIndex = users.findIndex(u => u.id === user.id);
+            if (userIndex !== -1) {
+                users[userIndex].name = formData.name;
+                localStorage.setItem("medibook_users", JSON.stringify(users));
                 
-                <div className="profile-meta-rows">
-                  <span className="profile-meta-row">
-                    <GraduationCap size={15} className="meta-row-icon" />
-                    {doctor.qualification}
-                  </span>
-                  
-                  <span className="profile-meta-row">
-                    <Briefcase size={15} className="meta-row-icon" />
-                    {doctor.experience} years experience
-                  </span>
+                user.name = formData.name;
+                updateStoredCurrentUser(user);
+            }
+        }
+        
+        setProfile(formData);
+        setIsEditing(false);
+        alert("Profile updated successfully!");
+    };
 
-                  <div className="profile-rating-row">
-                    <Star size={15} className="profile-rating-star" />
-                    <span className="profile-rating-value">{doctor.rating}</span>
-                    <span className="profile-reviews-count">({doctor.reviewCount} patient reviews)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+    if (!profile) return <div className="patient-dashboard-content">Loading...</div>;
 
-            {/* Right summary column */}
-            <div className="summary-right-side">
-              <div className="summary-consult-box">
-                <div className="consult-grid-item">
-                  <span className="consult-grid-label">Hospital</span>
-                  <div className="consult-grid-value-row">
-                    <Building2 size={15} className="consult-grid-icon" />
-                    <span>{doctor.hospital}</span>
-                  </div>
-                </div>
+    return (
+        <main className="patient-dashboard-content">
+            <PageHeader title="My Profile" subtitle="Manage your personal and professional information." />
 
-                <div className="consult-grid-item">
-                  <span className="consult-grid-label">Clinic Location</span>
-                  <div className="consult-grid-value-row">
-                    <MapPin size={15} className="consult-grid-icon" />
-                    <span>{doctor.location}</span>
-                  </div>
-                </div>
-
-                <div className="consult-grid-item">
-                  <span className="consult-grid-label">Consultation Fee</span>
-                  <div className="consult-grid-value-row">
-                    <span className="fee-symbol">₹</span>
-                    <span className="fee-amount">{doctor.consultationFee}</span>
-                  </div>
-                </div>
-
-                <div className="consult-grid-item">
-                  <span className="consult-grid-label">Next Available Slot</span>
-                  <div className="consult-grid-value-row">
-                    <span
-                      className={`avail-indicator-badge ${
-                        doctor.availability.toLowerCase().includes("today") ? "today" : "tomorrow"
-                      }`}
-                    >
-                      {doctor.availability}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <Button variant="primary" className="btn-book-profile" onClick={handleBookAppointment}>
-                Book Appointment
-              </Button>
-            </div>
-          </section>
-
-          {/* Two-Column Layout */}
-          <div className="profile-details-grid">
-            {/* Left Main Column */}
-            <div className="profile-main-column">
-              {/* About Card */}
-              <section className="details-section-card">
-                <h4 className="details-card-title">About {doctor.name}</h4>
-                <p className="about-description-text">{doctorBio}</p>
-              </section>
-
-              {/* Areas of Expertise */}
-              <section className="details-section-card">
-                <h4 className="details-card-title">Areas of Expertise</h4>
-                <div className="expertise-tags-container">
-                  {expertiseTags.map((tag) => (
-                    <span key={tag} className="expertise-tag">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </section>
-
-              {/* Patient Care */}
-              <section className="details-section-card">
-                <h4 className="details-card-title">Patient Care</h4>
-                <div className="patient-care-grid">
-                  <div className="care-item">
-                    <div className="care-icon-wrapper">
-                      <Heart className="care-icon" size={18} />
-                    </div>
-                    <span className="care-text">Personalized Treatment</span>
-                  </div>
-                  <div className="care-item">
-                    <div className="care-icon-wrapper">
-                      <Activity className="care-icon" size={18} />
-                    </div>
-                    <span className="care-text">Accurate Diagnosis</span>
-                  </div>
-                  <div className="care-item">
-                    <div className="care-icon-wrapper">
-                      <ShieldCheck className="care-icon" size={18} />
-                    </div>
-                    <span className="care-text">Modern Technology</span>
-                  </div>
-                  <div className="care-item">
-                    <div className="care-icon-wrapper">
-                      <User size={18} className="care-icon" />
-                    </div>
-                    <span className="care-text">Compassionate Care</span>
-                  </div>
-                </div>
-              </section>
-
-              {/* Education Section */}
-              <section className="details-section-card">
-                <h4 className="details-card-title">Education & Qualifications</h4>
-                <div className="timeline-container">
-                  {educationList.map((edu, idx) => (
-                    <div key={idx} className="timeline-item">
-                      <div className="timeline-marker">
-                        <div className="timeline-dot"></div>
-                        {idx < educationList.length - 1 && <div className="timeline-line"></div>}
-                      </div>
-                      <div className="timeline-content">
-                        <strong className="timeline-item-title">{edu}</strong>
-                        <span className="timeline-item-subtitle">
-                          {idx === 0
-                            ? "Advanced Specialization Training Board"
-                            : idx === 1
-                            ? "Postgraduate Medical Institute"
-                            : "Bachelor of Medicine, Bachelor of Surgery Graduation"}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* Professional Experience */}
-              <section className="details-section-card">
-                <h4 className="details-card-title">Professional Experience</h4>
-                <div className="experience-timeline">
-                  <div className="timeline-item">
-                    <div className="timeline-marker">
-                      <div className="timeline-dot active-dot"></div>
-                      <div className="timeline-line"></div>
-                    </div>
-                    <div className="timeline-content">
-                      <strong className="timeline-item-title">
-                        Senior Consultant ({doctor.specialty})
-                      </strong>
-                      <span className="timeline-item-subtitle">
-                        {doctor.hospital} (Current)
-                      </span>
-                      <p className="experience-description">
-                        Overseeing patient consultations, critical procedures, inpatient care diagnostics, and treatment recommendations in the specialized department of {doctor.specialty.toLowerCase()}.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="timeline-item">
-                    <div className="timeline-marker">
-                      <div className="timeline-dot"></div>
-                    </div>
-                    <div className="timeline-content">
-                      <strong className="timeline-item-title">Resident Medical Specialist</strong>
-                      <span className="timeline-item-subtitle">
-                        Previous Allied Medical Centers & Clinics ({doctor.experience - 5} years ago)
-                      </span>
-                      <p className="experience-description">
-                        Conducted clinical rounds, managed emergency intake operations, and provided patient consultation support under clinical supervision.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            </div>
-
-            {/* Right Sidebar Column */}
-            <div className="profile-side-column">
-              {/* Available Days */}
-              <section className="side-card">
-                <h4 className="side-card-title">Available Days</h4>
-                <div className="side-days-list">
-                  {weekDays.map((day) => {
-                    const { status, class: statusClass } = getDayStatus(day);
-                    const shortDay = day.substring(0, 3);
-                    return (
-                      <div key={day} className="side-day-row">
-                        <span className="day-name">{shortDay}</span>
-                        <div className="day-status-value">
-                          <span className={`status-dot ${statusClass}`}></span>
-                          <span className={`status-label-text ${statusClass}`}>{status}</span>
+            <div style={{ maxWidth: "800px", margin: "0 auto", width: "100%" }}>
+                <Card>
+                        <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "32px", paddingBottom: "24px", borderBottom: "1px solid #e2e8f0" }}>
+                            <div style={{ width: "80px", height: "80px", borderRadius: "50%", backgroundColor: "#e0f2fe", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <User size={40} color="#0284c7" />
+                            </div>
+                            <div>
+                                <h3 style={{ fontSize: "1.5rem", margin: "0 0 4px 0", color: "#0f172a" }}>{profile.name}</h3>
+                                <p style={{ margin: 0, color: "#64748b", fontSize: "1rem" }}>{profile.specialization}</p>
+                            </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
 
-              {/* Next Available Slots */}
-              <section className="side-card">
-                <h4 className="side-card-title">Next Available Slots</h4>
-                
-                <div className="slot-date-subtitle">
-                  Tomorrow, {getTomorrowDateString()}
-                </div>
+                        <form onSubmit={handleSave} className="add-doctor-form">
+                            <h4 style={{ margin: "0 0 16px 0", color: "#334155" }}>Personal Information</h4>
+                            <div className="form-row">
+                                <Input label="Full Name" name="name" value={formData.name || ''} onChange={handleChange} disabled={!isEditing} required />
+                                <Input label="Date of Birth (Year)" name="dobYear" type="text" value={formData.dobYear || formData.dob || ''} onChange={handleChange} disabled={!isEditing} />
+                            </div>
+                            <div className="form-row">
+                                <Input label="Email" name="email" value={formData.email || ''} onChange={handleChange} disabled={!isEditing} />
+                                <Input label="Phone Number" name="contact" value={formData.contact || formData.phone || ''} onChange={handleChange} disabled={!isEditing} />
+                            </div>
+                            
+                            <h4 style={{ margin: "24px 0 16px 0", color: "#334155" }}>Professional Details</h4>
+                            <div className="form-row">
+                                <Input label="Specialization" name="specialization" value={formData.specialization || ''} onChange={handleChange} disabled={!isEditing} required />
+                                <Input label="Experience" name="experience" value={formData.experience || ''} onChange={handleChange} disabled={!isEditing} />
+                            </div>
+                            <div className="form-row">
+                                <Input label="Hospital/Clinic" name="hospital" value={formData.hospital || ''} onChange={handleChange} disabled={!isEditing} required />
+                                <Input label="Consultation Fee" name="fee" type="number" value={formData.fee || ''} onChange={handleChange} disabled={!isEditing} />
+                            </div>
 
-                <div className="slots-buttons-grid">
-                  {availableTimeSlots.map((slot) => (
-                    <button
-                      key={slot}
-                      className={`slot-time-btn ${selectedSlot === slot ? "selected" : ""}`}
-                      onClick={() => setSelectedSlot(slot)}
-                    >
-                      {slot}
-                    </button>
-                  ))}
-                </div>
+                            <h4 style={{ margin: "24px 0 16px 0", color: "#334155" }}>Account Credentials</h4>
+                            <div className="form-row">
+                                <Input label="Login ID" name="loginId" value={profile.loginId || "N/A"} disabled={true} />
+                                <div style={{flex: 1}}>
+                                    {/* Empty div for spacing */}
+                                </div>
+                            </div>
 
-                <button 
-                  className="btn-full-availability" 
-                  onClick={() => showNotification("Schedule Calendar", "Loading full weekly availability calendar...", "info")}
-                >
-                  View Full Availability →
-                </button>
-              </section>
+                            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "32px" }}>
+                                {!isEditing ? (
+                                    <Button variant="primary" type="button" onClick={() => setIsEditing(true)}>
+                                        Edit Profile
+                                    </Button>
+                                ) : (
+                                    <>
+                                        <Button variant="outline" type="button" onClick={() => { setIsEditing(false); setFormData(profile); }}>
+                                            Cancel
+                                        </Button>
+                                        <Button variant="primary" type="submit">
+                                            <Save size={16} style={{marginRight: "6px"}} /> Save Changes
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        </form>
+                </Card>
             </div>
-          </div>
         </main>
-
-      {/* Floating Toast Notification */}
-      {toast.show && (
-        <div className="toast-container">
-          <Toast
-            type={toast.type}
-            title={toast.title}
-            message={toast.message}
-            onClose={() => setToast((prev) => ({ ...prev, show: false }))}
-          />
-        </div>
-      )}
-    </>
-  );
+    );
 }
 
 export default DoctorProfile;

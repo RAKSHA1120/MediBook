@@ -26,10 +26,8 @@ import {
   ShieldCheck,
   Lock
 } from "lucide-react";
-import doctorsData from "../data/doctors";
-import heroIllustration from "../assets/hospital_appointment_illustration.png";
-import { useAppointments } from "../context/AppointmentContext";
-import { getStoredNotifications, addNotification } from "../data/notifications";
+import { getDoctors, getCurrentUser, getNotifications, addNotification as storageAddNotif } from "../utils/storage";
+import { getStoredNotifications } from "../data/notifications";
 import Navbar from "../components/Navbar";
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -40,12 +38,8 @@ import AppointmentCard from "../components/AppointmentCard";
 import EmptyState from "../components/EmptyState";
 import "./PatientDashboard.css";
 
-// Local patient object
-const patient = {
-  name: "Raksha",
-  role: "Patient",
-  avatarLetter: "R"
-};
+import heroIllustration from "../assets/hospital_appointment_illustration.png";
+import { useAppointments } from "../context/AppointmentContext";
 
 // Specialties filter list
 const specialties = [
@@ -106,19 +100,17 @@ function PatientDashboard() {
   // Notifications / Recent Activity state
   const [notifications, setNotifications] = useState(() => getStoredNotifications());
 
+  const [doctorsList, setDoctorsList] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+
   useEffect(() => {
-    const handleNotifUpdate = () => {
-      setNotifications(getStoredNotifications());
-    };
-    window.addEventListener("medibook_notifications_updated", handleNotifUpdate);
-    return () => {
-      window.removeEventListener("medibook_notifications_updated", handleNotifUpdate);
-    };
+    setDoctorsList(getDoctors());
+    setCurrentUser(getCurrentUser());
   }, []);
 
   // Navigation and action handlers
   const handleDoctorClick = (docId) => {
-    const fullDoc = doctorsData.find(d => d.id === docId) || doctorsData[0];
+    const fullDoc = doctorsList.find(d => String(d.id) === String(docId)) || doctorsList[0];
     navigate("/doctor-profile", { state: { doctor: fullDoc } });
   };
 
@@ -133,7 +125,7 @@ function PatientDashboard() {
 
     if (!upcoming) return null;
 
-    const doc = doctorsData.find((d) => String(d.id) === String(upcoming.doctorId)) || {};
+    const doc = doctorsList.find((d) => String(d.id) === String(upcoming.doctorId)) || {};
     const docName = upcoming.doctorName || doc.name || "Dr. Emily Carter";
     const initials = docName
       .split(" ")
@@ -156,7 +148,7 @@ function PatientDashboard() {
       status: upcoming.status || "Confirmed",
       initials
     };
-  }, [appointments]);
+  }, [appointments, doctorsList]);
 
   const handleMyAppointments = () => {
     navigate("/my-appointments");
@@ -188,7 +180,7 @@ function PatientDashboard() {
 
   // Filter recommended doctors locally based on selected specialty chip and search bar text
   const filteredDoctors = useMemo(() => {
-    const list = doctorsData.filter((doctor) => {
+    const list = doctorsList.filter((doctor) => {
       // 1. Specialty Filter
       const matchesSpecialty =
         selectedSpecialty === "All" ||
@@ -209,7 +201,7 @@ function PatientDashboard() {
     });
 
     return list.slice(0, 3);
-  }, [selectedSpecialty, searchQuery]);
+  }, [selectedSpecialty, searchQuery, doctorsList]);
 
   // Recent activities slice
   const recentActivities = useMemo(() => {
@@ -235,7 +227,7 @@ function PatientDashboard() {
   };
 
   const handleBookAppointment = (docId) => {
-    const fullDoc = doctorsData.find(d => d.id === docId) || doctorsData[0];
+    const fullDoc = doctorsList.find(d => String(d.id) === String(docId)) || doctorsList[0];
     navigate("/book-appointment", { state: { doctor: fullDoc } });
   };
 
@@ -249,12 +241,15 @@ function PatientDashboard() {
 
     cancelAppointment(upcomingAppointment.id);
 
-    addNotification({
+    storageAddNotif({
+      id: Date.now(),
       type: "appointment",
       subType: "cancelled",
       title: "Appointment Cancelled",
       message: `Your appointment with ${upcomingAppointment.doctorName} on ${upcomingAppointment.date} has been cancelled.`,
-      appointmentId: upcomingAppointment.id
+      appointmentId: upcomingAppointment.id,
+      read: false,
+      createdAt: new Date().toLocaleTimeString()
     });
 
     setShowCancelModal(false);
@@ -288,7 +283,7 @@ function PatientDashboard() {
           {/* Greeting Section */}
           <section className="greeting-section">
             <h2 className="greeting-title">
-              {getGreeting()}, {patient.name}!
+              {getGreeting()}, {currentUser?.name || "Patient"}!
             </h2>
             <p className="greeting-subtitle">
               Find the right doctor and manage your appointments with ease.

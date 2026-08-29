@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -21,7 +21,7 @@ import {
   Sunrise,
   Sun
 } from "lucide-react";
-import doctors from "../data/doctors";
+import { getDoctors, getCurrentUser } from "../utils/storage";
 import {
   TIME_SLOTS,
   getMockBookedAppointments,
@@ -38,13 +38,6 @@ import "./AppointmentBooking.css";
 
 import { useAppointments } from "../context/AppointmentContext";
 
-// Patient info for Navbar
-const patient = {
-  name: "Raksha",
-  role: "Patient",
-  avatarLetter: "R"
-};
-
 function AppointmentBooking() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -54,7 +47,16 @@ function AppointmentBooking() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Selected Doctor with robust default fallback
-  const doctor = location.state?.doctor || (doctors && doctors[0]) || {
+  const [doctorsList, setDoctorsList] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    setDoctorsList(getDoctors());
+    setCurrentUser(getCurrentUser());
+  }, []);
+
+  const doctorFromState = location.state?.doctor;
+  const doctor = doctorFromState || (doctorsList.length > 0 ? doctorsList[0] : {
     id: 1,
     name: "Dr. Emily Carter",
     specialty: "Cardiology",
@@ -68,7 +70,7 @@ function AppointmentBooking() {
     gender: "Female",
     qualification: "MBBS, MD, DM",
     availableDays: ["Mon", "Wed", "Fri"]
-  };
+  });
 
   // Appointment Selection States
   const [selectedDate, setSelectedDate] = useState("");

@@ -1,0 +1,24 @@
+/* Deleted unused styles */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-card {
+  padding: var(--spacing-lg);
+}
+
+.dashboard-card h3 {
+  margin-bottom: var(--spacing-md);
+  font-size: 1.1rem;
+  color: var(--text-color);
+}

@@ -1,0 +1,48 @@
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import AdminSidebar from "../components/AdminSidebar";
+import "../pages/PatientDashboard.css"; // Reuse layout CSS structure
+
+function AdminLayout({ children }) {
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem("medibook_admin_sidebar_collapsed") === "true";
+  });
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    localStorage.setItem("medibook_admin_sidebar_collapsed", isCollapsed);
+  }, [isCollapsed]);
+
+  return (
+    <div className="patient-dashboard-layout">
+      {/* Dynamic Collapsible Sidebar */}
+      <AdminSidebar
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+      />
+
+      {/* Main Content Area */}
+      <div className="patient-dashboard-main">
+        {/* Top Navbar */}
+        <Navbar
+          userName="System Admin"
+          userRole="Administrator"
+          avatarLetter="A"
+          hideTabs={true}
+          onMenuClick={() => setIsMobileOpen(!isMobileOpen)}
+        />
+
+        {/* Dynamic Child Page */}
+        <div className="patient-dashboard-content-wrapper" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default AdminLayout;
