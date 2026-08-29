@@ -3,8 +3,6 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import DesignSystem from "../pages/DesignSystem";
 import Login from "../pages/Login";
 import PatientDashboard from "../pages/PatientDashboard";
-import DoctorList from "../pages/DoctorList";
-import DoctorProfile from "../pages/DoctorProfile";
 import AppointmentBooking from "../pages/AppointmentBooking";
 import BookingSuccess from "../pages/BookingSuccess";
 import Dashboard from "../pages/Dashboard";
@@ -24,17 +22,6 @@ import Notifications from "../pages/Notifications";
 import Settings from "../pages/Settings";
 import HelpSupport from "../pages/HelpSupport";
 
-import AdminLayout from "../layouts/AdminLayout";
-import AdminDashboard from "../pages/AdminDashboard";
-import AdminDoctors from "../pages/AdminDoctors";
-import AdminPatients from "../pages/AdminPatients";
-import AdminAppointments from "../pages/AdminAppointments";
-import AdminAppointmentDetails from "../pages/AdminAppointmentDetails";
-import AdminNotifications from "../pages/AdminNotifications";
-import AdminReports from "../pages/AdminReports";
-import AdminProfile from "../pages/AdminProfile";
-import AdminSettings from "../pages/AdminSettings";
-import AdminHelpSupport from "../pages/AdminHelpSupport";
 
 function AppRoutes() {
   return (
@@ -42,11 +29,9 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
-        
+
         {/* All Patient Pages Wrapped in PatientLayout */}
         <Route path="/patient-dashboard" element={<PatientLayout><PatientDashboard /></PatientLayout>} />
-        <Route path="/doctors" element={<PatientLayout><DoctorList /></PatientLayout>} />
-        <Route path="/doctor-profile" element={<PatientLayout><DoctorProfile /></PatientLayout>} />
         <Route path="/book-appointment" element={<PatientLayout><AppointmentBooking /></PatientLayout>} />
         <Route path="/booking-success" element={<PatientLayout><BookingSuccess /></PatientLayout>} />
 
@@ -58,6 +43,7 @@ function AppRoutes() {
         <Route path="/notifications" element={<PatientLayout><Notifications /></PatientLayout>} />
         <Route path="/settings" element={<PatientLayout><Settings /></PatientLayout>} />
         <Route path="/help-support" element={<PatientLayout><HelpSupport /></PatientLayout>} />
+
 
         <Route path="/design-system" element={<DesignSystem />} />
 

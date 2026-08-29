@@ -18,7 +18,6 @@ import {
   CalendarDays,
   Printer
 } from "lucide-react";
-import doctors from "../data/doctors";
 import { TIME_SLOTS, getMockBookedAppointments, getMockDisabledAppointments } from "../data/appointments";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
@@ -73,22 +72,15 @@ function AppointmentDetails() {
   // Helper to resolve Doctor Information
   const getDoctorInfo = (appt) => {
     if (!appt) return null;
-    let doc = null;
-    if (appt.doctorId) {
-      doc = doctors.find((d) => String(d.id) === String(appt.doctorId));
-    }
-    if (!doc && appt.doctorName) {
-      doc = doctors.find((d) => d.name.toLowerCase() === appt.doctorName.toLowerCase());
-    }
 
-    const name = appt.doctorName || doc?.name || "Dr. Emily Carter";
-    const specialty = appt.specialty || doc?.specialty || "Cardiology";
-    const hospital = appt.hospital || doc?.hospital || "MediCare Hospital";
-    const location = appt.location || doc?.location || "Chennai";
-    const fee = appt.consultationFee ?? doc?.consultationFee ?? 800;
-    const experience = doc?.experience ?? 12;
-    const rating = doc?.rating ?? 4.8;
-    const reviewCount = doc?.reviewCount ?? 124;
+    const name = appt.doctorName || "Dr. Emily Carter";
+    const specialty = appt.specialty || "Cardiology";
+    const hospital = appt.hospital || "MediCare Hospital";
+    const location = appt.location || "Chennai";
+    const fee = appt.consultationFee ?? 800;
+    const experience = 12;
+    const rating = 4.8;
+    const reviewCount = 124;
 
     const initials = name
       .split(" ")
@@ -98,7 +90,7 @@ function AppointmentDetails() {
       .substring(0, 2)
       .toUpperCase() || "DR";
 
-    return { docObj: doc, name, specialty, hospital, location, fee, experience, rating, reviewCount, initials };
+    return { docObj: null, name, specialty, hospital, location, fee, experience, rating, reviewCount, initials };
   };
 
   // Normalization helper for status
@@ -162,18 +154,18 @@ function AppointmentDetails() {
 
   const docInfo = getDoctorInfo(currentAppt);
   const bookedSlotsMap = useMemo(() => {
-    return getMockBookedAppointments(docInfo?.docObj?.id || 1);
-  }, [docInfo?.docObj?.id]);
+    return getMockBookedAppointments(1);
+  }, []);
 
   const disabledSlotsMap = useMemo(() => {
-    return getMockDisabledAppointments(docInfo?.docObj?.id || 1);
-  }, [docInfo?.docObj?.id]);
+    return getMockDisabledAppointments(1);
+  }, []);
 
   const isDateBooked = (dateString) => {
     const dateObj = upcomingDates.find((d) => d.dateString === dateString);
     if (!dateObj) return true;
 
-    const workingDays = docInfo?.docObj?.availableDays || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const workingDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     const isWorkingDay = workingDays.some(
       (day) =>
         day.toLowerCase() === dateObj.dayName.toLowerCase() ||

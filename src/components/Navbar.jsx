@@ -14,7 +14,7 @@ import { getCurrentUser } from "../utils/storage";
 
 function Navbar({
   userName = "Raksha N",
-  userRole = "Admin",
+  userRole = "Patient",
   avatarLetter = "R",
   hideTabs = false,
   onMenuClick,
@@ -65,15 +65,9 @@ function Navbar({
               <Users size={18} />
               <span>Patients</span>
             </button>
-
             <button className="navbar-tab">
               <CalendarDays size={18} />
               <span>Appointments</span>
-            </button>
-
-            <button className="navbar-tab">
-              <Stethoscope size={18} />
-              <span>Doctors</span>
             </button>
           </nav>
         )}

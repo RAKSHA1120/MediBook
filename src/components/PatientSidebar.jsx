@@ -63,7 +63,6 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
 
   const patientItems = [
     { path: "/patient-dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { path: "/doctors", label: "Find Doctor", icon: Search },
     { path: "/my-appointments", label: "My Appointments", icon: Calendar, altPath: "/appointments" },
     { path: "/notifications", label: "Notifications", icon: Bell, showBadge: true },
     { path: "/profile", label: "Profile", icon: User },

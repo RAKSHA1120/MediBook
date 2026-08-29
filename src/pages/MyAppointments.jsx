@@ -14,7 +14,6 @@ import {
   AlertTriangle,
   Receipt
 } from "lucide-react";
-import { getDoctors, getCurrentUser } from "../utils/storage";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
@@ -24,17 +23,11 @@ import EmptyState from "../components/EmptyState";
 import "./MyAppointments.css";
 
 import { useAppointments } from "../context/AppointmentContext";
-import { useEffect } from "react";
 
 function MyAppointments() {
   const navigate = useNavigate();
   const { appointments, cancelAppointment } = useAppointments();
   const [activeTab, setActiveTab] = useState("Upcoming");
-  const [currentUser, setCurrentUser] = useState(null);
-
-  useEffect(() => {
-    setCurrentUser(getCurrentUser());
-  }, []);
 
   // Modal States
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -54,20 +47,11 @@ function MyAppointments() {
 
   // Helper to resolve Doctor information
   const getDoctorInfo = (appt) => {
-    let doc = null;
-    const doctorsList = getDoctors();
-    if (appt.doctorId) {
-      doc = doctorsList.find((d) => String(d.id) === String(appt.doctorId));
-    }
-    if (!doc && appt.doctorName) {
-      doc = doctorsList.find((d) => d.name.toLowerCase() === appt.doctorName.toLowerCase());
-    }
-
-    const name = appt.doctorName || doc?.name || "Dr. Emily Carter";
-    const specialty = appt.specialty || doc?.specialty || "Cardiology";
-    const hospital = appt.hospital || doc?.hospital || "MediCare Hospital";
-    const location = appt.location || doc?.location || "Chennai";
-    const fee = appt.consultationFee ?? doc?.consultationFee ?? 800;
+    const name = appt.doctorName || "Dr. Emily Carter";
+    const specialty = appt.specialty || "Cardiology";
+    const hospital = appt.hospital || "MediCare Hospital";
+    const location = appt.location || "Chennai";
+    const fee = appt.consultationFee ?? 800;
 
     // Doctor Initials
     const initials = name
@@ -91,31 +75,25 @@ function MyAppointments() {
     return "upcoming";
   };
 
-  const myAppointmentsList = useMemo(() => {
-      if (!currentUser) return [];
-      // Only show appointments that belong to this patient
-      return appointments.filter(a => a.patientId === currentUser.refId || a.patientId === currentUser.id || a.patientName === currentUser.name);
-  }, [appointments, currentUser]);
-
   // Dynamic tab counts
   const tabCounts = useMemo(() => {
     const counts = { Upcoming: 0, Completed: 0, Cancelled: 0 };
-    myAppointmentsList.forEach((appt) => {
+    appointments.forEach((appt) => {
       const norm = getNormalizedStatus(appt.status);
       if (norm === "upcoming") counts.Upcoming++;
       else if (norm === "completed") counts.Completed++;
       else if (norm === "cancelled") counts.Cancelled++;
     });
     return counts;
-  }, [myAppointmentsList]);
+  }, [appointments]);
 
   // Filtered appointments for active tab
   const filteredAppointments = useMemo(() => {
-    return myAppointmentsList.filter((appt) => {
+    return appointments.filter((appt) => {
       const norm = getNormalizedStatus(appt.status);
       return norm === activeTab.toLowerCase();
     });
-  }, [myAppointmentsList, activeTab]);
+  }, [appointments, activeTab]);
 
   // Handle View Action
   const handleViewAppointment = (appt) => {

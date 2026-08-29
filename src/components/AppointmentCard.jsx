@@ -2,7 +2,6 @@ import { Calendar, Clock, Receipt, Eye, CalendarDays, X } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import PrimaryButton from "./PrimaryButton";
 import SecondaryButton from "./SecondaryButton";
-import doctors from "../data/doctors";
 import "./AppointmentCard.css";
 
 function AppointmentCard({
@@ -14,20 +13,11 @@ function AppointmentCard({
 }) {
   if (!appointment) return null;
 
-  // Resolve Doctor metadata if available
-  let doc = null;
-  if (appointment.doctorId) {
-    doc = doctors.find((d) => String(d.id) === String(appointment.doctorId));
-  }
-  if (!doc && appointment.doctorName) {
-    doc = doctors.find((d) => d.name.toLowerCase() === appointment.doctorName.toLowerCase());
-  }
-
-  const docName = appointment.doctorName || doc?.name || "Dr. Emily Carter";
-  const specialty = appointment.specialty || doc?.specialty || "Cardiology";
-  const hospital = appointment.hospital || doc?.hospital || "MediCare Hospital";
-  const location = appointment.location || doc?.location || "Chennai";
-  const fee = appointment.consultationFee ?? doc?.consultationFee ?? 800;
+  const docName = appointment.doctorName || "Dr. Emily Carter";
+  const specialty = appointment.specialty || "Cardiology";
+  const hospital = appointment.hospital || "MediCare Hospital";
+  const location = appointment.location || "Chennai";
+  const fee = appointment.consultationFee ?? 800;
 
   const initials = docName
     .split(" ")
