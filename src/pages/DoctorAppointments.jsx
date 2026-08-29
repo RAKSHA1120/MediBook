@@ -40,7 +40,12 @@ function DoctorAppointments() {
     const filteredAppointments = appointments.filter(apt => {
         const matchesSearch = (apt.patientName || apt.patient || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
                               (apt.type || "").toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === "All" || apt.status === statusFilter;
+        let matchesStatus = true;
+        if (statusFilter !== "All") {
+            const s = String(apt.status || "").toLowerCase();
+            const norm = s === 'scheduled' || s === 'confirmed' ? 'upcoming' : s;
+            matchesStatus = norm === statusFilter.toLowerCase();
+        }
         return matchesSearch && matchesStatus;
     });
 

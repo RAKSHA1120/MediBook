@@ -10,7 +10,8 @@ function PageHeader({
   action,
   actionLabel,
   onAction,
-  className = ""
+  className = "",
+  children
 }) {
   return (
     <div className={`page-header-container ${className}`}>
@@ -27,13 +28,16 @@ function PageHeader({
           {subtitle && <p className="page-header-subtitle">{subtitle}</p>}
         </div>
 
-        {(action || (actionLabel && onAction)) && (
+        {(action || (actionLabel && onAction) || children) && (
           <div className="page-header-action-area">
-            {action || (
-              <Button variant="primary" onClick={onAction}>
-                {actionLabel}
-              </Button>
-            )}
+            {children}
+            {!children && (action || (
+              actionLabel && onAction ? (
+                <Button variant="primary" onClick={onAction}>
+                  {actionLabel}
+                </Button>
+              ) : null
+            ))}
           </div>
         )}
       </div>

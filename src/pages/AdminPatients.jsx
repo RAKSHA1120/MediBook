@@ -6,7 +6,7 @@ import SearchBox from "../components/SearchBox";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
 import Input from "../components/Input";
-import { getPatients, updatePatient } from "../utils/storage";
+import { getPatients, updatePatient, deletePatient } from "../utils/storage";
 import "./AdminShared.css";
 
 function AdminPatients() {
@@ -44,6 +44,17 @@ function AdminPatients() {
     setPatients(getPatients());
     if (selectedPatient && selectedPatient.id === patient.id) {
        setSelectedPatient({ ...selectedPatient, status: newStatus });
+    }
+  };
+
+  const handleDeletePatient = (patient) => {
+    if (window.confirm(`Are you sure you want to delete patient ${patient.name}? This action cannot be undone.`)) {
+      deletePatient(patient.id);
+      setPatients(getPatients());
+      if (selectedPatient && selectedPatient.id === patient.id) {
+        setIsViewModalOpen(false);
+        setSelectedPatient(null);
+      }
     }
   };
 
@@ -100,6 +111,7 @@ function AdminPatients() {
                   <td className="nowrap">
                     <div className="action-buttons">
                       <Button variant="outline" size="sm" onClick={() => handleViewPatient(p)}>View</Button>
+                      <Button variant="outline" size="sm" style={{ color: "#ef4444", borderColor: "#fca5a5", backgroundColor: "#fff" }} onClick={() => handleDeletePatient(p)}>Delete</Button>
                     </div>
                   </td>
                 </tr>

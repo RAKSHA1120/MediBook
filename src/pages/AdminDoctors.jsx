@@ -7,7 +7,7 @@ import SearchBox from "../components/SearchBox";
 import Modal from "../components/Modal";
 import Input from "../components/Input";
 import StatusBadge from "../components/StatusBadge";
-import { getDoctors, addDoctor, updateDoctor, addUser } from "../utils/storage";
+import { getDoctors, addDoctor, updateDoctor, addUser, deleteDoctor } from "../utils/storage";
 import { generateLoginId, generatePassword } from "../utils/idGenerator";
 import "./AdminDoctors.css";
 import "./AdminShared.css";
@@ -108,6 +108,17 @@ function AdminDoctors() {
     }
   };
 
+  const handleDeleteDoctor = (doc) => {
+    if (window.confirm(`Are you sure you want to delete Dr. ${doc.name.replace(/^(dr\.|dr\s)/i, '')}? This action cannot be undone.`)) {
+      deleteDoctor(doc.id);
+      setDoctors(getDoctors());
+      if (selectedDoctor && selectedDoctor.id === doc.id) {
+        setIsViewModalOpen(false);
+        setSelectedDoctor(null);
+      }
+    }
+  };
+
   return (
     <div className="patient-dashboard-content">
       <PageHeader 
@@ -163,6 +174,7 @@ function AdminDoctors() {
                   <td className="nowrap">
                     <div className="action-buttons">
                       <Button variant="outline" size="sm" onClick={() => handleViewDoctor(doc)}>View</Button>
+                      <Button variant="outline" size="sm" style={{ color: "#ef4444", borderColor: "#fca5a5", backgroundColor: "#fff" }} onClick={() => handleDeleteDoctor(doc)}>Delete</Button>
                     </div>
                   </td>
                 </tr>

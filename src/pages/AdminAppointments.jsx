@@ -33,7 +33,11 @@ function AdminAppointments() {
   );
 
   if (activeTab !== "All") {
-    filteredAppointments = filteredAppointments.filter(apt => apt.status === activeTab);
+    filteredAppointments = filteredAppointments.filter(apt => {
+      const s = String(apt.status || "").toLowerCase();
+      const norm = s === 'scheduled' || s === 'confirmed' ? 'upcoming' : s;
+      return norm === activeTab.toLowerCase();
+    });
   }
 
   return (

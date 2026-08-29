@@ -150,6 +150,13 @@ export const updateDoctor = (id, updates) => {
     setStorage(KEYS.DOCTORS, doctors);
   }
 };
+export const deleteDoctor = (id) => {
+  const doctors = getDoctors();
+  setStorage(KEYS.DOCTORS, doctors.filter(d => d.id !== id));
+  
+  const users = getUsers();
+  setStorage(KEYS.USERS, users.filter(u => u.refId !== id));
+};
 
 // Patients API
 export const getPatients = () => getStorage(KEYS.PATIENTS);
@@ -165,6 +172,13 @@ export const updatePatient = (id, updates) => {
     patients[index] = { ...patients[index], ...updates };
     setStorage(KEYS.PATIENTS, patients);
   }
+};
+export const deletePatient = (id) => {
+  const patients = getPatients();
+  setStorage(KEYS.PATIENTS, patients.filter(p => p.id !== id));
+  
+  const users = getUsers();
+  setStorage(KEYS.USERS, users.filter(u => u.refId !== id));
 };
 
 // Appointments API
