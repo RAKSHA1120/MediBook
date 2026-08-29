@@ -1,5 +1,5 @@
 /* ==================================================
-   Admin Shared Styles (Tables, Toolbars, Cards)
+   Admin Shared Styles (Tables, Toolbars, Cards, Forms)
    ================================================== */
 
 .admin-table-card {
@@ -7,13 +7,13 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }
 
 .admin-toolbar {
-  padding: 16px 20px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
@@ -24,7 +24,6 @@
 .table-responsive {
   width: 100%;
   overflow-x: auto;
-  /* Custom scrollbar for better look */
   scrollbar-width: thin;
   scrollbar-color: var(--primary-soft) transparent;
 }
@@ -46,8 +45,7 @@
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  /* Allow natural wrapping to prevent overlaps */
-  table-layout: auto; 
+  table-layout: auto;
 }
 
 .admin-table th {
@@ -55,12 +53,12 @@
   background-color: var(--background);
   color: var(--text-muted);
   font-family: var(--font-heading);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border);
-  white-space: nowrap; /* Keep headers on one line */
+  white-space: nowrap;
 }
 
 .admin-table td {
@@ -70,10 +68,8 @@
   font-family: var(--font-body);
   font-size: 14px;
   color: var(--text-primary);
-  /* Text can wrap by default */
 }
 
-/* Prevent Actions and Status columns from shrinking or wrapping weirdly */
 .admin-table td.nowrap {
   white-space: nowrap;
 }
@@ -90,7 +86,7 @@
   background-color: var(--primary-soft);
 }
 
-/* Specific Cell Layouts */
+/* Cell Layouts */
 .user-info-cell {
   display: flex;
   align-items: center;
@@ -128,7 +124,189 @@
   color: var(--text-muted);
 }
 
-.action-buttons {
+/* ==================================================
+   Compact Icon Actions & Dropdown Popover
+   ================================================== */
+
+.table-actions-cell {
   display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.icon-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.icon-action-btn:hover,
+.icon-action-btn.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-color: var(--primary-light);
+}
+
+.more-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.more-menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  min-width: 140px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.more-menu-item {
+  width: 100%;
+  padding: 8px 14px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-heading);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.more-menu-item:hover {
+  background-color: var(--primary-soft);
+  color: var(--primary);
+}
+
+.more-menu-item.danger {
+  color: #ef4444;
+}
+
+.more-menu-item.danger:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+/* ==================================================
+   Spacious Hospital & Admin Modal Form Layout
+   ================================================== */
+
+.hospital-modal-container {
+  max-width: 580px;
+}
+
+.hospital-modal-container .modal-body {
+  padding: 28px 32px;
+}
+
+.hospital-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  width: 100%;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.form-label {
+  font-family: var(--font-heading);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin: 0;
+  display: block;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-heading);
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-input:hover:not(:disabled),
+.form-select:hover:not(:disabled) {
+  border-color: var(--primary-light);
+}
+
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(47, 111, 163, 0.15);
+}
+
+.form-error-banner {
+  padding: 12px 16px;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
+  .hospital-modal-container .modal-body {
+    padding: 20px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .hospital-form {
+    gap: 20px;
+  }
 }

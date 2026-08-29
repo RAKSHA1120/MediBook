@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import AdminSidebar from "../components/AdminSidebar";
-import "../pages/PatientDashboard.css"; // Reuse layout CSS structure
+import "../pages/PatientDashboard.css"; // Shared layout system
 
 function AdminLayout({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem("medibook_admin_sidebar_collapsed") === "true";
   });
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     localStorage.setItem("medibook_admin_sidebar_collapsed", isCollapsed);
@@ -34,6 +34,8 @@ function AdminLayout({ children }) {
           avatarLetter="A"
           hideTabs={true}
           onMenuClick={() => setIsMobileOpen(!isMobileOpen)}
+          onNotificationClick={() => navigate("/admin/notifications")}
+          onProfileClick={() => navigate("/admin/profile")}
         />
 
         {/* Dynamic Child Page */}

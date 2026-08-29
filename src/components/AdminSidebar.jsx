@@ -1,21 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
+  Building2,
   Users,
   Stethoscope,
   CalendarDays,
-  Bell,
-  BarChart3,
-  Settings,
-  HelpCircle,
+  KeyRound,
+  User,
   LogOut,
-  ShieldAlert,
+  Heart,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
-import Button from "./Button";
-import "../components/PatientSidebar.css"; // Reuse the sidebar CSS
+import { clearCurrentUser } from "../utils/storage";
+import "./PatientSidebar.css";
 
 function AdminSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) {
   const navigate = useNavigate();
@@ -32,13 +31,11 @@ function AdminSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOp
 
   const navItems = [
     { path: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/admin/hospitals", label: "Hospitals", icon: Building2 },
     { path: "/admin/doctors", label: "Doctors", icon: Stethoscope },
     { path: "/admin/patients", label: "Patients", icon: Users },
     { path: "/admin/appointments", label: "Appointments", icon: CalendarDays },
-    { path: "/admin/notifications", label: "Notifications", icon: Bell },
-    { path: "/admin/reports", label: "Reports & Analytics", icon: BarChart3 },
-    { path: "/admin/settings", label: "Settings", icon: Settings },
-    { path: "/admin/help", label: "Help & Support", icon: HelpCircle }
+    { path: "/admin/login-management", label: "Login Management", icon: KeyRound }
   ];
 
   const handleNavClick = (path) => {
@@ -74,16 +71,36 @@ function AdminSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOp
           <div
             className="brand-logo-group"
             onClick={() => handleNavClick("/admin/dashboard")}
-            title="Admin Home"
+            title="MediBook Admin Portal"
           >
-            <ShieldAlert className="brand-logo-icon" size={24} style={{ color: "var(--primary-color)" }} />
-            {isExpanded && <span className="brand-title">Admin</span>}
+            <Heart className="brand-logo-icon" size={24} />
+            {isExpanded && (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span className="brand-title">MediBook</span>
+                <span
+                  style={{
+                    fontSize: "10.5px",
+                    fontWeight: "700",
+                    background: "var(--primary-soft)",
+                    color: "var(--primary)",
+                    padding: "2px 7px",
+                    borderRadius: "12px",
+                    border: "1px solid rgba(47, 111, 163, 0.2)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px"
+                  }}
+                >
+                  Admin
+                </span>
+              </div>
+            )}
           </div>
 
           <button
             className="sidebar-toggle-btn"
             onClick={handleToggleClick}
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            aria-label="Toggle Sidebar"
           >
             {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
@@ -96,7 +113,7 @@ function AdminSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOp
             const Icon = item.icon;
 
             return (
-               <button
+              <button
                 key={item.path}
                 className={`patient-sidebar-item ${active ? "active" : ""}`}
                 onClick={() => handleNavClick(item.path)}
@@ -115,12 +132,24 @@ function AdminSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOp
           })}
         </nav>
 
-        {/* Footer */}
+        {/* Footer: Admin Profile & Logout */}
         <div className="patient-sidebar-footer">
+          <button
+            className={`patient-sidebar-item ${isActive("/admin/profile") ? "active" : ""}`}
+            onClick={() => handleNavClick("/admin/profile")}
+            title={!isExpanded ? "Admin Profile" : undefined}
+          >
+            <div className="sidebar-icon-container">
+              <User size={18} className="sidebar-item-icon" />
+            </div>
+            {isExpanded && <span className="sidebar-item-label">Admin Profile</span>}
+          </button>
+
           <button
             className="patient-sidebar-item logout"
             onClick={() => {
               if (setIsMobileOpen) setIsMobileOpen(false);
+              clearCurrentUser();
               navigate("/login");
             }}
             title={!isExpanded ? "Logout" : undefined}

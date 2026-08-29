@@ -26,10 +26,12 @@ import HelpSupport from "../pages/HelpSupport";
 
 import AdminLayout from "../layouts/AdminLayout";
 import AdminDashboard from "../pages/AdminDashboard";
+import AdminHospitals from "../pages/AdminHospitals";
 import AdminDoctors from "../pages/AdminDoctors";
 import AdminPatients from "../pages/AdminPatients";
 import AdminAppointments from "../pages/AdminAppointments";
 import AdminAppointmentDetails from "../pages/AdminAppointmentDetails";
+import AdminLoginManagement from "../pages/AdminLoginManagement";
 import AdminNotifications from "../pages/AdminNotifications";
 import AdminReports from "../pages/AdminReports";
 import AdminProfile from "../pages/AdminProfile";
@@ -73,9 +75,11 @@ function AppRoutes() {
 
         {/* All Admin Pages Wrapped in AdminLayout */}
         <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+        <Route path="/admin/hospitals" element={<AdminLayout><AdminHospitals /></AdminLayout>} />
         <Route path="/admin/doctors" element={<AdminLayout><AdminDoctors /></AdminLayout>} />
         <Route path="/admin/patients" element={<AdminLayout><AdminPatients /></AdminLayout>} />
         <Route path="/admin/appointments" element={<AdminLayout><AdminAppointments /></AdminLayout>} />
+        <Route path="/admin/login-management" element={<AdminLayout><AdminLoginManagement /></AdminLayout>} />
         <Route path="/admin/appointments/:id" element={<AdminLayout><AdminAppointmentDetails /></AdminLayout>} />
         <Route path="/admin/notifications" element={<AdminLayout><AdminNotifications /></AdminLayout>} />
         <Route path="/admin/reports" element={<AdminLayout><AdminReports /></AdminLayout>} />
