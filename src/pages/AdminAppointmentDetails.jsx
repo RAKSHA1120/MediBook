@@ -24,17 +24,21 @@ function AdminAppointmentDetails() {
       <PageHeader 
         title={`Appointment Details: ${id || "APT-001"}`}
         subtitle="Detailed read-only view for administrative purposes"
-      >
-        <Button variant="outline" onClick={() => navigate("/admin/appointments")}>Back to List</Button>
-      </PageHeader>
+        actionLabel="Back to List"
+        onAction={() => navigate("/admin/appointments")}
+      />
 
-      <Card style={{ marginTop: "var(--spacing-lg)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--spacing-lg)" }}>
-          <h3>Booking Information</h3>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+      <Card style={{ marginTop: "24px", padding: "32px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px", paddingBottom: "24px", borderBottom: "1px solid var(--border)" }}>
+          <div>
+            <h2 style={{ fontSize: "20px", fontWeight: "600", color: "var(--text-heading)", marginBottom: "8px" }}>Booking Information</h2>
+            <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>Manage the status of this appointment.</p>
+          </div>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <StatusBadge status={appointment.status} />
             <select 
-                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
+                className="field-select"
+                style={{ padding: '8px 12px', minWidth: '140px', fontSize: '14px' }}
                 value={appointment.status}
                 onChange={(e) => {
                    updateAppointmentStatus(appointment.id, e.target.value);
@@ -42,33 +46,71 @@ function AdminAppointmentDetails() {
                 }}
             >
                 <option value="Upcoming">Upcoming</option>
+                <option value="Confirmed">Confirmed</option>
                 <option value="Completed">Completed</option>
                 <option value="Cancelled">Cancelled</option>
             </select>
           </div>
         </div>
         
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--spacing-lg)" }}>
-          <div>
-            <h4 style={{ color: "var(--text-secondary)", marginBottom: "var(--spacing-xs)" }}>Patient Information</h4>
-            <p><strong>Name:</strong> {appointment.patientName || appointment.patient}</p>
-            <p><strong>ID:</strong> {appointment.patientId || "N/A"}</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "32px" }}>
+          {/* Patient Info */}
+          <div style={{ background: "var(--background)", padding: "20px", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)" }}>
+            <h4 style={{ color: "var(--primary)", marginBottom: "16px", fontSize: "16px", fontWeight: "600", display: "flex", alignItems: "center", gap: "8px" }}>
+              Patient Information
+            </h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "var(--text-muted)", fontSize: "14px" }}>Name</span>
+                    <span style={{ fontWeight: "500", color: "var(--text-primary)" }}>{appointment.patientName || appointment.patient}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "var(--text-muted)", fontSize: "14px" }}>Patient ID</span>
+                    <span style={{ fontWeight: "500", color: "var(--text-primary)" }}>{appointment.patientId || "N/A"}</span>
+                </div>
+            </div>
           </div>
-          <div>
-            <h4 style={{ color: "var(--text-secondary)", marginBottom: "var(--spacing-xs)" }}>Doctor Information</h4>
-            <p><strong>Name:</strong> {appointment.doctorName}</p>
-            <p><strong>Specialization:</strong> {appointment.specialty || appointment.type}</p>
-            <p><strong>ID:</strong> {appointment.doctorId || "N/A"}</p>
+
+          {/* Doctor Info */}
+          <div style={{ background: "var(--background)", padding: "20px", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)" }}>
+            <h4 style={{ color: "var(--primary)", marginBottom: "16px", fontSize: "16px", fontWeight: "600", display: "flex", alignItems: "center", gap: "8px" }}>
+              Doctor Information
+            </h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "var(--text-muted)", fontSize: "14px" }}>Name</span>
+                    <span style={{ fontWeight: "500", color: "var(--text-primary)" }}>{appointment.doctorName}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "var(--text-muted)", fontSize: "14px" }}>Specialization</span>
+                    <span style={{ fontWeight: "500", color: "var(--text-primary)" }}>{appointment.specialty || appointment.type}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "var(--text-muted)", fontSize: "14px" }}>Doctor ID</span>
+                    <span style={{ fontWeight: "500", color: "var(--text-primary)" }}>{appointment.doctorId || "N/A"}</span>
+                </div>
+            </div>
           </div>
         </div>
 
-        <hr style={{ margin: "var(--spacing-lg) 0", border: "0", borderTop: "1px solid var(--border-color)" }} />
-
-        <div>
-           <h4 style={{ color: "var(--text-secondary)", marginBottom: "var(--spacing-xs)" }}>Appointment specifics</h4>
-           <p><strong>Date:</strong> {appointment.date}</p>
-           <p><strong>Time:</strong> {appointment.time}</p>
-           <p><strong>Type:</strong> {appointment.type || "Consultation"}</p>
+        {/* Appointment Specifics */}
+        <div style={{ marginTop: "32px", background: "var(--background)", padding: "24px", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)" }}>
+           <h4 style={{ color: "var(--text-heading)", marginBottom: "20px", fontSize: "16px", fontWeight: "600" }}>Appointment Specifics</h4>
+           
+           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px" }}>
+               <div>
+                   <span style={{ display: "block", color: "var(--text-muted)", fontSize: "13px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Date</span>
+                   <span style={{ fontWeight: "500", fontSize: "15px", color: "var(--text-primary)" }}>{appointment.date}</span>
+               </div>
+               <div>
+                   <span style={{ display: "block", color: "var(--text-muted)", fontSize: "13px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Time</span>
+                   <span style={{ fontWeight: "500", fontSize: "15px", color: "var(--text-primary)" }}>{appointment.time}</span>
+               </div>
+               <div>
+                   <span style={{ display: "block", color: "var(--text-muted)", fontSize: "13px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Consultation Type</span>
+                   <span style={{ fontWeight: "500", fontSize: "15px", color: "var(--text-primary)" }}>{appointment.type || "Consultation"}</span>
+               </div>
+           </div>
         </div>
       </Card>
     </div>
