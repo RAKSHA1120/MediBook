@@ -13,19 +13,26 @@ import "./Notifications.css";
 
 function Notifications() {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState(() => getStoredNotifications());
+  const [allNotifications, setAllNotifications] = useState(() => getStoredNotifications());
+  const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
 
   // Sync state if external changes happen
   useEffect(() => {
+    import("../utils/storage").then(module => setCurrentUser(module.getCurrentUser()));
     const handleUpdate = () => {
-      setNotifications(getStoredNotifications());
+      setAllNotifications(getStoredNotifications());
     };
     window.addEventListener("medibook_notifications_updated", handleUpdate);
     return () => {
       window.removeEventListener("medibook_notifications_updated", handleUpdate);
     };
   }, []);
+
+  const notifications = useMemo(() => {
+    if (!currentUser) return [];
+    return allNotifications.filter(n => !n.userId || n.userId === currentUser.id || n.userId === currentUser.refId);
+  }, [allNotifications, currentUser]);
 
   // Filter Counts
   const counts = useMemo(() => {
@@ -54,14 +61,14 @@ function Notifications() {
   // Handle Mark All As Read
   const handleMarkAll = () => {
     const updated = markAllNotificationsAsRead();
-    setNotifications(updated);
+    setAllNotifications(updated);
   };
 
   // Handle Notification Click
   const handleCardClick = (notif) => {
     if (!notif.read) {
       const updated = markNotificationAsRead(notif.id);
-      setNotifications(updated);
+      setAllNotifications(updated);
     }
     if (notif.appointmentId) {
       navigate(`/appointment/${notif.appointmentId}`);

@@ -14,7 +14,7 @@ import {
   AlertTriangle,
   Receipt
 } from "lucide-react";
-import { getDoctors } from "../utils/storage";
+import { getDoctors, getCurrentUser } from "../utils/storage";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
@@ -24,11 +24,17 @@ import EmptyState from "../components/EmptyState";
 import "./MyAppointments.css";
 
 import { useAppointments } from "../context/AppointmentContext";
+import { useEffect } from "react";
 
 function MyAppointments() {
   const navigate = useNavigate();
   const { appointments, cancelAppointment } = useAppointments();
   const [activeTab, setActiveTab] = useState("Upcoming");
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    setCurrentUser(getCurrentUser());
+  }, []);
 
   // Modal States
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -85,25 +91,31 @@ function MyAppointments() {
     return "upcoming";
   };
 
+  const myAppointmentsList = useMemo(() => {
+      if (!currentUser) return [];
+      // Only show appointments that belong to this patient
+      return appointments.filter(a => a.patientId === currentUser.refId || a.patientId === currentUser.id || a.patientName === currentUser.name);
+  }, [appointments, currentUser]);
+
   // Dynamic tab counts
   const tabCounts = useMemo(() => {
     const counts = { Upcoming: 0, Completed: 0, Cancelled: 0 };
-    appointments.forEach((appt) => {
+    myAppointmentsList.forEach((appt) => {
       const norm = getNormalizedStatus(appt.status);
       if (norm === "upcoming") counts.Upcoming++;
       else if (norm === "completed") counts.Completed++;
       else if (norm === "cancelled") counts.Cancelled++;
     });
     return counts;
-  }, [appointments]);
+  }, [myAppointmentsList]);
 
   // Filtered appointments for active tab
   const filteredAppointments = useMemo(() => {
-    return appointments.filter((appt) => {
+    return myAppointmentsList.filter((appt) => {
       const norm = getNormalizedStatus(appt.status);
       return norm === activeTab.toLowerCase();
     });
-  }, [appointments, activeTab]);
+  }, [myAppointmentsList, activeTab]);
 
   // Handle View Action
   const handleViewAppointment = (appt) => {

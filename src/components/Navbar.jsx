@@ -9,7 +9,8 @@ import {
   Stethoscope,
   Menu,
 } from "lucide-react";
-import { getUnreadCount } from "../data/notifications";
+import { getStoredNotifications } from "../data/notifications";
+import { getCurrentUser } from "../utils/storage";
 
 function Navbar({
   userName = "Raksha N",
@@ -21,12 +22,22 @@ function Navbar({
   onProfileClick,
 }) {
   const navigate = useNavigate();
-  const [unreadCount, setUnreadCount] = useState(() => getUnreadCount());
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const handleNotifUpdate = () => {
-      setUnreadCount(getUnreadCount());
+      const allNotifications = getStoredNotifications();
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+          setUnreadCount(allNotifications.filter(n => !n.read).length);
+      } else {
+          setUnreadCount(allNotifications.filter(n => !n.read && (!n.userId || n.userId === currentUser.id || n.userId === currentUser.refId)).length);
+      }
     };
+    
+    // Initial fetch
+    handleNotifUpdate();
+    
     window.addEventListener("medibook_notifications_updated", handleNotifUpdate);
     return () => {
       window.removeEventListener("medibook_notifications_updated", handleNotifUpdate);

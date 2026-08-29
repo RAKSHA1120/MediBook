@@ -13,24 +13,30 @@ function DoctorPatients() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const user = getCurrentUser();
-        if (user) {
-            const allAppts = getAppointments();
-            const myAppts = allAppts.filter(a => a.doctorId === user.refId || a.doctorId === user.id || a.doctorName?.includes(user.name));
-            
-            // Extract unique patients based on appointments
-            const uniquePatientIds = [...new Set(myAppts.map(a => a.patientId))].filter(Boolean);
-            
-            const allPatients = getPatients();
-            // In case patientId isn't fully robust in mock data, also use patient names
-            const uniquePatientNames = [...new Set(myAppts.map(a => a.patientName || a.patient))].filter(Boolean);
+        const loadPatients = () => {
+            const user = getCurrentUser();
+            if (user) {
+                const allAppts = getAppointments();
+                const myAppts = allAppts.filter(a => a.doctorId === user.refId || a.doctorId === user.id || a.doctorName?.includes(user.name));
+                
+                // Extract unique patients based on appointments
+                const uniquePatientIds = [...new Set(myAppts.map(a => a.patientId))].filter(Boolean);
+                
+                const allPatients = getPatients();
+                // In case patientId isn't fully robust in mock data, also use patient names
+                const uniquePatientNames = [...new Set(myAppts.map(a => a.patientName || a.patient))].filter(Boolean);
 
-            const filteredPatients = allPatients.filter(p => 
-                uniquePatientIds.includes(p.id) || uniquePatientNames.includes(p.name)
-            );
-            
-            setDoctorPatients(filteredPatients);
-        }
+                const filteredPatients = allPatients.filter(p => 
+                    uniquePatientIds.includes(p.id) || uniquePatientNames.includes(p.name)
+                );
+                
+                setDoctorPatients(filteredPatients);
+            }
+        };
+
+        loadPatients();
+        window.addEventListener("medibook_appointments_updated", loadPatients);
+        return () => window.removeEventListener("medibook_appointments_updated", loadPatients);
     }, []);
 
     const filtered = doctorPatients.filter(p => 

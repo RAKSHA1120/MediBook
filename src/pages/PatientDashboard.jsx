@@ -98,10 +98,15 @@ function PatientDashboard() {
   const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
   
   // Notifications / Recent Activity state
-  const [notifications, setNotifications] = useState(() => getStoredNotifications());
+  const [allNotifications, setAllNotifications] = useState(() => getStoredNotifications());
 
   const [doctorsList, setDoctorsList] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+
+  const notifications = useMemo(() => {
+    if (!currentUser) return [];
+    return allNotifications.filter(n => !n.userId || n.userId === currentUser.id || n.userId === currentUser.refId);
+  }, [allNotifications, currentUser]);
 
   useEffect(() => {
     setDoctorsList(getDoctors());
@@ -116,8 +121,11 @@ function PatientDashboard() {
 
   // Dynamic upcoming appointment from AppointmentContext
   const upcomingAppointment = useMemo(() => {
-    if (!appointments || appointments.length === 0) return null;
+    if (!appointments || appointments.length === 0 || !currentUser) return null;
     const upcoming = appointments.find((a) => {
+      const isMyAppointment = a.patientId === currentUser?.refId || a.patientId === currentUser?.id || a.patientName === currentUser?.name;
+      if (!isMyAppointment) return false;
+      
       if (!a.status) return true;
       const s = String(a.status).toLowerCase();
       return s === "upcoming" || s === "confirmed" || s === "scheduled";
@@ -148,7 +156,7 @@ function PatientDashboard() {
       status: upcoming.status || "Confirmed",
       initials
     };
-  }, [appointments, doctorsList]);
+  }, [appointments, doctorsList, currentUser]);
 
   const handleMyAppointments = () => {
     navigate("/my-appointments");
@@ -248,6 +256,7 @@ function PatientDashboard() {
       title: "Appointment Cancelled",
       message: `Your appointment with ${upcomingAppointment.doctorName} on ${upcomingAppointment.date} has been cancelled.`,
       appointmentId: upcomingAppointment.id,
+      userId: currentUser?.refId || currentUser?.id,
       read: false,
       createdAt: new Date().toLocaleTimeString()
     });

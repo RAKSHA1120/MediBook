@@ -11,21 +11,27 @@ function AdminDashboard() {
   const [recentDoctors, setRecentDoctors] = useState([]);
 
   useEffect(() => {
-    const docs = getDoctors();
-    const pats = getPatients();
-    const appts = getAppointments();
+    const loadStats = () => {
+      const docs = getDoctors();
+      const pats = getPatients();
+      const appts = getAppointments();
 
-    const todayStr = new Date().toISOString().split("T")[0];
+      const todayStr = new Date().toISOString().split("T")[0];
 
-    setStats({
-      totalDoctors: docs.length,
-      totalPatients: pats.length,
-      totalAppointments: appts.length,
-      todayAppointments: appts.filter(a => a.date === todayStr || String(a.date).toLowerCase().includes("today")).length
-    });
+      setStats({
+        totalDoctors: docs.length,
+        totalPatients: pats.length,
+        totalAppointments: appts.length,
+        todayAppointments: appts.filter(a => a.date === todayStr || String(a.date).toLowerCase().includes("today")).length
+      });
 
-    setRecentAppointments(appts.slice(-4).reverse());
-    setRecentDoctors(docs.slice(-4).reverse());
+      setRecentAppointments(appts.slice(-4).reverse());
+      setRecentDoctors(docs.slice(-4).reverse());
+    };
+
+    loadStats();
+    window.addEventListener("medibook_appointments_updated", loadStats);
+    return () => window.removeEventListener("medibook_appointments_updated", loadStats);
   }, []);
 
   return (
@@ -75,6 +81,47 @@ function AdminDashboard() {
 
       {/* Main Grid for Recent Items */}
       <section className="dashboard-main-info-grid">
+        {/* Full Width Analytics Overview */}
+        <div className="analytics-column" style={{ gridColumn: "1 / -1", marginBottom: "24px" }}>
+            <div className="section-header">
+                <h3 className="section-main-title">Appointments Overview</h3>
+            </div>
+            {(() => {
+                const appts = getAppointments();
+                const upcoming = appts.filter(a => a.status?.toLowerCase() === 'upcoming' || a.status?.toLowerCase() === 'confirmed').length;
+                const completed = appts.filter(a => a.status?.toLowerCase() === 'completed').length;
+                const cancelled = appts.filter(a => a.status?.toLowerCase() === 'cancelled').length;
+                const total = upcoming + completed + cancelled || 1; // avoid div by 0
+
+                const upPct = (upcoming / total) * 100;
+                const compPct = (completed / total) * 100;
+                const cancPct = (cancelled / total) * 100;
+
+                return (
+                    <div style={{ padding: '24px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', height: '24px', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
+                            <div style={{ width: `${upPct}%`, background: 'var(--primary)', transition: 'width 1s ease' }}></div>
+                            <div style={{ width: `${compPct}%`, background: '#10b981', transition: 'width 1s ease' }}></div>
+                            <div style={{ width: `${cancPct}%`, background: '#ef4444', transition: 'width 1s ease' }}></div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 500 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--primary)' }}></div>
+                                <span>Upcoming ({upcoming})</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10b981' }}></div>
+                                <span>Completed ({completed})</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }}></div>
+                                <span>Cancelled ({cancelled})</span>
+                            </div>
+                        </div>
+                    </div>
+                )
+            })()}
+        </div>
         
         {/* Left Column: Recent Appointments (using recent-activity-card style) */}
         <div className="next-appointment-column">

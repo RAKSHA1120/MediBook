@@ -14,7 +14,10 @@ function AdminAppointments() {
   const [appointments, setAppointments] = useState([]);
 
   useEffect(() => {
-    setAppointments(getAppointments());
+    const loadAppointments = () => setAppointments(getAppointments());
+    loadAppointments();
+    window.addEventListener("medibook_appointments_updated", loadAppointments);
+    return () => window.removeEventListener("medibook_appointments_updated", loadAppointments);
   }, []);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("All");

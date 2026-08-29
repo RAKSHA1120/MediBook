@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Navigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import PatientSidebar from "../components/PatientSidebar";
 import { getCurrentUser } from "../utils/storage";
@@ -41,6 +41,10 @@ function PatientLayout({ children }) {
   }, []);
 
   const isDashboard = location.pathname === "/patient-dashboard";
+
+  if (!patient) {
+      return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="patient-dashboard-layout">

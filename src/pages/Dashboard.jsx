@@ -12,56 +12,22 @@ function Dashboard() {
     const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
-        const user = getCurrentUser();
-        setCurrentUser(user);
-        if (user) {
-            const allAppts = getAppointments();
-            let myAppts = allAppts.filter(a => a.doctorId === user.refId || a.doctorId === user.id || a.doctorName?.includes(user.name));
-            
-            // Auto-inject demo appointments for new doctors so the dashboard isn't completely empty for testing
-            if (myAppts.length === 0) {
-                const d = new Date();
-                const yyyy = d.getFullYear();
-                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                const dd = String(d.getDate()).padStart(2, '0');
-                const localToday = `${yyyy}-${mm}-${dd}`;
-
-                const demoAppts = [
-                    {
-                        id: `APT-DEMO-1-${Date.now()}`,
-                        patientId: "P_1",
-                        patientName: "Raksha",
-                        patient: "Raksha",
-                        doctorId: user.refId || user.id,
-                        doctorName: user.name,
-                        date: localToday,
-                        time: "10:30 AM",
-                        type: "General Checkup",
-                        status: "Upcoming"
-                    },
-                    {
-                        id: `APT-DEMO-2-${Date.now()}`,
-                        patientId: "P_2",
-                        patientName: "Amit Patel",
-                        patient: "Amit Patel",
-                        doctorId: user.refId || user.id,
-                        doctorName: user.name,
-                        date: localToday,
-                        time: "02:00 PM",
-                        type: "Follow-up",
-                        status: "Pending"
-                    }
-                ];
-                
-                // Save to localStorage
-                const updatedAppts = [...allAppts, ...demoAppts];
-                localStorage.setItem("medibook_appointments", JSON.stringify(updatedAppts));
-                myAppts = demoAppts;
-                window.dispatchEvent(new Event("medibook_appointments_updated"));
+        const loadAppointments = () => {
+            const user = getCurrentUser();
+            setCurrentUser(user);
+            if (user) {
+                const allAppts = getAppointments();
+                let myAppts = allAppts.filter(a => 
+                    (a.doctorId === user.refId || a.doctorId === user.id || a.doctorName?.includes(user.name))
+                    && (a.patientName || a.patientId)
+                );
+                setAppointments(myAppts);
             }
-            
-            setAppointments(myAppts);
-        }
+        };
+
+        loadAppointments();
+        window.addEventListener("medibook_appointments_updated", loadAppointments);
+        return () => window.removeEventListener("medibook_appointments_updated", loadAppointments);
     }, []);
 
     const d = new Date();

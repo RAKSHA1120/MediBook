@@ -31,10 +31,16 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
     const updateUnread = () => {
       try {
         const notifs = getStoredNotifications();
-        const unread = notifs.filter((n) => !n.read).length;
-        setUnreadCount(unread > 0 ? unread : 3);
+        const currentUser = getCurrentUser();
+        let unread = 0;
+        if (!currentUser) {
+            unread = notifs.filter((n) => !n.read).length;
+        } else {
+            unread = notifs.filter((n) => !n.read && (!n.userId || n.userId === currentUser.id || n.userId === currentUser.refId)).length;
+        }
+        setUnreadCount(unread);
       } catch (e) {
-        setUnreadCount(3);
+        setUnreadCount(0);
       }
     };
     updateUnread();

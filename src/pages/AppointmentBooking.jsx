@@ -225,6 +225,9 @@ function AppointmentBooking() {
       id: generatedAptId,
       doctorId: doctor.id,
       doctorName: doctor.name,
+      patientId: currentUser?.refId || currentUser?.id || "P_GUEST",
+      patientName: currentUser?.name || "Guest Patient",
+      patient: currentUser?.name || "Guest Patient",
       specialty: doctor.specialty,
       hospital: doctor.hospital,
       location: doctor.location || "Chennai",
@@ -232,7 +235,8 @@ function AppointmentBooking() {
       date: selectedDate,
       formattedDate: formatReadableDate(selectedDate),
       time: selectedSlot,
-      status: "confirmed",
+      type: "Consultation",
+      status: "Confirmed",
       createdAt: new Date().toISOString()
     };
     
@@ -247,7 +251,8 @@ function AppointmentBooking() {
       subType: "confirmed",
       title: "Appointment Confirmed",
       message: `Your appointment with ${doctor.name} on ${formatReadableDate(selectedDate)} at ${selectedSlot} has been confirmed.`,
-      appointmentId: generatedAptId
+      appointmentId: generatedAptId,
+      userId: currentUser?.refId || currentUser?.id
     });
 
     navigate("/booking-success", {

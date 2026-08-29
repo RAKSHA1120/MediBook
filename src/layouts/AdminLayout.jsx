@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Navigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import AdminSidebar from "../components/AdminSidebar";
 import "../pages/PatientDashboard.css"; // Reuse layout CSS structure
@@ -14,6 +14,18 @@ function AdminLayout({ children }) {
   useEffect(() => {
     localStorage.setItem("medibook_admin_sidebar_collapsed", isCollapsed);
   }, [isCollapsed]);
+
+  const [adminUser, setAdminUser] = useState(() => {
+    try {
+        const userStr = localStorage.getItem("medibook_currentUser");
+        if (userStr) return JSON.parse(userStr);
+        return null;
+    } catch (e) { return null; }
+  });
+
+  if (!adminUser || adminUser.role !== "admin") {
+      return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="patient-dashboard-layout">
