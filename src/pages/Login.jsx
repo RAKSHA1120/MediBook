@@ -102,10 +102,13 @@ function Login() {
         addUser({
           id: `U_${newPatientId}`,
           mobile: mobile.trim(),
+          loginId: mobile.trim(),
           password,
           role: "patient",
           name: name.trim(),
-          refId: newPatientId
+          refId: newPatientId,
+          status: "Active",
+          createdDate: new Date().toISOString().split("T")[0]
         });
         alert("Registration successful! Please login.");
         setActiveTab("signin");
@@ -118,6 +121,10 @@ function Login() {
       
       if (isAdminMode) {
         if (user && user.role === "admin") {
+           if (user.status && user.status !== "Active") {
+              setErrors({ mobile: "Your admin account is disabled. Contact administrator." });
+              return;
+           }
            setCurrentUser(user);
            navigate("/admin/dashboard");
         } else {
@@ -127,11 +134,15 @@ function Login() {
       }
   
       if (user) {
+        if (user.status && user.status !== "Active") {
+           setErrors({ mobile: "Your account is disabled. Please contact system administrator." });
+           return;
+        }
         if (user.role === "doctor") {
            const doctors = getDoctors();
            const doctorRecord = doctors.find(d => d.id === user.refId || d.loginId === user.loginId);
            if (doctorRecord && doctorRecord.status !== "Active") {
-              setErrors({ mobile: "Your account is inactive. Please contact the administrator." });
+              setErrors({ mobile: "Your doctor account is inactive. Contact administrator." });
               return;
            }
         }
@@ -143,7 +154,6 @@ function Login() {
       } else {
         setErrors({ mobile: "Invalid mobile number or password" });
       }
-
     }, 800);
   };
 

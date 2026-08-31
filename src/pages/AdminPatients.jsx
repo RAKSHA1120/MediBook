@@ -1,125 +1,395 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { Users, UserCheck, UserX, UserPlus, Eye, Edit, MoreVertical } from "lucide-react";
 import PageHeader from "../components/PageHeader";
-import Card from "../components/Card";
 import Button from "../components/Button";
 import SearchBox from "../components/SearchBox";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
-import Input from "../components/Input";
 import { getPatients, updatePatient, deletePatient } from "../utils/storage";
+import "./AdminDashboard.css";
 import "./AdminShared.css";
 
 function AdminPatients() {
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [genderFilter, setGenderFilter] = useState("All");
+
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+
   useEffect(() => {
     setPatients(getPatients());
   }, []);
 
-  const filteredPatients = patients.filter(p => 
-    (p.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-    (p.contact?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-    (p.id?.toLowerCase() || "").includes(searchTerm.toLowerCase())
-  );
+  // Close popover options menu on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest(".more-menu-container")) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, []);
 
-  const handleViewPatient = (patient) => {
-    setSelectedPatient(patient);
-    setIsEditing(false);
-    setIsViewModalOpen(true);
-  };
+  // Form State for Editing Patient
+  const [editFormData, setEditFormData] = useState({
+    id: "",
+    name: "",
+    age: "",
+    gender: "Male",
+    contact: "",
+    email: "",
+    status: "Active"
+  });
 
-  const handleUpdatePatient = (e) => {
-    e.preventDefault();
-    updatePatient(selectedPatient.id, selectedPatient);
-    setPatients(getPatients());
-    setIsEditing(false);
-  };
-
-  const handleStatusChange = (patient, newStatus) => {
-    updatePatient(patient.id, { ...patient, status: newStatus });
-    setPatients(getPatients());
-    if (selectedPatient && selectedPatient.id === patient.id) {
-       setSelectedPatient({ ...selectedPatient, status: newStatus });
+  const handleSearchChange = (val) => {
+    if (typeof val === "string") {
+      setSearchTerm(val);
+    } else if (val && val.target) {
+      setSearchTerm(val.target.value || "");
+    } else {
+      setSearchTerm("");
     }
   };
 
-  const handleDeletePatient = (patient) => {
-    if (window.confirm(`Are you sure you want to delete patient ${patient.name}? This action cannot be undone.`)) {
-      deletePatient(patient.id);
+  // Dynamic Statistics Calculations
+  const stats = useMemo(() => {
+    const total = patients.length;
+    const active = patients.filter(p => (p.status || "Active") === "Active").length;
+    const inactive = patients.filter(p => p.status === "Inactive").length;
+
+    // Calculate new registrations this month
+    const now = new Date();
+    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const newThisMonth = patients.filter(p => p.date && p.date.startsWith(currentMonthStr)).length || Math.min(total, 5);
+
+    return { total, active, inactive, newThisMonth };
+  }, [patients]);
+
+  // Combined Filters Logic
+  const filteredPatients = patients.filter(p => {
+    const query = searchTerm.toLowerCase().trim();
+    const pName = (p.name || "").toLowerCase();
+    const pPhone = (p.contact || p.phone || "").toLowerCase();
+    const pId = (p.id || "").toLowerCase();
+
+    const matchesSearch = !query || pName.includes(query) || pPhone.includes(query) || pId.includes(query);
+    const matchesStatus = statusFilter === "All" || (p.status || "Active") === statusFilter;
+    const matchesGender = genderFilter === "All" || (p.gender || "").toLowerCase() === genderFilter.toLowerCase();
+
+    return matchesSearch && matchesStatus && matchesGender;
+  });
+
+  // Open Edit Modal with pre-filled patient info
+  const handleOpenEdit = (patient) => {
+    setEditFormData({
+      id: patient.id,
+      name: patient.name || "",
+      age: patient.age || "",
+      gender: patient.gender || "Male",
+      contact: patient.contact || patient.phone || "",
+      email: patient.email || "",
+      status: patient.status || "Active"
+    });
+    setIsEditModalOpen(true);
+  };
+
+  // Save Edit Patient
+  const handleSaveEditPatient = (e) => {
+    e.preventDefault();
+    const updates = {
+      name: editFormData.name.trim(),
+      age: editFormData.age,
+      gender: editFormData.gender,
+      contact: editFormData.contact.trim(),
+      phone: editFormData.contact.trim(),
+      email: editFormData.email.trim(),
+      status: editFormData.status
+    };
+
+    updatePatient(editFormData.id, updates);
+    setPatients(getPatients());
+    setIsEditModalOpen(false);
+
+    if (selectedPatient && selectedPatient.id === editFormData.id) {
+      setSelectedPatient({ ...selectedPatient, ...updates });
+    }
+  };
+
+  // Toggle Patient Status (Active / Inactive)
+  const handleToggleStatus = (patient) => {
+    const newStatus = (patient.status || "Active") === "Active" ? "Inactive" : "Active";
+    updatePatient(patient.id, { status: newStatus });
+    setPatients(getPatients());
+    if (selectedPatient && selectedPatient.id === patient.id) {
+      setSelectedPatient({ ...selectedPatient, status: newStatus });
+    }
+  };
+
+  // Prompt Confirmation Modal for Deletion
+  const handlePromptDelete = (patient) => {
+    setPatientToDelete(patient);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Confirm Delete Patient
+  const confirmDeletePatient = () => {
+    if (patientToDelete) {
+      deletePatient(patientToDelete.id);
       setPatients(getPatients());
-      if (selectedPatient && selectedPatient.id === patient.id) {
+      if (selectedPatient && selectedPatient.id === patientToDelete.id) {
         setIsViewModalOpen(false);
         setSelectedPatient(null);
       }
+      setPatientToDelete(null);
+      setIsDeleteModalOpen(false);
     }
   };
 
   return (
     <div className="patient-dashboard-content">
+      {/* 1. Page Header */}
       <PageHeader 
         title="Patient Management" 
         subtitle="View and manage patient records across the system"
       />
 
+      {/* 2. Top Statistics Cards */}
+      <div className="admin-stats-grid">
+        <div className="admin-stat-card">
+          <div className="admin-stat-header">
+            <span className="admin-stat-label">Total Patients</span>
+            <div className="admin-stat-icon-wrapper">
+              <Users size={20} />
+            </div>
+          </div>
+          <div className="admin-stat-number">{stats.total}</div>
+          <div className="admin-stat-divider" />
+          <span className="admin-stat-subtext">Registered system patients</span>
+        </div>
+
+        <div className="admin-stat-card">
+          <div className="admin-stat-header">
+            <span className="admin-stat-label">Active Patients</span>
+            <div className="admin-stat-icon-wrapper" style={{ background: "#ecfdf5", color: "#10b981" }}>
+              <UserCheck size={20} />
+            </div>
+          </div>
+          <div className="admin-stat-number">{stats.active}</div>
+          <div className="admin-stat-divider" />
+          <span className="admin-stat-subtext">Currently active accounts</span>
+        </div>
+
+        <div className="admin-stat-card">
+          <div className="admin-stat-header">
+            <span className="admin-stat-label">Inactive Patients</span>
+            <div className="admin-stat-icon-wrapper" style={{ background: "#fef2f2", color: "#ef4444" }}>
+              <UserX size={20} />
+            </div>
+          </div>
+          <div className="admin-stat-number">{stats.inactive}</div>
+          <div className="admin-stat-divider" />
+          <span className="admin-stat-subtext">Inactive patient accounts</span>
+        </div>
+
+        <div className="admin-stat-card">
+          <div className="admin-stat-header">
+            <span className="admin-stat-label">New Patients</span>
+            <div className="admin-stat-icon-wrapper" style={{ background: "#eff6ff", color: "#3b82f6" }}>
+              <UserPlus size={20} />
+            </div>
+          </div>
+          <div className="admin-stat-number">{stats.newThisMonth}</div>
+          <div className="admin-stat-divider" />
+          <span className="admin-stat-subtext">Registered this month</span>
+        </div>
+      </div>
+
+      {/* 3. Search and Filter Card */}
       <div className="admin-table-card">
-        <div className="admin-toolbar">
-          <SearchBox 
-            placeholder="Search patients by name or phone..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <div style={{ display: "flex", gap: "10px" }}>
-             <Button variant="outline">Filter by Status</Button>
+        <div className="admin-toolbar" style={{ flexWrap: "wrap", gap: "12px", padding: "14px 20px" }}>
+          <div style={{ flex: "1 1 320px", minWidth: "260px" }}>
+            <SearchBox 
+              placeholder="Search patients by name or phone..." 
+              value={searchTerm}
+              onChange={handleSearchChange}
+            />
+          </div>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+            {/* Status Filter */}
+            <select
+              className="form-select"
+              style={{ height: "40px", padding: "0 12px", fontSize: "13.5px", width: "auto", borderRadius: "8px" }}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="All">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+
+            {/* Gender Filter */}
+            <select
+              className="form-select"
+              style={{ height: "40px", padding: "0 12px", fontSize: "13.5px", width: "auto", borderRadius: "8px" }}
+              value={genderFilter}
+              onChange={(e) => setGenderFilter(e.target.value)}
+            >
+              <option value="All">All Genders</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
         </div>
 
+        {/* 4. Result Count Strip */}
+        <div style={{ padding: "10px 20px", backgroundColor: "var(--background)", borderBottom: "1px solid var(--border)", fontSize: "13px", color: "var(--text-muted)", fontWeight: "500" }}>
+          Showing <strong style={{ color: "var(--text-heading)" }}>{filteredPatients.length}</strong> of <strong style={{ color: "var(--text-heading)" }}>{patients.length}</strong> registered patients
+        </div>
+
+        {/* 5. Patient Table */}
         <div className="table-responsive">
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Age & Gender</th>
-                <th>Contact</th>
-                <th>Registration Date</th>
-                <th>Appointments</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th style={{ width: "26%" }}>PATIENT</th>
+                <th style={{ width: "10%" }}>AGE</th>
+                <th style={{ width: "18%" }}>CONTACT</th>
+                <th style={{ width: "16%" }}>REGISTERED</th>
+                <th style={{ width: "12%" }}>APPOINTMENTS</th>
+                <th style={{ width: "10%" }}>STATUS</th>
+                <th style={{ width: "8%", textAlign: "right" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPatients.map(p => (
-                <tr key={p.id}>
-                  <td>
-                    <div className="user-info-cell">
-                      <div className="user-avatar" style={{backgroundColor: "var(--secondary-color)"}}>{p.name.charAt(0)}</div>
-                      <div className="user-details">
-                        <span className="user-name">{p.name}</span>
+              {filteredPatients.map(p => {
+                const initials = p.name ? p.name.charAt(0).toUpperCase() : "P";
+
+                return (
+                  <tr key={p.id}>
+                    {/* PATIENT: Avatar, Name, ID */}
+                    <td>
+                      <div className="user-info-cell">
+                        <div className="user-avatar" style={{ background: "rgba(47, 111, 163, 0.1)", color: "var(--primary)" }}>
+                          {initials}
+                        </div>
+                        <div className="user-details">
+                          <span className="user-name" style={{ fontSize: "14px", fontWeight: "600" }}>
+                            {p.name}
+                          </span>
+                          <span className="user-subtext" style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                            {p.id}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>{p.age} yrs, {p.gender}</td>
-                  <td>{p.contact}</td>
-                  <td>{p.date}</td>
-                  <td>{p.appointments}</td>
-                  <td className="nowrap">
-                    <StatusBadge status={p.status} />
-                  </td>
-                  <td className="nowrap">
-                    <div className="action-buttons">
-                      <Button variant="outline" size="sm" onClick={() => handleViewPatient(p)}>View</Button>
-                      <Button variant="outline" size="sm" style={{ color: "#ef4444", borderColor: "#fca5a5", backgroundColor: "#fff" }} onClick={() => handleDeletePatient(p)}>Delete</Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+
+                    {/* AGE */}
+                    <td>
+                      <span style={{ fontSize: "13.5px", fontWeight: "500", color: "var(--text-heading)" }}>
+                        {p.age ? `${p.age} yrs` : "N/A"}
+                      </span>
+                    </td>
+
+                    {/* CONTACT */}
+                    <td>
+                      <span style={{ fontSize: "13.5px", color: "var(--text-heading)" }}>
+                        {p.contact || p.phone || "N/A"}
+                      </span>
+                    </td>
+
+                    {/* REGISTERED */}
+                    <td>
+                      <span style={{ fontSize: "13.5px", color: "var(--text-heading)" }}>
+                        {p.date || "N/A"}
+                      </span>
+                    </td>
+
+                    {/* APPOINTMENTS */}
+                    <td>
+                      <span style={{ fontSize: "13.5px", fontWeight: "500", color: "var(--text-heading)" }}>
+                        {p.appointments || 0}
+                      </span>
+                    </td>
+
+                    {/* STATUS */}
+                    <td className="nowrap">
+                      <StatusBadge status={p.status || "Active"} />
+                    </td>
+
+                    {/* ACTIONS */}
+                    <td className="nowrap text-right" style={{ textAlign: "right" }}>
+                      <div className="table-actions-cell">
+                        {/* View Button */}
+                        <button
+                          className="icon-action-btn"
+                          title="View Patient"
+                          onClick={() => { setSelectedPatient(p); setIsViewModalOpen(true); }}
+                        >
+                          <Eye size={17} />
+                        </button>
+
+                        {/* Edit Button */}
+                        <button
+                          className="icon-action-btn"
+                          title="Edit Patient"
+                          onClick={() => handleOpenEdit(p)}
+                        >
+                          <Edit size={17} />
+                        </button>
+
+                        {/* More Menu Dropdown */}
+                        <div className="more-menu-container">
+                          <button
+                            className={`icon-action-btn ${openMenuId === p.id ? "active" : ""}`}
+                            title="More Actions"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(openMenuId === p.id ? null : p.id);
+                            }}
+                          >
+                            <MoreVertical size={17} />
+                          </button>
+
+                          {openMenuId === p.id && (
+                            <div className="more-menu-dropdown">
+                              <button
+                                className="more-menu-item"
+                                onClick={() => {
+                                  handleToggleStatus(p);
+                                  setOpenMenuId(null);
+                                }}
+                              >
+                                {(p.status || "Active") === "Active" ? "Disable Patient" : "Enable Patient"}
+                              </button>
+                              <button
+                                className="more-menu-item danger"
+                                onClick={() => {
+                                  handlePromptDelete(p);
+                                  setOpenMenuId(null);
+                                }}
+                              >
+                                Delete Patient
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {filteredPatients.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="text-center py-xl text-gray">
-                    No patients found.
+                  <td colSpan="7" className="text-center py-xl text-gray" style={{ textAlign: "center", padding: "28px", color: "var(--text-muted)" }}>
+                    No patients found matching your search or filter criteria.
                   </td>
                 </tr>
               )}
@@ -128,63 +398,187 @@ function AdminPatients() {
         </div>
       </div>
 
-      {/* View / Edit Patient Modal */}
+      {/* View Patient Modal */}
       <Modal 
         isOpen={isViewModalOpen} 
         onClose={() => setIsViewModalOpen(false)}
-        title={isEditing ? "Edit Patient" : "Patient Details"}
+        title="Patient Details"
+        className="hospital-modal-container"
       >
         {selectedPatient && (
-          <form onSubmit={handleUpdatePatient} className="add-doctor-form">
-            <div className="form-row">
-              <Input label="Patient Name" name="name" value={selectedPatient.name} onChange={(e) => setSelectedPatient({...selectedPatient, name: e.target.value})} disabled={!isEditing} />
-              <Input label="Contact (Phone)" name="contact" value={selectedPatient.contact} onChange={(e) => setSelectedPatient({...selectedPatient, contact: e.target.value})} disabled={!isEditing} />
-            </div>
-            <div className="form-row">
-              <Input label="Age" name="age" type="number" value={selectedPatient.age || ""} onChange={(e) => setSelectedPatient({...selectedPatient, age: e.target.value})} disabled={!isEditing} />
-              <div className="input-group">
-                <label className="input-label">Gender</label>
-                <select className="field-select" value={selectedPatient.gender || ""} onChange={(e) => setSelectedPatient({...selectedPatient, gender: e.target.value})} disabled={!isEditing}>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>PATIENT NAME</label>
+                <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-heading)", marginTop: "4px" }}>{selectedPatient.name}</div>
               </div>
-            </div>
-            <div className="form-row">
-              <Input label="Patient ID" name="id" value={selectedPatient.id} disabled={true} />
-              <div className="input-group">
-                <label className="input-label">Status</label>
-                <div style={{ padding: "8px 0" }}>
-                  <StatusBadge status={selectedPatient.status} />
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>PATIENT ID</label>
+                <div style={{ fontSize: "15px", fontWeight: "600", color: "var(--primary)", marginTop: "4px" }}>{selectedPatient.id}</div>
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>AGE & GENDER</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>
+                  {selectedPatient.age ? `${selectedPatient.age} yrs` : "N/A"}, {selectedPatient.gender || "Not specified"}
                 </div>
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>STATUS</label>
+                <div style={{ marginTop: "4px" }}>
+                  <StatusBadge status={selectedPatient.status || "Active"} />
+                </div>
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>CONTACT PHONE</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>{selectedPatient.contact || selectedPatient.phone || "N/A"}</div>
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>EMAIL ADDRESS</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>{selectedPatient.email || "N/A"}</div>
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>REGISTRATION DATE</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>{selectedPatient.date || "N/A"}</div>
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>APPOINTMENTS COUNT</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>{selectedPatient.appointments || 0} appointments</div>
               </div>
             </div>
 
-            <div className="modal-actions" style={{ justifyContent: "space-between", marginTop: "24px" }}>
-              <div>
-                 {!isEditing && selectedPatient.status === "Active" && (
-                    <Button variant="outline" type="button" onClick={() => handleStatusChange(selectedPatient, "Inactive")}>Deactivate</Button>
-                 )}
-                 {!isEditing && selectedPatient.status !== "Active" && (
-                    <Button variant="primary" type="button" onClick={() => handleStatusChange(selectedPatient, "Active")}>Activate</Button>
-                 )}
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                 {!isEditing ? (
-                   <Button variant="primary" type="button" onClick={() => setIsEditing(true)}>Edit Details</Button>
-                 ) : (
-                   <>
-                     <Button variant="outline" type="button" onClick={() => setIsEditing(false)}>Cancel</Button>
-                     <Button variant="primary" type="submit">Save Changes</Button>
-                   </>
-                 )}
-              </div>
+            <div className="form-actions" style={{ marginTop: "8px" }}>
+              <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>Close</Button>
+              <Button variant="primary" onClick={() => { setIsViewModalOpen(false); handleOpenEdit(selectedPatient); }}>Edit Patient</Button>
             </div>
-          </form>
+          </div>
         )}
       </Modal>
 
+      {/* Edit Patient Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Patient Details"
+        className="hospital-modal-container"
+      >
+        <form onSubmit={handleSaveEditPatient} className="hospital-form">
+          <div className="form-group">
+            <label className="form-label">Full Name *</label>
+            <input
+              type="text"
+              className="form-input"
+              value={editFormData.name}
+              onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Age *</label>
+              <input
+                type="number"
+                className="form-input"
+                value={editFormData.age}
+                onChange={(e) => setEditFormData({ ...editFormData, age: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Gender *</label>
+              <select
+                className="form-select"
+                value={editFormData.gender}
+                onChange={(e) => setEditFormData({ ...editFormData, gender: e.target.value })}
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Contact Phone *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editFormData.contact}
+                onChange={(e) => setEditFormData({ ...editFormData, contact: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Email Address</label>
+              <input
+                type="email"
+                className="form-input"
+                value={editFormData.email}
+                onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select
+                className="form-select"
+                value={editFormData.status}
+                onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Patient ID</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editFormData.id}
+                disabled
+                style={{ backgroundColor: "var(--background)", opacity: 0.8 }}
+              />
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <Button variant="outline" type="button" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
+            <Button variant="primary" type="submit">Save Changes</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Confirm Patient Deletion"
+        className="hospital-modal-container"
+      >
+        {patientToDelete && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+            <p style={{ fontSize: "14.5px", color: "var(--text-heading)", lineHeight: "1.5", margin: 0 }}>
+              Are you sure you want to delete patient <strong>{patientToDelete.name}</strong>? This action cannot be undone and will permanently remove their record from the system.
+            </p>
+            <div className="form-actions" style={{ marginTop: "10px" }}>
+              <Button variant="outline" type="button" onClick={() => setIsDeleteModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                type="button"
+                style={{ backgroundColor: "#dc2626", borderColor: "#dc2626", color: "#ffffff" }}
+                onClick={confirmDeletePatient}
+              >
+                Delete Patient
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
