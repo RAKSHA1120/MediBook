@@ -1,5 +1,6 @@
 import { initialDoctorsData, initialPatientsData, adminRecentAppointments } from "../data/adminMockData";
 import doctorsData from "../data/doctors";
+import uniqueAppts from "../data/patientAppointments";
 import { INITIAL_NOTIFICATIONS } from "../data/notifications";
 import { generateLoginId, generatePassword } from "./idGenerator";
 
@@ -138,6 +139,14 @@ export const addUser = (user) => {
   const users = getUsers();
   users.push(user);
   setStorage(KEYS.USERS, users);
+};
+export const updateUser = (idOrKey, updates) => {
+  const users = getUsers();
+  const index = users.findIndex(u => u.id === idOrKey || u.mobile === idOrKey || u.loginId === idOrKey);
+  if (index !== -1) {
+    users[index] = { ...users[index], ...updates };
+    setStorage(KEYS.USERS, users);
+  }
 };
 
 // Doctors API

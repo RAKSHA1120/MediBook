@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { useLocation, Navigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import AdminSidebar from "../components/AdminSidebar";
-import "../pages/PatientDashboard.css"; // Reuse layout CSS structure
+import "../pages/PatientDashboard.css"; // Shared layout system
 
 function AdminLayout({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem("medibook_admin_sidebar_collapsed") === "true";
   });
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     localStorage.setItem("medibook_admin_sidebar_collapsed", isCollapsed);
@@ -17,14 +17,14 @@ function AdminLayout({ children }) {
 
   const [adminUser, setAdminUser] = useState(() => {
     try {
-        const userStr = localStorage.getItem("medibook_current_user");
-        if (userStr) return JSON.parse(userStr);
-        return null;
+      const userStr = localStorage.getItem("medibook_current_user");
+      if (userStr) return JSON.parse(userStr);
+      return null;
     } catch (e) { return null; }
   });
 
   if (!adminUser || adminUser.role !== "admin") {
-      return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -46,6 +46,8 @@ function AdminLayout({ children }) {
           avatarLetter="A"
           hideTabs={true}
           onMenuClick={() => setIsMobileOpen(!isMobileOpen)}
+          onNotificationClick={() => navigate("/admin/notifications")}
+          onProfileClick={() => navigate("/admin/profile")}
         />
 
         {/* Dynamic Child Page */}

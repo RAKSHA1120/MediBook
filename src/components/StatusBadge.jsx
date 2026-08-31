@@ -12,6 +12,18 @@ function StatusBadge({ status = "upcoming", className = "" }) {
     label = "Confirmed";
     variantClass = "status-upcoming";
     IconComponent = CheckCircle2;
+  } else if (norm === "active") {
+    label = "Active";
+    variantClass = "status-upcoming";
+    IconComponent = CheckCircle2;
+  } else if (norm === "pending") {
+    label = "Pending";
+    variantClass = "status-available";
+    IconComponent = Clock;
+  } else if (norm === "inactive") {
+    label = "Inactive";
+    variantClass = "status-cancelled";
+    IconComponent = XCircle;
   } else if (norm === "completed") {
     label = "Completed";
     variantClass = "status-completed";

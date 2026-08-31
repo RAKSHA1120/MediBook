@@ -1,128 +1,170 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Users, CalendarCheck, Stethoscope, BriefcaseMedical, CheckCircle2, UserPlus, ClipboardList } from "lucide-react";
+import {
+  Building2,
+  Stethoscope,
+  Users,
+  CalendarCheck,
+  Clock,
+  UserCheck,
+  ClipboardList,
+  UserPlus
+} from "lucide-react";
 import { getDoctors, getPatients, getAppointments } from "../utils/storage";
-import Button from "../components/Button";
+import { getHospitalsStorage } from "./AdminHospitals";
+import StatusBadge from "../components/StatusBadge";
+import "./AdminDashboard.css";
 
 function AdminDashboard() {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ totalDoctors: 0, totalPatients: 0, totalAppointments: 0, todayAppointments: 0 });
+  const [stats, setStats] = useState({
+    totalHospitals: 0,
+    totalDoctors: 0,
+    totalPatients: 0,
+    totalAppointments: 0,
+    todayAppointments: 0,
+    upcomingAppointments: 0,
+    activeDoctors: 0
+  });
+
   const [recentAppointments, setRecentAppointments] = useState([]);
-  const [recentDoctors, setRecentDoctors] = useState([]);
+  const [recentRegistrations, setRecentRegistrations] = useState([]);
 
   useEffect(() => {
-    const loadStats = () => {
-      const docs = getDoctors();
-      const pats = getPatients();
-      const appts = getAppointments();
+    const docs = getDoctors();
+    const pats = getPatients();
+    const appts = getAppointments();
 
-      const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = new Date().toISOString().split("T")[0];
 
-      setStats({
-        totalDoctors: docs.length,
-        totalPatients: pats.length,
-        totalAppointments: appts.length,
-        todayAppointments: appts.filter(a => a.date === todayStr || String(a.date).toLowerCase().includes("today")).length
-      });
+    setStats({
+      totalDoctors: docs.length,
+      totalPatients: pats.length,
+      totalAppointments: appts.length,
+      todayAppointments: appts.filter(a => a.date === todayStr || String(a.date).toLowerCase().includes("today")).length
+    });
 
-      setRecentAppointments(appts.slice(-4).reverse());
-      setRecentDoctors(docs.slice(-4).reverse());
-    };
-
-    loadStats();
-    window.addEventListener("medibook_appointments_updated", loadStats);
-    return () => window.removeEventListener("medibook_appointments_updated", loadStats);
+    setRecentAppointments(appts.slice(-4).reverse());
+    setRecentDoctors(docs.slice(-4).reverse());
   }, []);
 
   return (
     <main className="patient-dashboard-content">
-      {/* Greeting Section (Matches PatientDashboard) */}
+      {/* Greeting Header */}
       <section className="greeting-section">
         <h2 className="greeting-title">Welcome back, System Admin!</h2>
         <p className="greeting-subtitle">
-          Here is an overview of MediBook's system status today.
+          Here is an overview of MediBook's healthcare network and system operations today.
         </p>
       </section>
 
-      {/* Statistics Cards (Uses benefits-section structure) */}
-      <section className="benefits-section" style={{ marginTop: "0" }}>
-        <div className="benefit-card">
-          <div className="benefit-icon-wrapper">
-            <Stethoscope size={24} />
+      {/* TIER 1: 4 MAIN KPI CARDS */}
+      <section className="admin-stats-grid">
+        {/* 1. Total Hospitals */}
+        <div className="admin-stat-card">
+          <div className="admin-stat-header">
+            <span className="admin-stat-label">Total Hospitals</span>
+            <div className="admin-stat-icon-wrapper">
+              <Building2 size={20} />
+            </div>
           </div>
-          <h4 className="benefit-title">{stats.totalDoctors}</h4>
-          <p className="benefit-description">Total Doctors</p>
+          <div className="admin-stat-number">{stats.totalHospitals}</div>
+          <div className="admin-stat-divider" />
+          <div className="admin-stat-subtext">Registered healthcare facilities</div>
         </div>
 
-        <div className="benefit-card">
-          <div className="benefit-icon-wrapper">
-            <Users size={24} />
+        {/* 2. Total Doctors */}
+        <div className="admin-stat-card">
+          <div className="admin-stat-header">
+            <span className="admin-stat-label">Total Doctors</span>
+            <div className="admin-stat-icon-wrapper">
+              <Stethoscope size={20} />
+            </div>
           </div>
-          <h4 className="benefit-title">{stats.totalPatients}</h4>
-          <p className="benefit-description">Total Patients</p>
+          <div className="admin-stat-number">{stats.totalDoctors}</div>
+          <div className="admin-stat-divider" />
+          <div className="admin-stat-subtext">Active medical professionals</div>
         </div>
 
-        <div className="benefit-card">
-          <div className="benefit-icon-wrapper">
-            <CalendarCheck size={24} />
+        {/* 3. Total Patients */}
+        <div className="admin-stat-card">
+          <div className="admin-stat-header">
+            <span className="admin-stat-label">Total Patients</span>
+            <div className="admin-stat-icon-wrapper">
+              <Users size={20} />
+            </div>
           </div>
-          <h4 className="benefit-title">{stats.todayAppointments}</h4>
-          <p className="benefit-description">Today's Appointments</p>
+          <div className="admin-stat-number">{stats.totalPatients}</div>
+          <div className="admin-stat-divider" />
+          <div className="admin-stat-subtext">Registered system patients</div>
         </div>
 
-        <div className="benefit-card">
-          <div className="benefit-icon-wrapper">
-            <BriefcaseMedical size={24} />
+        {/* 4. Total Appointments */}
+        <div className="admin-stat-card">
+          <div className="admin-stat-header">
+            <span className="admin-stat-label">Total Appointments</span>
+            <div className="admin-stat-icon-wrapper">
+              <CalendarCheck size={20} />
+            </div>
           </div>
-          <h4 className="benefit-title">{stats.totalAppointments}</h4>
-          <p className="benefit-description">Total Appointments</p>
+          <div className="admin-stat-number">{stats.totalAppointments}</div>
+          <div className="admin-stat-divider" />
+          <div className="admin-stat-subtext">Total scheduled visits</div>
         </div>
       </section>
 
-      {/* Main Grid for Recent Items */}
-      <section className="dashboard-main-info-grid">
-        {/* Full Width Analytics Overview */}
-        <div className="analytics-column" style={{ gridColumn: "1 / -1", marginBottom: "24px" }}>
-            <div className="section-header">
-                <h3 className="section-main-title">Appointments Overview</h3>
+      {/* TIER 2: COMPACT OPERATIONAL OVERVIEW BAR */}
+      <section className="operational-overview-bar">
+        {/* Today's Appointments */}
+        <div className="operational-overview-item">
+          <div className="operational-overview-icon">
+            <Clock size={18} />
+          </div>
+          <div className="operational-overview-details">
+            <div className="operational-overview-header">
+              <span className="operational-overview-label">Today's Appointments</span>
+              <span className="operational-overview-val">{stats.todayAppointments}</span>
             </div>
-            {(() => {
-                const appts = getAppointments();
-                const upcoming = appts.filter(a => a.status?.toLowerCase() === 'upcoming' || a.status?.toLowerCase() === 'confirmed').length;
-                const completed = appts.filter(a => a.status?.toLowerCase() === 'completed').length;
-                const cancelled = appts.filter(a => a.status?.toLowerCase() === 'cancelled').length;
-                const total = upcoming + completed + cancelled || 1; // avoid div by 0
-
-                const upPct = (upcoming / total) * 100;
-                const compPct = (completed / total) * 100;
-                const cancPct = (cancelled / total) * 100;
-
-                return (
-                    <div style={{ padding: '24px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
-                        <div style={{ display: 'flex', height: '24px', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
-                            <div style={{ width: `${upPct}%`, background: 'var(--primary)', transition: 'width 1s ease' }}></div>
-                            <div style={{ width: `${compPct}%`, background: '#10b981', transition: 'width 1s ease' }}></div>
-                            <div style={{ width: `${cancPct}%`, background: '#ef4444', transition: 'width 1s ease' }}></div>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 500 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--primary)' }}></div>
-                                <span>Upcoming ({upcoming})</span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10b981' }}></div>
-                                <span>Completed ({completed})</span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }}></div>
-                                <span>Cancelled ({cancelled})</span>
-                            </div>
-                        </div>
-                    </div>
-                )
-            })()}
+            <span className="operational-overview-subtext">Scheduled today</span>
+          </div>
         </div>
-        
+
+        <div className="operational-overview-divider" />
+
+        {/* Upcoming Appointments */}
+        <div className="operational-overview-item">
+          <div className="operational-overview-icon">
+            <CalendarCheck size={18} />
+          </div>
+          <div className="operational-overview-details">
+            <div className="operational-overview-header">
+              <span className="operational-overview-label">Upcoming Appointments</span>
+              <span className="operational-overview-val">{stats.upcomingAppointments}</span>
+            </div>
+            <span className="operational-overview-subtext">Confirmed & pending</span>
+          </div>
+        </div>
+
+        <div className="operational-overview-divider" />
+
+        {/* Active Doctors */}
+        <div className="operational-overview-item">
+          <div className="operational-overview-icon">
+            <UserCheck size={18} />
+          </div>
+          <div className="operational-overview-details">
+            <div className="operational-overview-header">
+              <span className="operational-overview-label">Active Doctors</span>
+              <span className="operational-overview-val">{stats.activeDoctors}</span>
+            </div>
+            <span className="operational-overview-subtext">Available for consultation</span>
+          </div>
+        </div>
+      </section>
+
+      {/* TIER 3: RECENT ACTIVITY (Recent Appointments & Recent Registrations) */}
+      <section className="dashboard-main-info-grid">
+
         {/* Left Column: Recent Appointments (using recent-activity-card style) */}
         <div className="next-appointment-column">
           <div className="section-header">
@@ -134,18 +176,28 @@ function AdminDashboard() {
 
           <div className="recent-activity-card">
             <div className="recent-activity-list">
-              {recentAppointments.length === 0 ? <p className="text-gray" style={{padding: '16px'}}>No recent appointments</p> : null}
+              {recentAppointments.length === 0 ? (
+                <p className="no-activity-text">No recent appointments</p>
+              ) : null}
               {recentAppointments.map((apt) => (
-                <div key={apt.id} className="activity-item" onClick={() => navigate(`/admin/appointments/${apt.id}`)}>
+                <div
+                  key={apt.id}
+                  className="activity-item"
+                  onClick={() => navigate(`/admin/appointments/${apt.id}`)}
+                >
                   <div className="activity-icon-container">
-                     <ClipboardList size={18} className="activity-icon reminder" />
+                    <ClipboardList size={18} className="activity-icon reminder" />
                   </div>
                   <div className="activity-content">
                     <div className="activity-title-row">
-                      <h4 className="activity-title">{apt.patientName} &bull; {apt.doctorName}</h4>
-                      <span className="activity-time">{apt.status}</span>
+                      <h4 className="activity-title">
+                        {apt.patientName} &bull; {apt.doctorName}
+                      </h4>
+                      <StatusBadge status={apt.status} />
                     </div>
-                    <p className="activity-message">{apt.type} on {apt.date} at {apt.time}</p>
+                    <p className="activity-message">
+                      {apt.specialty || apt.type || "General"} &bull; {apt.date} at {apt.time}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -153,36 +205,43 @@ function AdminDashboard() {
           </div>
         </div>
 
-        {/* Right Column: Recent Doctor Registrations (using recent-activity-card style) */}
+        {/* Right Column: Recent Registrations */}
         <div className="quick-actions-column">
           <div className="section-header">
-            <h3 className="section-main-title">New Registrations</h3>
+            <h3 className="section-main-title">Recent Registrations</h3>
             <button className="view-all-link" onClick={() => navigate("/admin/doctors")}>
               View All
             </button>
           </div>
-          
+
           <div className="recent-activity-card">
             <div className="recent-activity-list">
-              {recentDoctors.length === 0 ? <p className="text-gray" style={{padding: '16px'}}>No recent doctors</p> : null}
-              {recentDoctors.map((doc) => (
-                 <div key={doc.id} className="activity-item" onClick={() => navigate("/admin/doctors")}>
+              {recentRegistrations.length === 0 ? (
+                <p className="no-activity-text">No recent registrations</p>
+              ) : null}
+              {recentRegistrations.map((item) => (
+                <div
+                  key={item.id}
+                  className="activity-item"
+                  onClick={() => navigate(item.navPath)}
+                >
                   <div className="activity-icon-container">
-                     <UserPlus size={18} className="activity-icon confirmed" />
+                    <UserPlus size={18} className="activity-icon confirmed" />
                   </div>
                   <div className="activity-content">
                     <div className="activity-title-row">
-                      <h4 className="activity-title">{doc.name}</h4>
-                      <span className="activity-time">{doc.status}</span>
+                      <h4 className="activity-title">{item.name}</h4>
+                      <span className={`registration-type-badge ${item.type}`}>
+                        {item.type}
+                      </span>
                     </div>
-                    <p className="activity-message">{doc.specialization} &bull; {doc.hospital}</p>
+                    <p className="activity-message">{item.dateText}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
-
       </section>
     </main>
   );

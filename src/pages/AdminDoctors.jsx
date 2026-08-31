@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Eye, EyeOff, Edit, MoreVertical, Building2 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
-import Card from "../components/Card";
 import Button from "../components/Button";
 import SearchBox from "../components/SearchBox";
 import Modal from "../components/Modal";
@@ -15,101 +14,193 @@ import "./AdminShared.css";
 function AdminDoctors() {
   const [doctors, setDoctors] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [specFilter, setSpecFilter] = useState("All");
+  const [hospitalFilter, setHospitalFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [newCredentials, setNewCredentials] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   useEffect(() => {
     setDoctors(getDoctors());
   }, []);
 
-  // New Doctor Form State
-  const [formData, setFormData] = useState({
+  // Close options popover on click outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest(".more-menu-container")) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, []);
+
+  // Form State for Adding Doctor
+  const [addFormData, setAddFormData] = useState({
     name: "",
-    dob: "",
+    qualification: "MBBS, MD",
+    specialization: "Cardiology",
+    hospital: "",
+    experience: "",
+    email: "",
+    phone: "",
+    dob: ""
+  });
+
+  // Form State for Editing Doctor
+  const [editFormData, setEditFormData] = useState({
+    id: "",
+    name: "",
+    qualification: "",
     specialization: "",
     hospital: "",
     experience: "",
     email: "",
-    phone: ""
+    phone: "",
+    contact: "",
+    status: "Active",
+    loginId: ""
   });
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleSearchChange = (val) => {
+    if (typeof val === "string") {
+      setSearchTerm(val);
+    } else if (val && val.target) {
+      setSearchTerm(val.target.value || "");
+    } else {
+      setSearchTerm("");
+    }
   };
 
+  // Derive unique specializations & hospitals for dropdown filters
+  const specializationOptions = useMemo(() => {
+    const specs = doctors.map(d => d.specialization || d.specialty).filter(Boolean);
+    return Array.from(new Set(specs));
+  }, [doctors]);
+
+  const hospitalOptions = useMemo(() => {
+    const hosps = doctors.map(d => d.hospital).filter(Boolean);
+    return Array.from(new Set(hosps));
+  }, [doctors]);
+
+  // Handle Add Doctor
   const handleAddDoctor = (e) => {
     e.preventDefault();
-    
-    const dobYear = formData.dob ? formData.dob.split("-")[0] : new Date().getFullYear();
-    const loginId = generateLoginId(formData.name, dobYear, doctors);
-    const password = generatePassword(formData.name, dobYear);
+    const dobYear = addFormData.dob ? addFormData.dob.split("-")[0] : "1985";
+    const loginId = generateLoginId(addFormData.name, dobYear, doctors);
+    const password = generatePassword(addFormData.name, dobYear);
 
     const newDoc = {
       id: `D_${Date.now()}`,
-      name: formData.name,
-      dob: formData.dob,
-      specialization: formData.specialization,
-      hospital: formData.hospital,
-      experience: formData.experience,
-      email: formData.email,
-      contact: formData.phone,
-      phone: formData.phone,
+      name: addFormData.name.trim(),
+      qualification: addFormData.qualification.trim() || "MBBS, MD",
+      specialization: addFormData.specialization.trim() || "General Medicine",
+      specialty: addFormData.specialization.trim() || "General Medicine",
+      hospital: addFormData.hospital.trim() || "City Hospital",
+      experience: addFormData.experience.trim() || "5",
+      email: addFormData.email.trim(),
+      contact: addFormData.phone.trim(),
+      phone: addFormData.phone.trim(),
+      dob: addFormData.dob,
       status: "Active",
-      loginId: loginId
+      loginId: loginId,
+      rating: 4.8,
+      consultationFee: 800
     };
 
     addDoctor(newDoc);
     addUser({
-       id: `U_DOC_${newDoc.id}`,
-       mobile: loginId,
-       password,
-       role: "doctor",
-       name: formData.name,
-       refId: newDoc.id
+      id: `U_DOC_${newDoc.id}`,
+      mobile: loginId,
+      loginId: loginId,
+      password,
+      role: "doctor",
+      name: addFormData.name.trim(),
+      refId: newDoc.id,
+      status: "Active",
+      createdDate: new Date().toISOString().split("T")[0]
     });
 
     setDoctors(getDoctors());
-    setNewCredentials({ name: formData.name, loginId, password });
-    
+    setNewCredentials({ name: addFormData.name, loginId, password });
     setIsAddModalOpen(false);
     setIsSuccessModalOpen(true);
-    setFormData({ name: "", dob: "", specialization: "", hospital: "", experience: "", email: "", phone: "" });
+    setAddFormData({
+      name: "",
+      qualification: "MBBS, MD",
+      specialization: "Cardiology",
+      hospital: "",
+      experience: "",
+      email: "",
+      phone: "",
+      dob: ""
+    });
   };
 
-  const filteredDoctors = doctors.filter(doc => 
-    (doc.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-    (doc.specialization?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-    (doc.loginId?.toLowerCase() || "").includes(searchTerm.toLowerCase())
-  );
-
-  const handleViewDoctor = (doc) => {
-    setSelectedDoctor(doc);
-    setIsEditing(false);
-    setIsViewModalOpen(true);
+  // Open Edit Modal with Pre-filled Doctor Details
+  const handleOpenEdit = (doc) => {
+    setEditFormData({
+      id: doc.id,
+      name: doc.name || "",
+      qualification: doc.qualification || "MBBS, MD",
+      specialization: doc.specialization || doc.specialty || "General Medicine",
+      hospital: doc.hospital || "",
+      experience: doc.experience !== undefined ? String(doc.experience).replace(/[^0-9]/g, "") : "",
+      email: doc.email || "",
+      phone: doc.contact || doc.phone || "",
+      contact: doc.contact || doc.phone || "",
+      status: doc.status || "Active",
+      loginId: doc.loginId || ""
+    });
+    setIsEditModalOpen(true);
   };
 
-  const handleUpdateDoctor = (e) => {
+  // Handle Update Doctor
+  const handleSaveEditDoctor = (e) => {
     e.preventDefault();
-    updateDoctor(selectedDoctor.id, selectedDoctor);
-    setDoctors(getDoctors());
-    setIsEditing(false);
-  };
+    const updates = {
+      name: editFormData.name.trim(),
+      qualification: editFormData.qualification.trim(),
+      specialization: editFormData.specialization.trim(),
+      specialty: editFormData.specialization.trim(),
+      hospital: editFormData.hospital.trim(),
+      experience: editFormData.experience.trim(),
+      email: editFormData.email.trim(),
+      contact: editFormData.phone.trim(),
+      phone: editFormData.phone.trim(),
+      status: editFormData.status
+    };
 
-  const handleStatusChange = (doc, newStatus) => {
-    updateDoctor(doc.id, { status: newStatus });
+    updateDoctor(editFormData.id, updates);
     setDoctors(getDoctors());
-    if (selectedDoctor && selectedDoctor.id === doc.id) {
-       setSelectedDoctor({ ...selectedDoctor, status: newStatus });
+    setIsEditModalOpen(false);
+    if (selectedDoctor && selectedDoctor.id === editFormData.id) {
+      setSelectedDoctor({ ...selectedDoctor, ...updates });
     }
   };
 
+  // Toggle Doctor Status (Active / Inactive)
+  const handleToggleStatus = (doc) => {
+    const newStatus = doc.status === "Active" ? "Inactive" : "Active";
+    updateDoctor(doc.id, { status: newStatus });
+    setDoctors(getDoctors());
+    if (selectedDoctor && selectedDoctor.id === doc.id) {
+      setSelectedDoctor({ ...selectedDoctor, status: newStatus });
+    }
+  };
+
+  // Handle Delete Doctor
   const handleDeleteDoctor = (doc) => {
-    if (window.confirm(`Are you sure you want to delete Dr. ${doc.name.replace(/^(dr\.|dr\s)/i, '')}? This action cannot be undone.`)) {
+    const cleanName = doc.name ? doc.name.replace(/^(dr\.|dr\s)/i, '').trim() : "Doctor";
+    if (window.confirm(`Are you sure you want to remove Dr. ${cleanName} from the medical network?`)) {
       deleteDoctor(doc.id);
       setDoctors(getDoctors());
       if (selectedDoctor && selectedDoctor.id === doc.id) {
@@ -119,11 +210,33 @@ function AdminDoctors() {
     }
   };
 
+  // Combined Filter logic
+  const filteredDoctors = doctors.filter(doc => {
+    const query = searchTerm.toLowerCase().trim();
+    const docName = (doc.name || "").toLowerCase();
+    const docSpec = (doc.specialization || doc.specialty || "").toLowerCase();
+    const docHosp = (doc.hospital || "").toLowerCase();
+    const docId = (doc.loginId || "").toLowerCase();
+
+    const matchesSearch = !query || docName.includes(query) || docSpec.includes(query) || docHosp.includes(query) || docId.includes(query);
+    const matchesSpec = specFilter === "All" || (doc.specialization || doc.specialty) === specFilter;
+    const matchesHosp = hospitalFilter === "All" || doc.hospital === hospitalFilter;
+    const matchesStatus = statusFilter === "All" || (doc.status || "Active") === statusFilter;
+
+    return matchesSearch && matchesSpec && matchesHosp && matchesStatus;
+  });
+
+  const formatExperience = (exp) => {
+    if (exp === undefined || exp === null || exp === "") return "0 yrs";
+    const num = String(exp).replace(/[^0-9]/g, "").trim();
+    return num ? `${num} yrs` : `${exp} yrs`;
+  };
+
   return (
     <div className="patient-dashboard-content">
       <PageHeader 
         title="Doctor Management" 
-        subtitle="Manage doctors and their credentials in the system"
+        subtitle="Manage registered medical practitioners, specializations, and account credentials"
       >
         <Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
           Add New Doctor
@@ -131,58 +244,189 @@ function AdminDoctors() {
       </PageHeader>
 
       <div className="admin-table-card">
-        <div className="admin-toolbar">
-          <SearchBox 
-            placeholder="Search doctors by name, specialty or login ID..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        {/* Compact Search & Filters Toolbar */}
+        <div className="admin-toolbar" style={{ flexWrap: "wrap", gap: "12px", padding: "12px 20px" }}>
+          <div style={{ flex: "1 1 300px", minWidth: "260px" }}>
+            <SearchBox 
+              placeholder="Search doctors by name, specialty or hospital..." 
+              value={searchTerm}
+              onChange={handleSearchChange}
+            />
+          </div>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+            {/* Specialization Filter */}
+            <select
+              className="form-select"
+              style={{ height: "40px", padding: "0 12px", fontSize: "13.5px", width: "auto", borderRadius: "8px" }}
+              value={specFilter}
+              onChange={(e) => setSpecFilter(e.target.value)}
+            >
+              <option value="All">All Specializations</option>
+              {specializationOptions.map(spec => (
+                <option key={spec} value={spec}>{spec}</option>
+              ))}
+            </select>
+
+            {/* Hospital Filter */}
+            <select
+              className="form-select"
+              style={{ height: "40px", padding: "0 12px", fontSize: "13.5px", width: "auto", borderRadius: "8px" }}
+              value={hospitalFilter}
+              onChange={(e) => setHospitalFilter(e.target.value)}
+            >
+              <option value="All">All Hospitals</option>
+              {hospitalOptions.map(hosp => (
+                <option key={hosp} value={hosp}>{hosp}</option>
+              ))}
+            </select>
+
+            {/* Status Filter */}
+            <select
+              className="form-select"
+              style={{ height: "40px", padding: "0 12px", fontSize: "13.5px", width: "auto", borderRadius: "8px" }}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="All">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
         </div>
 
         <div className="table-responsive">
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Login ID</th>
-                <th>Specialization</th>
-                <th>Hospital</th>
-                <th>Experience</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th style={{ width: "28%" }}>DOCTOR</th>
+                <th style={{ width: "18%" }}>SPECIALIZATION</th>
+                <th style={{ width: "22%" }}>HOSPITAL</th>
+                <th style={{ width: "12%" }}>EXPERIENCE</th>
+                <th style={{ width: "10%" }}>STATUS</th>
+                <th style={{ width: "10%", textAlign: "right" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              {filteredDoctors.map(doc => (
-                <tr key={doc.id}>
-                  <td>
-                    <div className="user-info-cell">
-                      <div className="user-avatar">{doc.name.charAt(0)}</div>
-                      <div className="user-details">
-                        <span className="user-name">Dr. {doc.name.replace(/^(dr\.|dr\s)/i, '')}</span>
-                        <span className="user-subtext">{doc.contact}</span>
+              {filteredDoctors.map(doc => {
+                const rawName = doc.name || "Doctor";
+                const cleanName = rawName.replace(/^(dr\.|dr\s)/i, '').trim();
+                const qual = doc.qualification || "MBBS, MD";
+                const spec = doc.specialization || doc.specialty || "General Medicine";
+
+                return (
+                  <tr key={doc.id}>
+                    {/* DOCTOR: Avatar, Name, Qualification */}
+                    <td>
+                      <div className="user-info-cell">
+                        <div className="user-avatar" style={{ background: "rgba(47, 111, 163, 0.1)", color: "var(--primary)" }}>
+                          {cleanName.charAt(0)}
+                        </div>
+                        <div className="user-details">
+                          <span className="user-name" style={{ fontSize: "14px", fontWeight: "600" }}>
+                            Dr. {cleanName}
+                          </span>
+                          <span className="user-subtext" style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                            {qual}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>{doc.loginId || "N/A"}</td>
-                  <td>{doc.specialization}</td>
-                  <td>{doc.hospital}</td>
-                  <td>{doc.experience}</td>
-                  <td className="nowrap">
-                    <StatusBadge status={doc.status} />
-                  </td>
-                  <td className="nowrap">
-                    <div className="action-buttons">
-                      <Button variant="outline" size="sm" onClick={() => handleViewDoctor(doc)}>View</Button>
-                      <Button variant="outline" size="sm" style={{ color: "#ef4444", borderColor: "#fca5a5", backgroundColor: "#fff" }} onClick={() => handleDeleteDoctor(doc)}>Delete</Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+
+                    {/* SPECIALIZATION */}
+                    <td>
+                      <span style={{ fontSize: "13.5px", fontWeight: "500", color: "var(--text-heading)" }}>
+                        {spec}
+                      </span>
+                    </td>
+
+                    {/* HOSPITAL */}
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-heading)", fontWeight: "500", fontSize: "13.5px" }} title={doc.hospital || "MediCare Network"}>
+                        <Building2 size={15} style={{ color: "var(--primary)", flexShrink: 0 }} />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "200px" }}>
+                          {doc.hospital || "MediCare Hospital"}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* EXPERIENCE */}
+                    <td>
+                      <span style={{ fontSize: "13.5px", fontWeight: "500", color: "var(--text-heading)" }}>
+                        {formatExperience(doc.experience)}
+                      </span>
+                    </td>
+
+                    {/* STATUS */}
+                    <td className="nowrap">
+                      <StatusBadge status={doc.status || "Active"} />
+                    </td>
+
+                    {/* ACTIONS */}
+                    <td className="nowrap text-right" style={{ textAlign: "right" }}>
+                      <div className="table-actions-cell">
+                        {/* View Button */}
+                        <button
+                          className="icon-action-btn"
+                          title="View Doctor"
+                          onClick={() => { setSelectedDoctor(doc); setIsViewModalOpen(true); }}
+                        >
+                          <Eye size={17} />
+                        </button>
+
+                        {/* Edit Button */}
+                        <button
+                          className="icon-action-btn"
+                          title="Edit Doctor"
+                          onClick={() => handleOpenEdit(doc)}
+                        >
+                          <Edit size={17} />
+                        </button>
+
+                        {/* More Menu Dropdown */}
+                        <div className="more-menu-container">
+                          <button
+                            className={`icon-action-btn ${openMenuId === doc.id ? "active" : ""}`}
+                            title="More options"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(openMenuId === doc.id ? null : doc.id);
+                            }}
+                          >
+                            <MoreVertical size={17} />
+                          </button>
+
+                          {openMenuId === doc.id && (
+                            <div className="more-menu-dropdown">
+                              <button
+                                className="more-menu-item"
+                                onClick={() => {
+                                  handleToggleStatus(doc);
+                                  setOpenMenuId(null);
+                                }}
+                              >
+                                {doc.status === "Active" ? "Disable Doctor" : "Enable Doctor"}
+                              </button>
+                              <button
+                                className="more-menu-item danger"
+                                onClick={() => {
+                                  handleDeleteDoctor(doc);
+                                  setOpenMenuId(null);
+                                }}
+                              >
+                                Delete Doctor
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {filteredDoctors.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="text-center py-xl text-gray">
-                    No doctors found matching your search.
+                  <td colSpan="6" className="text-center py-xl text-gray" style={{ textAlign: "center", padding: "28px", color: "var(--text-muted)" }}>
+                    No doctors found matching your filter criteria.
                   </td>
                 </tr>
               )}
@@ -191,113 +435,313 @@ function AdminDoctors() {
         </div>
       </div>
 
-      {/* Add Doctor Modal */}
+      {/* Add New Doctor Modal */}
       <Modal 
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)}
         title="Add New Doctor"
+        className="hospital-modal-container"
       >
-        <form onSubmit={handleAddDoctor} className="add-doctor-form">
-          <div className="form-row">
-            <Input label="Doctor Name" name="name" value={formData.name} onChange={handleInputChange} required placeholder="e.g. Arun Kumar" />
-            <Input label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleInputChange} required />
+        <form onSubmit={handleAddDoctor} className="hospital-form">
+          <div className="form-group">
+            <label className="form-label">Doctor Name *</label>
+            <input
+              type="text"
+              className="form-input"
+              value={addFormData.name}
+              onChange={(e) => setAddFormData({ ...addFormData, name: e.target.value })}
+              placeholder="e.g. Arun Kumar"
+              required
+            />
           </div>
+
           <div className="form-row">
-            <Input label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} required placeholder="e.g. doctor@example.com" />
-            <Input label="Phone Number" name="phone" value={formData.phone} onChange={handleInputChange} required placeholder="e.g. 9876543210" />
+            <div className="form-group">
+              <label className="form-label">Qualification *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={addFormData.qualification}
+                onChange={(e) => setAddFormData({ ...addFormData, qualification: e.target.value })}
+                placeholder="e.g. MBBS, MD"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Specialization *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={addFormData.specialization}
+                onChange={(e) => setAddFormData({ ...addFormData, specialization: e.target.value })}
+                placeholder="e.g. Cardiology"
+                required
+              />
+            </div>
           </div>
+
           <div className="form-row">
-            <Input label="Specialization" name="specialization" value={formData.specialization} onChange={handleInputChange} required placeholder="e.g. Cardiology" />
-            <Input label="Hospital/Clinic" name="hospital" value={formData.hospital} onChange={handleInputChange} required placeholder="e.g. City Hospital" />
+            <div className="form-group">
+              <label className="form-label">Hospital / Clinic *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={addFormData.hospital}
+                onChange={(e) => setAddFormData({ ...addFormData, hospital: e.target.value })}
+                placeholder="e.g. MediCare Hospital"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Experience (Years) *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={addFormData.experience}
+                onChange={(e) => setAddFormData({ ...addFormData, experience: e.target.value })}
+                placeholder="e.g. 12"
+                required
+              />
+            </div>
           </div>
+
           <div className="form-row">
-            <Input label="Experience" name="experience" value={formData.experience} onChange={handleInputChange} required placeholder="e.g. 10 years" />
-            <div style={{flex: 1}}></div>
+            <div className="form-group">
+              <label className="form-label">Email Address *</label>
+              <input
+                type="email"
+                className="form-input"
+                value={addFormData.email}
+                onChange={(e) => setAddFormData({ ...addFormData, email: e.target.value })}
+                placeholder="e.g. doctor@hospital.com"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phone Number *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={addFormData.phone}
+                onChange={(e) => setAddFormData({ ...addFormData, phone: e.target.value })}
+                placeholder="e.g. +91 9876543210"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Date of Birth</label>
+            <input
+              type="date"
+              className="form-input"
+              value={addFormData.dob}
+              onChange={(e) => setAddFormData({ ...addFormData, dob: e.target.value })}
+            />
           </div>
           
-          <div className="modal-actions">
+          <div className="form-actions">
             <Button variant="outline" type="button" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
             <Button variant="primary" type="submit">Create Doctor Account</Button>
           </div>
         </form>
       </Modal>
 
-      {/* View / Edit Doctor Modal */}
+      {/* View Doctor Modal */}
       <Modal 
         isOpen={isViewModalOpen} 
         onClose={() => setIsViewModalOpen(false)}
-        title={isEditing ? "Edit Doctor" : "Doctor Details"}
+        title="Doctor Details"
+        className="hospital-modal-container"
       >
         {selectedDoctor && (
-          <form onSubmit={handleUpdateDoctor} className="add-doctor-form">
-            <div className="form-row">
-              <Input label="Doctor Name" name="name" value={selectedDoctor.name || (isEditing ? "" : "N/A")} onChange={(e) => setSelectedDoctor({...selectedDoctor, name: e.target.value})} disabled={!isEditing} />
-              <Input label="Specialization" name="specialization" value={selectedDoctor.specialization || (isEditing ? "" : "N/A")} onChange={(e) => setSelectedDoctor({...selectedDoctor, specialization: e.target.value})} disabled={!isEditing} />
-            </div>
-            <div className="form-row">
-              <Input label="Hospital/Clinic" name="hospital" value={selectedDoctor.hospital || (isEditing ? "" : "N/A")} onChange={(e) => setSelectedDoctor({...selectedDoctor, hospital: e.target.value})} disabled={!isEditing} />
-              <Input label="Experience" name="experience" value={selectedDoctor.experience || (isEditing ? "" : "N/A")} onChange={(e) => setSelectedDoctor({...selectedDoctor, experience: e.target.value})} disabled={!isEditing} />
-            </div>
-            <div className="form-row">
-              <Input label="Email" name="email" value={selectedDoctor.email || (isEditing ? "" : "N/A")} onChange={(e) => setSelectedDoctor({...selectedDoctor, email: e.target.value})} disabled={!isEditing} />
-              <Input label="Phone" name="contact" value={selectedDoctor.contact || selectedDoctor.phone || (isEditing ? "" : "N/A")} onChange={(e) => setSelectedDoctor({...selectedDoctor, contact: e.target.value})} disabled={!isEditing} />
-            </div>
-            <div className="form-row">
-              <Input label="Date of Birth" name="dob" value={selectedDoctor.dob || selectedDoctor.dobYear || (isEditing ? "" : "N/A")} onChange={(e) => setSelectedDoctor({...selectedDoctor, dob: e.target.value})} disabled={!isEditing} />
-              <Input label="Login ID" name="loginId" value={selectedDoctor.loginId || "N/A"} disabled={true} />
-            </div>
-            <div className="form-row">
-              <div className="input-group" style={{ position: "relative" }}>
-                <Input 
-                  label="Password" 
-                  name="password" 
-                  type={showPassword ? "text" : "password"}
-                  value={selectedDoctor.password || "N/A"} 
-                  disabled={true} 
-                  style={{ paddingRight: "40px" }}
-                />
-                <button 
-                  type="button" 
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: "absolute", right: "12px", top: "34px", background: "none", border: "none", cursor: "pointer", color: "#64748b" }}
-                  title={showPassword ? "Hide Password" : "Show Password"}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>DOCTOR NAME</label>
+                <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-heading)", marginTop: "4px" }}>
+                  Dr. {(selectedDoctor.name || "Doctor").replace(/^(dr\.|dr\s)/i, '').trim()}
+                </div>
               </div>
-              <div className="input-group">
-                <label className="input-label">Status</label>
-                <div style={{ padding: "8px 0" }}>
-                  <StatusBadge status={selectedDoctor.status || "N/A"} />
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>LOGIN ID</label>
+                <div style={{ fontSize: "15px", fontWeight: "600", color: "var(--primary)", marginTop: "4px" }}>
+                  {selectedDoctor.loginId || "N/A"}
+                </div>
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>QUALIFICATION</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>
+                  {selectedDoctor.qualification || "MBBS, MD"}
+                </div>
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>SPECIALIZATION</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>
+                  {selectedDoctor.specialization || selectedDoctor.specialty || "General Medicine"}
+                </div>
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>HOSPITAL</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>
+                  {selectedDoctor.hospital || "MediCare Hospital"}
+                </div>
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>EXPERIENCE</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>
+                  {formatExperience(selectedDoctor.experience)}
+                </div>
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>STATUS</label>
+                <div style={{ marginTop: "4px" }}>
+                  <StatusBadge status={selectedDoctor.status || "Active"} />
+                </div>
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>CONTACT NUMBER</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>
+                  {selectedDoctor.contact || selectedDoctor.phone || "N/A"}
                 </div>
               </div>
             </div>
 
-            <div className="modal-actions" style={{ justifyContent: "space-between" }}>
-              <div>
-                 {!isEditing && selectedDoctor.status === "Active" && (
-                    <Button variant="outline" type="button" onClick={() => handleStatusChange(selectedDoctor, "Inactive")}>Deactivate</Button>
-                 )}
-                 {!isEditing && selectedDoctor.status !== "Active" && (
-                    <Button variant="primary" type="button" onClick={() => handleStatusChange(selectedDoctor, "Active")}>Activate</Button>
-                 )}
+            {selectedDoctor.email && (
+              <div style={{ paddingTop: "12px", borderTop: "1px solid var(--border)" }}>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>EMAIL ADDRESS</label>
+                <div style={{ fontSize: "14px", color: "var(--text-heading)", marginTop: "4px" }}>{selectedDoctor.email}</div>
               </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                 {!isEditing ? (
-                   <Button variant="primary" type="button" onClick={() => setIsEditing(true)}>Edit Details</Button>
-                 ) : (
-                   <>
-                     <Button variant="outline" type="button" onClick={() => setIsEditing(false)}>Cancel</Button>
-                     <Button variant="primary" type="submit">Save Changes</Button>
-                   </>
-                 )}
-              </div>
+            )}
+
+            <div className="form-actions" style={{ marginTop: "8px" }}>
+              <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>Close</Button>
+              <Button variant="primary" onClick={() => { setIsViewModalOpen(false); handleOpenEdit(selectedDoctor); }}>Edit Doctor</Button>
             </div>
-          </form>
+          </div>
         )}
       </Modal>
 
-      {/* Success & Credentials Modal */}
+      {/* Edit Doctor Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Doctor Details"
+        className="hospital-modal-container"
+      >
+        <form onSubmit={handleSaveEditDoctor} className="hospital-form">
+          <div className="form-group">
+            <label className="form-label">Doctor Name *</label>
+            <input
+              type="text"
+              className="form-input"
+              value={editFormData.name}
+              onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Qualification *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editFormData.qualification}
+                onChange={(e) => setEditFormData({ ...editFormData, qualification: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Specialization *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editFormData.specialization}
+                onChange={(e) => setEditFormData({ ...editFormData, specialization: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Hospital / Clinic *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editFormData.hospital}
+                onChange={(e) => setEditFormData({ ...editFormData, hospital: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Experience (Years) *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editFormData.experience}
+                onChange={(e) => setEditFormData({ ...editFormData, experience: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Email Address *</label>
+              <input
+                type="email"
+                className="form-input"
+                value={editFormData.email}
+                onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phone Number *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editFormData.phone}
+                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select
+                className="form-select"
+                value={editFormData.status}
+                onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Login ID</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editFormData.loginId}
+                disabled
+                style={{ backgroundColor: "var(--background)", opacity: 0.8 }}
+              />
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <Button variant="outline" type="button" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
+            <Button variant="primary" type="submit">Save Changes</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Credentials Success Modal */}
       <Modal
         isOpen={isSuccessModalOpen}
         onClose={() => setIsSuccessModalOpen(false)}
