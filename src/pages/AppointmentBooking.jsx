@@ -345,7 +345,7 @@ function AppointmentBooking() {
                   <Button variant="primary" onClick={() => navigate("/patient-dashboard")}>
                     Go to Patient Dashboard
                   </Button>
-                  <Button variant="outline" onClick={() => navigate("/doctors")}>
+                  <Button variant="outline" onClick={() => navigate("/find-doctor")}>
                     Book Another Appointment
                   </Button>
                 </div>

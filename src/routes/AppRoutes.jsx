@@ -3,6 +3,7 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import DesignSystem from "../pages/DesignSystem";
 import Login from "../pages/Login";
 import PatientDashboard from "../pages/PatientDashboard";
+import DoctorList from "../pages/DoctorList";
 import AppointmentBooking from "../pages/AppointmentBooking";
 import BookingSuccess from "../pages/BookingSuccess";
 import Dashboard from "../pages/Dashboard";
@@ -56,6 +57,8 @@ function AppRoutes() {
 
         {/* All Patient Pages Wrapped in PatientLayout */}
         <Route path="/patient-dashboard" element={<PatientLayout><PatientDashboard /></PatientLayout>} />
+        <Route path="/find-doctor" element={<PatientLayout><DoctorList /></PatientLayout>} />
+        <Route path="/doctors" element={<PatientLayout><DoctorList /></PatientLayout>} />
         <Route path="/book-appointment" element={<PatientLayout><AppointmentBooking /></PatientLayout>} />
         <Route path="/booking-success" element={<PatientLayout><BookingSuccess /></PatientLayout>} />
 

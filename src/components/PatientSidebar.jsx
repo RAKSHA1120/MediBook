@@ -59,13 +59,13 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
 
   const patientItems = [
     { path: "/patient-dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/find-doctor", label: "Find Doctor", icon: Search },
     { path: "/my-appointments", label: "My Appointments", icon: Calendar, altPath: "/appointments" },
     { path: "/notifications", label: "Notifications", icon: Bell, showBadge: true },
     { path: "/profile", label: "Profile", icon: User },
     { path: "/settings", label: "Settings", icon: Settings },
     { path: "/help-support", label: "Help & Support", icon: HelpCircle }
   ];
-
   const doctorItems = [
     { path: "/doctor/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/doctor/appointments", label: "My Appointments", icon: Calendar },
@@ -104,9 +104,8 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
   return (
     <>
       <aside
-        className={`patient-sidebar ${isCollapsed ? "collapsed" : "expanded"} ${
-          isCollapsed && isHovered ? "hover-expanded" : ""
-        } ${isMobileOpen ? "open" : ""}`}
+        className={`patient-sidebar ${isCollapsed ? "collapsed" : "expanded"} ${isCollapsed && isHovered ? "hover-expanded" : ""
+          } ${isMobileOpen ? "open" : ""}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >

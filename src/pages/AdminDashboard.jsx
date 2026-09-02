@@ -29,6 +29,7 @@ function AdminDashboard() {
 
   const [recentAppointments, setRecentAppointments] = useState([]);
   const [recentRegistrations, setRecentRegistrations] = useState([]);
+  const [recentDoctors, setRecentDoctors] = useState([]);
 
   useEffect(() => {
     const docs = getDoctors();

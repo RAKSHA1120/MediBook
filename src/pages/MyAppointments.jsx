@@ -247,7 +247,7 @@ function MyAppointments() {
                 : XCircle
             }
             actionLabel={activeTab === "Upcoming" ? "Find a Doctor" : undefined}
-            onAction={activeTab === "Upcoming" ? () => navigate("/doctors") : undefined}
+            onAction={activeTab === "Upcoming" ? () => navigate("/find-doctor") : undefined}
           />
         )}
       </div>

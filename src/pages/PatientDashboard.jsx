@@ -228,7 +228,7 @@ function PatientDashboard() {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    navigate("/doctors", { state: { query: searchQuery } });
+    navigate("/find-doctor", { state: { query: searchQuery } });
   };
 
   // Cancellation Flow
@@ -376,7 +376,7 @@ function PatientDashboard() {
                 title="No Upcoming Appointment"
                 description="You don't have any active appointments scheduled."
                 actionLabel="Find a Doctor"
-                onAction={() => navigate("/doctors")}
+                onAction={() => navigate("/find-doctor")}
               />
             )}
           </div>
@@ -389,7 +389,7 @@ function PatientDashboard() {
 
             <div className="quick-actions-card">
               <div className="quick-actions-list">
-                <button className="quick-action-btn" onClick={() => navigate("/doctors")}>
+                <button className="quick-action-btn" onClick={() => navigate("/find-doctor")}>
                   <div className="quick-action-icon-wrap">
                     <Search size={20} />
                   </div>
@@ -400,7 +400,7 @@ function PatientDashboard() {
                   <ChevronRight size={16} className="quick-action-arrow" />
                 </button>
 
-                <button className="quick-action-btn" onClick={() => navigate("/doctors")}>
+                <button className="quick-action-btn" onClick={() => navigate("/find-doctor")}>
                   <div className="quick-action-icon-wrap">
                     <CalendarPlus size={20} />
                   </div>
