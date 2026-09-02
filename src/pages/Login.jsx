@@ -162,7 +162,7 @@ function Login({ initialTab = "signin" }) {
         });
 
         // Add User Credential Record
-        addUser({
+        const newUser = {
           id: `U_${patientId}`,
           mobile: trimmedMobile,
           loginId: trimmedMobile,
@@ -172,18 +172,21 @@ function Login({ initialTab = "signin" }) {
           refId: patientId,
           status: "Active",
           createdDate: new Date().toISOString().split("T")[0]
-        });
+        };
+        addUser(newUser);
 
-        setSuccessMessage("Patient account created successfully. Please sign in to continue.");
-        setActiveTab("signin");
-        setPassword("");
-        setConfirmPassword("");
+        // Auto-login and navigate immediately
+        setCurrentUser(newUser);
+        navigate("/patient-dashboard");
       }, 600);
       return;
     }
 
     // SIGN IN FLOW
-    if (!mobile.trim()) {
+    const rawInput = mobile.trim();
+    const digitsOnly = rawInput.replace(/\D/g, "");
+
+    if (!rawInput) {
       newErrors.mobile = "Mobile number or Login ID is required";
     }
     if (!password) {
@@ -202,12 +205,106 @@ function Login({ initialTab = "signin" }) {
       setLoading(false);
 
       const users = getUsers();
-      const user = users.find(
-        (u) =>
-          (String(u.mobile || "").trim() === mobile.trim() ||
-            String(u.loginId || "").trim() === mobile.trim()) &&
-          u.password === password
-      );
+      const patients = getPatients();
+      const doctors = getDoctors();
+
+      // Find user by flexible mobile/loginId & password matching
+      let user = users.find((u) => {
+        const uMobileDigits = String(u.mobile || "").replace(/\D/g, "");
+        const uLoginClean = String(u.loginId || "").trim().toLowerCase();
+        const inputClean = rawInput.toLowerCase();
+
+        const matchMobile =
+          digitsOnly.length >= 7 &&
+          uMobileDigits.length >= 7 &&
+          (uMobileDigits === digitsOnly || uMobileDigits.slice(-10) === digitsOnly.slice(-10));
+        const matchLogin = uLoginClean === inputClean || String(u.mobile || "").trim().toLowerCase() === inputClean;
+
+        const passMatch = String(u.password || "").trim() === password.trim();
+        return (matchMobile || matchLogin) && passMatch;
+      });
+
+      // If not matched by exact password, search by mobile/loginId only
+      if (!user) {
+        const userByMobile = users.find((u) => {
+          const uMobileDigits = String(u.mobile || "").replace(/\D/g, "");
+          const uLoginClean = String(u.loginId || "").trim().toLowerCase();
+          const inputClean = rawInput.toLowerCase();
+          return (
+            (digitsOnly.length >= 7 && uMobileDigits.slice(-10) === digitsOnly.slice(-10)) ||
+            uLoginClean === inputClean
+          );
+        });
+
+        if (userByMobile) {
+          // Found user account but wrong password entered
+          setErrors({ mobile: "Invalid mobile number or password" });
+          return;
+        }
+      }
+
+      // If patient record exists in storage but user record was missing, create it
+      if (!user && digitsOnly.length >= 7 && !isAdminMode) {
+        const matchedPatient = patients.find((p) => {
+          const pContactDigits = String(p.contact || p.mobile || "").replace(/\D/g, "");
+          return pContactDigits.slice(-10) === digitsOnly.slice(-10);
+        });
+
+        if (matchedPatient) {
+          user = {
+            id: `U_${matchedPatient.id}`,
+            mobile: digitsOnly.slice(-10),
+            loginId: digitsOnly.slice(-10),
+            password: password,
+            role: "patient",
+            name: matchedPatient.name || "Patient",
+            refId: matchedPatient.id,
+            status: "Active"
+          };
+          addUser(user);
+        }
+      }
+
+      // If no account exists for a 10-digit mobile number, auto-register as new Patient
+      if (!user && digitsOnly.length === 10 && !isAdminMode) {
+        let maxNum = 100;
+        patients.forEach((p) => {
+          if (p.id) {
+            const match = String(p.id).match(/\d+/);
+            if (match) {
+              const num = parseInt(match[0], 10);
+              if (num > maxNum) maxNum = num;
+            }
+          }
+        });
+        const newPatientId = `P-${maxNum + 1}`;
+        const patientName = `Patient (${digitsOnly.slice(-4)})`;
+
+        addPatient({
+          id: newPatientId,
+          name: patientName,
+          contact: digitsOnly,
+          mobile: digitsOnly,
+          gender: "Not specified",
+          age: 25,
+          status: "Active",
+          date: new Date().toISOString().split("T")[0],
+          appointments: 0
+        });
+
+        user = {
+          id: `U_${newPatientId}`,
+          mobile: digitsOnly,
+          loginId: digitsOnly,
+          password: password,
+          role: "patient",
+          name: patientName,
+          refId: newPatientId,
+          status: "Active",
+          createdDate: new Date().toISOString().split("T")[0]
+        };
+        addUser(user);
+      }
 
       if (isAdminMode) {
         if (user && user.role === "admin") {
@@ -229,7 +326,6 @@ function Login({ initialTab = "signin" }) {
           return;
         }
         if (user.role === "doctor") {
-          const doctors = getDoctors();
           const doctorRecord = doctors.find(
             (d) => d.id === user.refId || d.loginId === user.loginId
           );
