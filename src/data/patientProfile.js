@@ -21,7 +21,8 @@ export const PATIENT_PROFILE_STORAGE_KEY = "medibook_patient_profile";
 // Helper to compute initials from full name
 export const getPatientInitials = (name) => {
   if (!name || typeof name !== "string") return "P";
-  const parts = name.trim().split(" ").filter(Boolean);
+  const cleanName = name.replace(/\([^)]*\)/g, "").replace(/[^a-zA-Z\s]/g, "").trim();
+  const parts = cleanName.split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "P";
   if (parts.length === 1) return parts[0][0].toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -48,20 +49,25 @@ export const getStoredPatientProfile = () => {
   }
 
   const patientId = patientRecord?.id || user.refId || user.id || "P-101";
-  const name = patientRecord?.name || user.name || "Patient";
-  const phone = patientRecord?.contact || patientRecord?.mobile || user.mobile || "";
-  const gender = patientRecord?.gender || extraData.gender || user.gender || "Not specified";
-  const age = patientRecord?.age || extraData.age || user.age || "N/A";
+
+  let rawName = extraData.name || patientRecord?.name || user.name || "Patient";
+  if (rawName.startsWith("Patient (") && rawName.endsWith(")")) {
+    rawName = "Patient";
+  }
+
+  const phone = extraData.phone || patientRecord?.contact || patientRecord?.mobile || user.mobile || "";
+  const gender = extraData.gender || patientRecord?.gender || user.gender || "Not specified";
+  const age = extraData.age || patientRecord?.age || user.age || "N/A";
 
   return { 
      ...DEFAULT_PATIENT_PROFILE, 
      ...extraData,
      id: patientId,
      patientId: patientId,
-     name: name, 
+     name: rawName, 
      phone: phone, 
      mobile: phone,
-     email: extraData.email || `${name.toLowerCase().replace(/[^a-z0-9]/g, "")}@example.com`,
+     email: extraData.email || `${rawName.toLowerCase().replace(/[^a-z0-9]/g, "") || "patient"}@example.com`,
      gender: gender,
      age: age,
      role: "Patient" 
@@ -74,6 +80,35 @@ export const savePatientProfile = (profileData) => {
   if (user) {
     const updatedUser = { ...user, name: profileData.name, mobile: profileData.phone };
     setCurrentUser(updatedUser);
+
+    const patients = getPatients();
+    const targetRefId = String(user.refId || user.id || "").trim().toLowerCase();
+    const targetMobile = String(user.mobile || "").trim().toLowerCase();
+
+    const pIdx = patients.findIndex(
+      (p) =>
+        String(p.id || "").trim().toLowerCase() === targetRefId ||
+        String(p.contact || p.mobile || "").trim().toLowerCase() === targetMobile
+    );
+
+    if (pIdx !== -1) {
+      patients[pIdx] = {
+        ...patients[pIdx],
+        name: profileData.name,
+        contact: profileData.phone,
+        mobile: profileData.phone,
+        gender: profileData.gender,
+        age: profileData.age
+      };
+      setStorage("medibook_patients", patients);
+    }
+
+    const users = getUsers();
+    const uIdx = users.findIndex((u) => u.id === user.id || u.refId === user.refId);
+    if (uIdx !== -1) {
+      users[uIdx] = { ...users[uIdx], name: profileData.name, mobile: profileData.phone };
+      setStorage("medibook_users", users);
+    }
     
     // Save extra data separately
     try {
@@ -81,4 +116,5 @@ export const savePatientProfile = (profileData) => {
     } catch (e) {}
   }
   window.dispatchEvent(new Event("medibook_profile_updated"));
+  window.dispatchEvent(new Event("medibook_current_user_updated"));
 };

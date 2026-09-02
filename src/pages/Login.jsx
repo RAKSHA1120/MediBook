@@ -278,7 +278,7 @@ function Login({ initialTab = "signin" }) {
           }
         });
         const newPatientId = `P-${maxNum + 1}`;
-        const patientName = `Patient (${digitsOnly.slice(-4)})`;
+        const patientName = "Patient";
 
         addPatient({
           id: newPatientId,
