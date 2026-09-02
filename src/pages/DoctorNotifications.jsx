@@ -6,9 +6,10 @@ import EmptyState from "../components/EmptyState";
 import NotificationCard from "../components/NotificationCard";
 import {
   getCurrentUser,
-  getNotifications,
+  getCurrentDoctor,
+  getDoctorNotifications,
   markNotificationAsRead,
-  markAllNotificationsAsRead
+  markAllDoctorNotificationsAsRead
 } from "../utils/storage";
 import "./Notifications.css";
 
@@ -27,19 +28,9 @@ function DoctorNotifications() {
 
   const loadDoctorNotifications = () => {
     const user = getCurrentUser();
-    const allNotifs = getNotifications();
-
-    // Filter notifications for doctor
-    const docName = user?.name ? user.name.toLowerCase().replace("dr. ", "") : "";
-    const doctorNotifs = allNotifs.filter(
-      (n) =>
-        (docName && n.message?.toLowerCase().includes(docName)) ||
-        (n.title && n.title.toLowerCase().includes("appointment")) ||
-        n.type === "appointment" ||
-        n.type === "appointment_booking"
-    );
-
-    setNotifications(doctorNotifs.length > 0 ? doctorNotifs : allNotifs);
+    const doc = getCurrentDoctor();
+    const doctorNotifs = getDoctorNotifications(doc?.id, user?.id);
+    setNotifications(doctorNotifs);
   };
 
   const counts = useMemo(() => {
@@ -69,7 +60,9 @@ function DoctorNotifications() {
   }, [notifications, activeTab]);
 
   const handleMarkAll = () => {
-    markAllNotificationsAsRead();
+    const user = getCurrentUser();
+    const doc = getCurrentDoctor();
+    markAllDoctorNotificationsAsRead(doc?.id, user?.id);
     loadDoctorNotifications();
   };
 

@@ -138,8 +138,7 @@ function PatientDashboard() {
 
   // Filtered patient appointments
   const patientAppts = useMemo(() => {
-    if (!currentPatient && !currentUser) return [];
-    return getPatientAppointments(currentPatient?.id || currentUser?.refId || currentUser?.id);
+    return getPatientAppointments(currentPatient?.id || currentUser?.refId || currentUser?.id, appointments);
   }, [currentPatient, currentUser, appointments]);
 
   // Dynamic upcoming appointment for current patient
@@ -284,7 +283,7 @@ function PatientDashboard() {
         {/* Greeting Section */}
         <section className="greeting-section">
           <h2 className="greeting-title">
-            {getGreeting()}, {currentUser?.name || "Patient"}!
+            {getGreeting()}, {currentPatient?.name || currentUser?.name || "Patient"}!
           </h2>
           <p className="greeting-subtitle">
             Find the right doctor and manage your appointments with ease.
@@ -299,7 +298,13 @@ function PatientDashboard() {
               Book appointments with trusted doctors and get the best care.
             </p>
             <div className="hero-banner-action">
-              {/* Find Doctors link removed */}
+              <Button
+                variant="primary"
+                onClick={() => navigate("/find-doctor")}
+                icon={Search}
+              >
+                Find a Doctor
+              </Button>
             </div>
           </div>
           <div className="hero-banner-illustration">

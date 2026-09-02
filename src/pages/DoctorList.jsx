@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Stethoscope, X } from "lucide-react";
-import { getDoctors } from "../utils/storage";
+import { Stethoscope, X, Building2 } from "lucide-react";
+import { getDoctors, getHospitals } from "../utils/storage";
 import Button from "../components/Button";
 import Select from "../components/Select";
 import Toast from "../components/Toast";
@@ -9,6 +9,7 @@ import DoctorCard from "../components/DoctorCard";
 import SearchBox from "../components/SearchBox";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
+import Modal from "../components/Modal";
 import "./DoctorList.css";
 
 // Specialties list for filter options
@@ -69,9 +70,14 @@ function DoctorList() {
   const [searchVal, setSearchVal] = useState(initialQuery);
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
+  const [selectedHospital, setSelectedHospital] = useState("All");
   const [selectedLocation, setSelectedLocation] = useState("All");
 
   const [toast, setToast] = useState({ show: false, title: "", message: "", type: "success" });
+
+  // Doctor profile modal state
+  const [selectedProfileDoctor, setSelectedProfileDoctor] = useState(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // Sorting and Pagination states
   const [sortBy, setSortBy] = useState("Relevance");
@@ -86,6 +92,37 @@ function DoctorList() {
       setCurrentPage(1);
     }
   }, [location.state]);
+
+  // Generate hospital options dynamically from storage + doctor list
+  const hospitalOptions = useMemo(() => {
+    const hospitals = getHospitals();
+    const map = new Map();
+
+    hospitals.forEach((h) => {
+      if (h.id && h.name) {
+        map.set(String(h.id).toLowerCase(), h.name);
+      }
+    });
+
+    doctorsList.forEach((d) => {
+      if (d.hospitalId && d.hospital) {
+        map.set(String(d.hospitalId).toLowerCase(), d.hospital);
+      } else if (d.hospital) {
+        const key = String(d.hospital).toLowerCase().replace(/[^a-z0-9]/g, "");
+        if (!map.has(key)) map.set(key, d.hospital);
+      }
+    });
+
+    const opts = Array.from(map.entries()).map(([id, name]) => ({
+      value: id,
+      label: name
+    })).sort((a, b) => a.label.localeCompare(b.label));
+
+    return [
+      { value: "All", label: "All Hospitals" },
+      ...opts
+    ];
+  }, [doctorsList]);
 
   // Generate location options dynamically from doctor list
   const locationOptions = useMemo(() => {
@@ -113,14 +150,26 @@ function DoctorList() {
       // 2. Specialty filter
       const isSpecMatch = matchSpecialty(doc.specialty || doc.specialization, selectedSpecialty);
 
-      // 3. Location filter
+      // 3. Hospital filter
+      const selectedHosObj = hospitalOptions.find((o) => o.value === selectedHospital);
+      const targetHosName = selectedHosObj ? selectedHosObj.label.toLowerCase() : "";
+
+      const matchesHospital =
+        selectedHospital === "All" ||
+        (doc.hospitalId && String(doc.hospitalId).toLowerCase() === String(selectedHospital).toLowerCase()) ||
+        (doc.hospital && (
+          String(doc.hospital).toLowerCase() === String(selectedHospital).toLowerCase() ||
+          (targetHosName && String(doc.hospital).toLowerCase() === targetHosName)
+        ));
+
+      // 4. Location filter
       const matchesLocation =
         selectedLocation === "All" ||
         (doc.location && String(doc.location).toLowerCase() === selectedLocation.toLowerCase());
 
-      return matchesSearch && isSpecMatch && matchesLocation;
+      return matchesSearch && isSpecMatch && matchesHospital && matchesLocation;
     });
-  }, [doctorsList, searchQuery, selectedSpecialty, selectedLocation]);
+  }, [doctorsList, searchQuery, selectedSpecialty, selectedHospital, selectedLocation, hospitalOptions]);
 
   // Sorting logic
   const sortedDoctors = useMemo(() => {
@@ -153,6 +202,31 @@ function DoctorList() {
     return sortedDoctors.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [sortedDoctors, currentPage]);
 
+  // Group paginated doctors visually by BOTH hospital AND location branch
+  const groupedDoctors = useMemo(() => {
+    const map = new Map();
+    paginatedDoctors.forEach((doc) => {
+      const hosId = doc.hospitalId || doc.hospital || "MediCare Hospital";
+      const hosName = doc.hospital || "MediCare Hospital";
+      const docLoc = doc.location || "Chennai";
+
+      // Combined key ensures branch-level grouping by hospital + location
+      const groupKey = `${String(hosId).toLowerCase()}_${String(docLoc).toLowerCase()}`;
+
+      if (!map.has(groupKey)) {
+        map.set(groupKey, {
+          key: groupKey,
+          hospitalName: hosName,
+          hospitalId: hosId,
+          location: docLoc,
+          doctors: []
+        });
+      }
+      map.get(groupKey).doctors.push(doc);
+    });
+    return Array.from(map.values());
+  }, [paginatedDoctors]);
+
   const handlePageChange = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
@@ -162,14 +236,15 @@ function DoctorList() {
 
   // Check if any filters are currently active
   const isFiltersActive = useMemo(() => {
-    return searchQuery.trim() !== "" || selectedSpecialty !== "All" || selectedLocation !== "All";
-  }, [searchQuery, selectedSpecialty, selectedLocation]);
+    return searchQuery.trim() !== "" || selectedSpecialty !== "All" || selectedHospital !== "All" || selectedLocation !== "All";
+  }, [searchQuery, selectedSpecialty, selectedHospital, selectedLocation]);
 
   // Reset all filters
   const handleClearFilters = () => {
     setSearchVal("");
     setSearchQuery("");
     setSelectedSpecialty("All");
+    setSelectedHospital("All");
     setSelectedLocation("All");
     setSortBy("Relevance");
     setCurrentPage(1);
@@ -186,6 +261,13 @@ function DoctorList() {
   const handleSpecialtyChange = (e) => {
     const val = e.target.value;
     setSelectedSpecialty(val);
+    setCurrentPage(1);
+  };
+
+  // Hospital select handler
+  const handleHospitalChange = (e) => {
+    const val = e.target.value;
+    setSelectedHospital(val);
     setCurrentPage(1);
   };
 
@@ -209,8 +291,14 @@ function DoctorList() {
     setSearchVal("");
     setSearchQuery("");
     setSelectedSpecialty(mappedSpec);
+    setSelectedHospital("All");
     setSelectedLocation("All");
     setCurrentPage(1);
+  };
+
+  const handleViewProfile = (doc) => {
+    setSelectedProfileDoctor(doc);
+    setIsProfileModalOpen(true);
   };
 
   const handleBookAppointment = (doc) => {
@@ -245,6 +333,16 @@ function DoctorList() {
                 onChange={handleSpecialtyChange}
                 options={specialtyOptions}
                 placeholder="All Specialties"
+              />
+            </div>
+
+            {/* Hospital Dropdown Filter */}
+            <div className="filter-select-wrapper">
+              <Select
+                value={selectedHospital}
+                onChange={handleHospitalChange}
+                options={hospitalOptions}
+                placeholder="All Hospitals"
               />
             </div>
 
@@ -319,18 +417,32 @@ function DoctorList() {
           </div>
         </section>
 
-        {/* Doctors Grid / Empty State */}
-        <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
-          {paginatedDoctors.length > 0 ? (
-            <div className="doctors-list-grid">
-              {paginatedDoctors.map((doc) => (
-                <DoctorCard
-                  key={doc.id}
-                  doctor={doc}
-                  onBook={(d) => handleBookAppointment(d)}
-                />
-              ))}
-            </div>
+        {/* Doctors Grid / Grouped by Hospital / Empty State */}
+        <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-lg)" }}>
+          {groupedDoctors.length > 0 ? (
+            groupedDoctors.map((group) => (
+              <div key={group.key} className="hospital-doctor-group">
+                <div className="hospital-group-header">
+                  <Building2 size={20} className="hospital-header-icon" />
+                  <span className="hospital-header-title">{group.hospitalName}</span>
+                  <span className="hospital-header-location">• {group.location}</span>
+                  <span className="hospital-header-count">
+                    {group.doctors.length} {group.doctors.length === 1 ? "Doctor" : "Doctors"}
+                  </span>
+                </div>
+
+                <div className="doctors-list-grid">
+                  {group.doctors.map((doc) => (
+                    <DoctorCard
+                      key={doc.id}
+                      doctor={doc}
+                      onViewProfile={(d) => handleViewProfile(d)}
+                      onBook={(d) => handleBookAppointment(d)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))
           ) : (
             <EmptyState
               title="No Doctors Found"
@@ -373,6 +485,102 @@ function DoctorList() {
           </div>
         )}
       </main>
+
+      {/* Doctor Profile Modal */}
+      <Modal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        title="Doctor Profile Details"
+      >
+        {selectedProfileDoctor && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {/* Header Profile Section */}
+            <div style={{ display: "flex", gap: "16px", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "16px" }}>
+              <div className="doctor-card-avatar" style={{ width: "64px", height: "64px", fontSize: "22px" }}>
+                {(selectedProfileDoctor.name || "DR")
+                  .split(" ")
+                  .filter((n) => n.toLowerCase() !== "dr.")
+                  .map((n) => n[0])
+                  .join("")
+                  .substring(0, 2)
+                  .toUpperCase() || "DR"}
+              </div>
+              <div>
+                <h2 style={{ fontSize: "20px", fontWeight: "700", margin: 0, color: "var(--text-heading)" }}>
+                  {selectedProfileDoctor.name.toLowerCase().startsWith("dr.") ? selectedProfileDoctor.name : `Dr. ${selectedProfileDoctor.name}`}
+                </h2>
+                <div style={{ color: "var(--primary)", fontWeight: "600", fontSize: "14px", marginTop: "2px" }}>
+                  {selectedProfileDoctor.specialty || selectedProfileDoctor.specialization}
+                </div>
+                <div style={{ color: "var(--text-muted)", fontSize: "13px" }}>
+                  {selectedProfileDoctor.qualification || "MBBS, MD"}
+                </div>
+              </div>
+            </div>
+
+            {/* Profile Details Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>HOSPITAL / CLINIC</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "600", color: "var(--text-heading)", marginTop: "4px" }}>
+                  {selectedProfileDoctor.hospital || "MediCare Hospital"}
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>LOCATION</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "600", color: "var(--text-heading)", marginTop: "4px" }}>
+                  {selectedProfileDoctor.location || "Chennai"}
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>EXPERIENCE</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "600", color: "var(--text-heading)", marginTop: "4px" }}>
+                  {selectedProfileDoctor.experience} {typeof selectedProfileDoctor.experience === 'number' ? 'yrs experience' : ''}
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>CONSULTATION FEE</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "700", color: "var(--primary)", marginTop: "4px" }}>
+                  ₹{selectedProfileDoctor.consultationFee ?? selectedProfileDoctor.fee ?? 800}
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>RATING</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "600", color: "#a16207", marginTop: "4px" }}>
+                  ⭐ {selectedProfileDoctor.rating || 4.8} ({selectedProfileDoctor.reviewCount || 124} reviews)
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>AVAILABILITY</label>
+                <div style={{ fontSize: "14.5px", fontWeight: "600", color: "var(--success, #16a34a)", marginTop: "4px" }}>
+                  {selectedProfileDoctor.availability || "Available Today"}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="form-actions" style={{ display: "flex", gap: "12px", marginTop: "12px", justifyContent: "flex-end" }}>
+              <Button variant="outline" onClick={() => setIsProfileModalOpen(false)}>
+                Close
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setIsProfileModalOpen(false);
+                  handleBookAppointment(selectedProfileDoctor);
+                }}
+              >
+                Book Appointment
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Toast Notification */}
       {toast.show && (

@@ -10,7 +10,7 @@ import {
   ClipboardList,
   UserPlus
 } from "lucide-react";
-import { getDoctors, getPatients, getAppointments } from "../utils/storage";
+import { getDoctors, getPatients, getAppointments, getHospitals } from "../utils/storage";
 import { getHospitalsStorage } from "./AdminHospitals";
 import StatusBadge from "../components/StatusBadge";
 import "./AdminDashboard.css";
@@ -32,21 +32,37 @@ function AdminDashboard() {
   const [recentDoctors, setRecentDoctors] = useState([]);
 
   useEffect(() => {
-    const docs = getDoctors();
-    const pats = getPatients();
-    const appts = getAppointments();
+    const loadDashboardData = () => {
+      const hospitals = getHospitals();
+      const docs = getDoctors();
+      const pats = getPatients();
+      const appts = getAppointments();
 
-    const todayStr = new Date().toISOString().split("T")[0];
+      const todayStr = new Date().toISOString().split("T")[0];
 
-    setStats({
-      totalDoctors: docs.length,
-      totalPatients: pats.length,
-      totalAppointments: appts.length,
-      todayAppointments: appts.filter(a => a.date === todayStr || String(a.date).toLowerCase().includes("today")).length
-    });
+      setStats({
+        totalHospitals: hospitals.length,
+        totalDoctors: docs.length,
+        totalPatients: pats.length,
+        totalAppointments: appts.length,
+        todayAppointments: appts.filter(a => a.date === todayStr || String(a.date).toLowerCase().includes("today")).length,
+        upcomingAppointments: appts.filter(a => (a.status || "").toLowerCase() === "confirmed" || (a.status || "").toLowerCase() === "pending").length,
+        activeDoctors: docs.filter(d => (d.status || "Active").toLowerCase() === "active").length
+      });
 
-    setRecentAppointments(appts.slice(-4).reverse());
-    setRecentDoctors(docs.slice(-4).reverse());
+      setRecentAppointments(appts.slice(-4).reverse());
+      setRecentDoctors(docs.slice(-4).reverse());
+    };
+
+    loadDashboardData();
+
+    window.addEventListener("medibook_hospitals_updated", loadDashboardData);
+    window.addEventListener("storage", loadDashboardData);
+
+    return () => {
+      window.removeEventListener("medibook_hospitals_updated", loadDashboardData);
+      window.removeEventListener("storage", loadDashboardData);
+    };
   }, []);
 
   return (

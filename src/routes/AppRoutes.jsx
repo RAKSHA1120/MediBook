@@ -14,6 +14,7 @@ import DoctorPatientDetails from "../pages/DoctorPatientDetails";
 import DoctorSchedule from "../pages/DoctorSchedule";
 import DoctorNotifications from "../pages/DoctorNotifications";
 import DoctorSettings from "../pages/DoctorSettings";
+import DoctorProfile from "../pages/DoctorProfile";
 
 import PatientLayout from "../layouts/PatientLayout";
 import MyAppointments from "../pages/MyAppointments";
@@ -77,11 +78,11 @@ function AppRoutes() {
         {/* Doctor Routes */}
         <Route path="/doctor/dashboard" element={<PatientLayout><Dashboard /></PatientLayout>} />
         <Route path="/doctor/appointments" element={<PatientLayout><DoctorAppointments /></PatientLayout>} />
-        <Route path="/doctor/patients" element={<Navigate to="/doctor/appointments" replace />} />
+        <Route path="/doctor/patients" element={<PatientLayout><DoctorPatients /></PatientLayout>} />
         <Route path="/doctor/patients/:id" element={<PatientLayout><DoctorPatientDetails /></PatientLayout>} />
         <Route path="/doctor/schedule" element={<PatientLayout><DoctorSchedule /></PatientLayout>} />
         <Route path="/doctor/notifications" element={<PatientLayout><DoctorNotifications /></PatientLayout>} />
-        <Route path="/doctor/profile" element={<PatientLayout><PatientProfile /></PatientLayout>} />
+        <Route path="/doctor/profile" element={<PatientLayout><DoctorProfile /></PatientLayout>} />
         <Route path="/doctor/settings" element={<PatientLayout><DoctorSettings /></PatientLayout>} />
 
         {/* Hospital Routes */}
