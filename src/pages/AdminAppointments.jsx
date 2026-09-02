@@ -28,7 +28,10 @@ function AdminAppointments() {
   const [modalStatus, setModalStatus] = useState("");
 
   useEffect(() => {
-    setAppointments(getAppointments());
+    const loadAppointments = () => setAppointments(getAppointments());
+    loadAppointments();
+    window.addEventListener("medibook_appointments_updated", loadAppointments);
+    return () => window.removeEventListener("medibook_appointments_updated", loadAppointments);
   }, []);
 
   const tabs = [

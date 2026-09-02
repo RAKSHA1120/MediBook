@@ -2,7 +2,6 @@ import { Calendar, Clock, Receipt, Eye, CalendarDays, X } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import PrimaryButton from "./PrimaryButton";
 import SecondaryButton from "./SecondaryButton";
-import doctors from "../data/doctors";
 import "./AppointmentCard.css";
 
 function AppointmentCard({
@@ -14,32 +13,19 @@ function AppointmentCard({
 }) {
   if (!appointment) return null;
 
-  // Resolve Doctor metadata if available
-  let doc = null;
-  const docIdStr = String(appointment.doctorId ?? "").trim();
-  const docNameStr = String(appointment.doctorName || appointment.doctor || "").trim();
-
-  if (docIdStr !== "") {
-    doc = doctors.find((d) => String(d.id ?? "").trim() === docIdStr);
-  }
-  if (!doc && docNameStr !== "") {
-    const normTargetDocName = docNameStr.toLowerCase();
-    doc = doctors.find((d) => String(d.name ?? "").trim().toLowerCase() === normTargetDocName);
-  }
-
-  const rawDocName = appointment.doctorName || appointment.doctor || doc?.name;
+  const rawDocName = appointment.doctorName || appointment.doctor;
   const docName = String(rawDocName ?? "").trim() !== "" ? String(rawDocName).trim() : "N/A";
 
-  const rawSpecialty = appointment.specialty || appointment.type || doc?.specialty || doc?.specialization;
+  const rawSpecialty = appointment.specialty || appointment.type;
   const specialty = String(rawSpecialty ?? "").trim() !== "" ? String(rawSpecialty).trim() : "N/A";
 
-  const rawHospital = appointment.hospital || appointment.hospitalName || doc?.hospital || doc?.hospitalName;
+  const rawHospital = appointment.hospital || appointment.hospitalName;
   const hospital = String(rawHospital ?? "").trim() !== "" ? String(rawHospital).trim() : "N/A";
 
-  const rawLocation = appointment.location || doc?.location;
+  const rawLocation = appointment.location;
   const location = String(rawLocation ?? "").trim() !== "" ? String(rawLocation).trim() : "";
 
-  const feeVal = appointment.consultationFee ?? appointment.fee ?? doc?.consultationFee ?? doc?.fee;
+  const feeVal = appointment.consultationFee ?? appointment.fee;
   const fee = feeVal !== null && feeVal !== undefined ? feeVal : "N/A";
 
   const initials = docName !== "N/A"

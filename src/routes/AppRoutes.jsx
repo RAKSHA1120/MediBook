@@ -3,8 +3,6 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import DesignSystem from "../pages/DesignSystem";
 import Login from "../pages/Login";
 import PatientDashboard from "../pages/PatientDashboard";
-import DoctorList from "../pages/DoctorList";
-import DoctorProfile from "../pages/DoctorProfile";
 import AppointmentBooking from "../pages/AppointmentBooking";
 import BookingSuccess from "../pages/BookingSuccess";
 import Dashboard from "../pages/Dashboard";
@@ -55,11 +53,9 @@ function AppRoutes() {
         <Route path="/login" element={<Login initialTab="signin" />} />
         <Route path="/signup" element={<Login initialTab="signup" />} />
         <Route path="/register" element={<Login initialTab="signup" />} />
-        
+
         {/* All Patient Pages Wrapped in PatientLayout */}
         <Route path="/patient-dashboard" element={<PatientLayout><PatientDashboard /></PatientLayout>} />
-        <Route path="/doctors" element={<PatientLayout><DoctorList /></PatientLayout>} />
-        <Route path="/doctor-profile" element={<PatientLayout><DoctorProfile /></PatientLayout>} />
         <Route path="/book-appointment" element={<PatientLayout><AppointmentBooking /></PatientLayout>} />
         <Route path="/booking-success" element={<PatientLayout><BookingSuccess /></PatientLayout>} />
 
@@ -72,6 +68,7 @@ function AppRoutes() {
         <Route path="/settings" element={<PatientLayout><Settings /></PatientLayout>} />
         <Route path="/help-support" element={<PatientLayout><HelpSupport /></PatientLayout>} />
 
+
         <Route path="/design-system" element={<DesignSystem />} />
 
         {/* Doctor Routes */}
@@ -81,7 +78,7 @@ function AppRoutes() {
         <Route path="/doctor/patients/:id" element={<PatientLayout><DoctorPatientDetails /></PatientLayout>} />
         <Route path="/doctor/schedule" element={<PatientLayout><DoctorSchedule /></PatientLayout>} />
         <Route path="/doctor/notifications" element={<PatientLayout><DoctorNotifications /></PatientLayout>} />
-        <Route path="/doctor/profile" element={<PatientLayout><DoctorProfile /></PatientLayout>} />
+        <Route path="/doctor/profile" element={<PatientLayout><PatientProfile /></PatientLayout>} />
         <Route path="/doctor/settings" element={<PatientLayout><DoctorSettings /></PatientLayout>} />
 
         {/* Hospital Routes */}

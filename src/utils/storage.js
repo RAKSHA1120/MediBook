@@ -1,5 +1,4 @@
 import { initialDoctorsData, initialPatientsData, adminRecentAppointments } from "../data/adminMockData";
-import doctorsData from "../data/doctors";
 import uniqueAppts from "../data/patientAppointments";
 import { INITIAL_NOTIFICATIONS } from "../data/notifications";
 import { generateLoginId, generatePassword } from "./idGenerator";
@@ -167,6 +166,14 @@ const setStorage = (key, data) => {
 };
 
 export const initializeDemoData = () => {
+  // One-time wipe of old dummy appointments and notifications
+  if (localStorage.getItem("medibook_wiped_dummy_v1") !== "true") {
+    localStorage.removeItem(KEYS.APPOINTMENTS);
+    localStorage.removeItem(KEYS.NOTIFICATIONS);
+    localStorage.removeItem(KEYS.INIT);
+    localStorage.setItem("medibook_wiped_dummy_v1", "true");
+  }
+
   if (localStorage.getItem(KEYS.INIT) === "true") return;
 
   console.log("Initializing Demo Data...");
@@ -192,10 +199,7 @@ export const initializeDemoData = () => {
   });
 
   // Merge doctor mock data
-  const mergedDoctors = [...doctorsData];
-  initialDoctorsData.forEach(d => {
-    if (!mergedDoctors.find(md => md.id === d.id)) mergedDoctors.push(d);
-  });
+  const mergedDoctors = [...initialDoctorsData];
 
   // Ensure every doctor has hospital association
   mergedDoctors.forEach((doc, idx) => {
@@ -216,10 +220,7 @@ export const initializeDemoData = () => {
   initialUsers.push({ id: "U_PAT_1", mobile: "9876543210", loginId: "9876543210", password: "123456", role: "patient", name: "Raksha", refId: "P_1" });
 
   // Appointments
-  const appointments = [...uniqueAppts];
-  adminRecentAppointments.forEach(a => {
-    if (!appointments.find(apt => apt.id === a.id)) appointments.push(a);
-  });
+  const appointments = [];
 
   setStorage(KEYS.USERS, initialUsers);
   setStorage(KEYS.HOSPITALS, hospitals);

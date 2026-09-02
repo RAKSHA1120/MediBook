@@ -14,6 +14,9 @@ function DoctorAppointments() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [consultationNotes, setConsultationNotes] = useState("");
+  const [prescribedMedicines, setPrescribedMedicines] = useState("");
 
   useEffect(() => {
     loadAppointments();
@@ -92,6 +95,8 @@ function DoctorAppointments() {
 
   const openDetails = (apt) => {
     const allPatients = getPatients();
+    const allUsers = JSON.parse(localStorage.getItem("medibook_users") || "[]");
+
     const patientInfo = allPatients.find((p) => {
       const pIdStr = String(p.id ?? "").trim();
       const pNameStr = String(p.name ?? "").toLowerCase().trim();
@@ -101,15 +106,28 @@ function DoctorAppointments() {
       return (aptPIdStr !== "" && pIdStr === aptPIdStr) || (aptPNameStr !== "" && pNameStr === aptPNameStr);
     });
 
+    const patientUser = allUsers.find(
+      (u) => u.refId === apt.patientId || (patientInfo && u.refId === patientInfo.id)
+    );
+
+    let extraProfile = {};
+    if (patientUser) {
+      try {
+        const extraStr = localStorage.getItem(`medibook_profile_${patientUser.id}`);
+        if (extraStr) extraProfile = JSON.parse(extraStr);
+      } catch (e) {}
+    }
+
     const rawPId = String(apt.patientId ?? "").trim();
-    const validPId = rawPId !== "" && rawPId.toLowerCase() !== "n/a" ? rawPId : (patientInfo?.id ? String(patientInfo.id) : null);
+    const validPId =
+      rawPId !== "" && rawPId.toLowerCase() !== "n/a" ? rawPId : patientInfo?.id ? String(patientInfo.id) : null;
 
     setSelectedAppointment({
       ...apt,
       patientName: String(apt.patientName || apt.patient || patientInfo?.name || "Patient").trim(),
       patientId: validPId,
-      contact: patientInfo?.contact || patientInfo?.phone || "N/A",
-      email: patientInfo?.email || "N/A",
+      contact: extraProfile.phone || patientInfo?.contact || patientInfo?.phone || "N/A",
+      email: extraProfile.email || patientInfo?.email || "N/A",
       reason: String(apt.type || apt.reason || apt.specialty || "Consultation").trim(),
       notes: apt.notes || "No additional notes provided."
     });
@@ -431,15 +449,81 @@ function DoctorAppointments() {
                     <Button
                       variant="primary"
                       onClick={() => {
-                        handleStatusChange(selectedAppointment.id, "Completed");
                         setIsDetailsModalOpen(false);
+                        setIsPrescriptionModalOpen(true);
                       }}
                     >
-                      Complete
+                      Complete Consultation
                     </Button>
                   </>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Prescription / Consultation Notes Modal */}
+      <Modal
+        isOpen={isPrescriptionModalOpen}
+        onClose={() => setIsPrescriptionModalOpen(false)}
+        title="Complete Consultation"
+      >
+        {selectedAppointment && (
+          <div className="prescription-modal-body" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "14px" }}>
+              Add consultation notes and prescriptions for <strong>{selectedAppointment.patientName || selectedAppointment.patient}</strong>. This will be available in their medical records.
+            </p>
+
+            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-heading)" }}>Consultation Notes / Diagnosis</label>
+              <textarea
+                className="field-input"
+                rows="4"
+                placeholder="E.g., Patient presented with mild fever and sore throat..."
+                value={consultationNotes}
+                onChange={(e) => setConsultationNotes(e.target.value)}
+                style={{ resize: "vertical", minHeight: "100px" }}
+              />
+            </div>
+
+            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-heading)" }}>Prescribed Medicines</label>
+              <textarea
+                className="field-input"
+                rows="3"
+                placeholder="E.g., Paracetamol 500mg - 1-0-1 for 3 days"
+                value={prescribedMedicines}
+                onChange={(e) => setPrescribedMedicines(e.target.value)}
+                style={{ resize: "vertical", minHeight: "80px" }}
+              />
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: "16px", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <Button variant="outline" onClick={() => setIsPrescriptionModalOpen(false)}>Cancel</Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  const prescriptions = JSON.parse(localStorage.getItem("medibook_prescriptions") || "[]");
+                  prescriptions.push({
+                    id: Date.now(),
+                    appointmentId: selectedAppointment.id,
+                    patientId: selectedAppointment.patientId,
+                    doctorId: selectedAppointment.doctorId,
+                    date: selectedAppointment.date,
+                    notes: consultationNotes,
+                    medicines: prescribedMedicines
+                  });
+                  localStorage.setItem("medibook_prescriptions", JSON.stringify(prescriptions));
+
+                  handleStatusChange(selectedAppointment.id, "Completed");
+                  setIsPrescriptionModalOpen(false);
+                  setConsultationNotes("");
+                  setPrescribedMedicines("");
+                }}
+              >
+                Save & Complete
+              </Button>
             </div>
           </div>
         )}

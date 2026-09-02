@@ -328,3 +328,29 @@
     gap: 20px;
   }
 }
+
+/* Modal Detail Rows */
+.detail-row {
+  display: flex;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+
+.detail-label {
+  width: 140px;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.detail-value {
+  flex: 1;
+  color: var(--text-heading);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.appointment-details-modal .detail-row:last-child {
+  border-bottom: none;
+}

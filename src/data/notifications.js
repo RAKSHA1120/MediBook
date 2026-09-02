@@ -1,3 +1,7 @@
+/* ==================================================
+   MediBook Notifications Data & State Management
+   ================================================== */
+
 export const INITIAL_NOTIFICATIONS = [
   {
     id: "notif-001",

@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { clearCurrentUser } from "../utils/storage";
 
 import {
     Menu,
     LayoutDashboard,
     Users,
     CalendarDays,
-    CalendarClock,
-    Bell,
+    Stethoscope,
+    FlaskConical,
+    Pill,
+    CreditCard,
+    BarChart3,
     Settings,
     User,
     LogOut,
@@ -16,12 +17,6 @@ import {
 
 function Sidebar() {
     const [expanded, setExpanded] = useState(false);
-    const navigate = useNavigate();
-
-    const handleLogout = () => {
-        clearCurrentUser();
-        navigate("/login");
-    };
 
     return (
         <aside
@@ -40,48 +35,39 @@ function Sidebar() {
                 </button>
             </div>
 
+            {/* Navigation */}
             <nav className="sidebar-nav">
-                <NavLink to="/doctor/dashboard" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
+
+                <button className="sidebar-item active">
                     <LayoutDashboard className="sidebar-icon" />
                     <span className="sidebar-label">Dashboard</span>
-                </NavLink>
+                </button>
 
-                <NavLink to="/doctor/appointments" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
+                <button className="sidebar-item">
                     <CalendarDays className="sidebar-icon" />
-                    <span className="sidebar-label">My Appointments</span>
-                </NavLink>
+                    <span className="sidebar-label">Appointments</span>
+                </button>
 
-                <NavLink to="/doctor/patients" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
-                    <Users className="sidebar-icon" />
-                    <span className="sidebar-label">Patients</span>
-                </NavLink>
-                
-                <NavLink to="/doctor/schedule" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
-                    <CalendarClock className="sidebar-icon" />
-                    <span className="sidebar-label">Schedule</span>
-                </NavLink>
-
-                <NavLink to="/doctor/notifications" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
-                    <Bell className="sidebar-icon" />
-                    <span className="sidebar-label">Notifications</span>
-                </NavLink>
             </nav>
 
+            {/* Bottom */}
             <div className="sidebar-bottom">
-                <NavLink to="/doctor/profile" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
-                    <User className="sidebar-icon" />
-                    <span className="sidebar-label">Profile</span>
-                </NavLink>
-                
-                <NavLink to="/doctor/settings" className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}>
+
+                <button className="sidebar-item">
                     <Settings className="sidebar-icon" />
                     <span className="sidebar-label">Settings</span>
-                </NavLink>
+                </button>
 
-                <button className="sidebar-item logout" onClick={handleLogout}>
+                <button className="sidebar-item">
+                    <User className="sidebar-icon" />
+                    <span className="sidebar-label">Profile</span>
+                </button>
+
+                <button className="sidebar-item logout">
                     <LogOut className="sidebar-icon" />
                     <span className="sidebar-label">Logout</span>
                 </button>
+
             </div>
         </aside>
     );
