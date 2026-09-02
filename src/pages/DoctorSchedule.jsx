@@ -1,158 +1,387 @@
 import { useState, useEffect } from "react";
-import { Clock, Plus, Trash2, CalendarClock } from "lucide-react";
+import { Clock, Plus, Trash2, CalendarClock, Save, CheckCircle2, AlertCircle } from "lucide-react";
 import { getCurrentUser } from "../utils/storage";
 import PageHeader from "../components/PageHeader";
 import Card from "../components/Card";
 import Button from "../components/Button";
+import "../pages/AdminShared.css";
 
 function DoctorSchedule() {
-    const [schedule, setSchedule] = useState({
-        Monday: ["09:00 AM - 01:00 PM"],
-        Tuesday: ["09:00 AM - 01:00 PM"],
-        Wednesday: ["09:00 AM - 01:00 PM"],
-        Thursday: ["09:00 AM - 01:00 PM"],
-        Friday: ["09:00 AM - 01:00 PM"],
-        Saturday: [],
-        Sunday: []
+  const [schedule, setSchedule] = useState({
+    Monday: ["09:00 AM - 01:00 PM"],
+    Tuesday: ["09:00 AM - 01:00 PM"],
+    Wednesday: ["09:00 AM - 01:00 PM"],
+    Thursday: ["09:00 AM - 01:00 PM"],
+    Friday: ["09:00 AM - 01:00 PM"],
+    Saturday: [],
+    Sunday: []
+  });
+
+  const [newSlot, setNewSlot] = useState({ day: "Monday", start: "09:00", end: "13:00" });
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (user) {
+      const userKey = user.refId || user.id;
+      const savedSchedule = localStorage.getItem(`medibook_schedule_${userKey}`);
+      if (savedSchedule) {
+        try {
+          setSchedule(JSON.parse(savedSchedule));
+        } catch (e) {
+          console.error("Failed to parse saved doctor schedule", e);
+        }
+      }
+    }
+  }, []);
+
+  const showToast = (msg, isSuccess = true) => {
+    if (isSuccess) {
+      setSuccessMessage(msg);
+      setErrorMessage("");
+      setTimeout(() => setSuccessMessage(""), 4000);
+    } else {
+      setErrorMessage(msg);
+      setSuccessMessage("");
+      setTimeout(() => setErrorMessage(""), 4000);
+    }
+  };
+
+  const handleSave = () => {
+    const user = getCurrentUser();
+    if (user) {
+      const userKey = user.refId || user.id;
+      localStorage.setItem(`medibook_schedule_${userKey}`, JSON.stringify(schedule));
+      showToast("Schedule saved successfully to your profile!", true);
+    } else {
+      showToast("Unable to save schedule: User session not found.", false);
+    }
+  };
+
+  const addSlot = (e) => {
+    if (e) e.preventDefault();
+
+    if (!newSlot.start || !newSlot.end) {
+      showToast("Please specify both start and end times.", false);
+      return;
+    }
+
+    if (newSlot.start >= newSlot.end) {
+      showToast("Start time must be earlier than end time.", false);
+      return;
+    }
+
+    const formatTime = (time24) => {
+      const [hours, minutes] = time24.split(":");
+      const h = parseInt(hours, 10);
+      const ampm = h >= 12 ? "PM" : "AM";
+      const h12 = h % 12 || 12;
+      return `${h12.toString().padStart(2, "0")}:${minutes} ${ampm}`;
+    };
+
+    const slotString = `${formatTime(newSlot.start)} - ${formatTime(newSlot.end)}`;
+    const currentSlots = schedule[newSlot.day] || [];
+
+    if (currentSlots.includes(slotString)) {
+      showToast(`This time slot (${slotString}) already exists for ${newSlot.day}.`, false);
+      return;
+    }
+
+    setSchedule((prev) => ({
+      ...prev,
+      [newSlot.day]: [...(prev[newSlot.day] || []), slotString]
+    }));
+
+    showToast(`Added ${slotString} to ${newSlot.day}.`, true);
+  };
+
+  const removeSlot = (day, index) => {
+    setSchedule((prev) => {
+      const updatedDay = [...(prev[day] || [])];
+      updatedDay.splice(index, 1);
+      return { ...prev, [day]: updatedDay };
     });
+  };
 
-    const [newSlot, setNewSlot] = useState({ day: "Monday", start: "09:00", end: "13:00" });
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-    useEffect(() => {
-        const user = getCurrentUser();
-        if (user) {
-            const savedSchedule = localStorage.getItem(`medibook_schedule_${user.refId}`);
-            if (savedSchedule) {
-                setSchedule(JSON.parse(savedSchedule));
-            }
-        }
-    }, []);
+  return (
+    <main className="patient-dashboard-content">
+      {/* 1. Page Header */}
+      <section className="greeting-section" style={{ marginBottom: "20px" }}>
+        <h2 className="greeting-title">My Schedule</h2>
+        <p className="greeting-subtitle">Manage your weekly availability and time slots.</p>
+      </section>
 
-    const handleSave = () => {
-        const user = getCurrentUser();
-        if (user) {
-            localStorage.setItem(`medibook_schedule_${user.refId}`, JSON.stringify(schedule));
-            alert("Schedule saved successfully!");
-        }
-    };
+      {/* Toast Feedback Banners */}
+      {successMessage && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            background: "#ecfdf5",
+            color: "#065f46",
+            border: "1px solid #a7f3d0",
+            borderRadius: "var(--radius-md)",
+            padding: "12px 16px",
+            marginBottom: "20px",
+            fontSize: "14px",
+            fontWeight: "500"
+          }}
+        >
+          <CheckCircle2 size={18} color="#10b981" />
+          <span>{successMessage}</span>
+        </div>
+      )}
 
-    const addSlot = () => {
-        const formatTime = (time24) => {
-            const [hours, minutes] = time24.split(':');
-            const h = parseInt(hours);
-            const ampm = h >= 12 ? 'PM' : 'AM';
-            const h12 = h % 12 || 12;
-            return `${h12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
-        };
+      {errorMessage && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            background: "#fef2f2",
+            color: "#991b1b",
+            border: "1px solid #fecaca",
+            borderRadius: "var(--radius-md)",
+            padding: "12px 16px",
+            marginBottom: "20px",
+            fontSize: "14px",
+            fontWeight: "500"
+          }}
+        >
+          <AlertCircle size={18} color="#ef4444" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
 
-        const slotString = `${formatTime(newSlot.start)} - ${formatTime(newSlot.end)}`;
-        
-        setSchedule(prev => ({
-            ...prev,
-            [newSlot.day]: [...prev[newSlot.day], slotString]
-        }));
-    };
+      {/* 2. Responsive 2-Column Grid Layout */}
+      <div
+        className="schedule-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: "24px",
+          alignItems: "start"
+        }}
+      >
+        {/* LEFT COLUMN: Add New Time Slot Card + Save Button */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <Card>
+            <h3
+              style={{
+                margin: "0 0 20px 0",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                fontSize: "1.1rem",
+                fontWeight: "700",
+                color: "var(--text-heading)"
+              }}
+            >
+              <CalendarClock size={22} style={{ color: "var(--primary)" }} /> Add New Time Slot
+            </h3>
 
-    const removeSlot = (day, index) => {
-        setSchedule(prev => {
-            const updatedDay = [...prev[day]];
-            updatedDay.splice(index, 1);
-            return { ...prev, [day]: updatedDay };
-        });
-    };
+            <form onSubmit={addSlot} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Day of Week */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "var(--text-muted)",
+                    marginBottom: "6px"
+                  }}
+                >
+                  Day of Week
+                </label>
+                <select
+                  className="form-select"
+                  style={{ height: "44px", width: "100%", borderRadius: "8px" }}
+                  value={newSlot.day}
+                  onChange={(e) => setNewSlot({ ...newSlot, day: e.target.value })}
+                >
+                  {days.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+              {/* Start & End Times Row */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "var(--text-muted)",
+                      marginBottom: "6px"
+                    }}
+                  >
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    className="form-input"
+                    style={{ height: "44px", width: "100%", borderRadius: "8px" }}
+                    value={newSlot.start}
+                    onChange={(e) => setNewSlot({ ...newSlot, start: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "var(--text-muted)",
+                      marginBottom: "6px"
+                    }}
+                  >
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    className="form-input"
+                    style={{ height: "44px", width: "100%", borderRadius: "8px" }}
+                    value={newSlot.end}
+                    onChange={(e) => setNewSlot({ ...newSlot, end: e.target.value })}
+                  />
+                </div>
+              </div>
 
-    return (
-        <main className="patient-dashboard-content">
-            <PageHeader title="My Schedule" subtitle="Manage your weekly availability and time slots." />
+              {/* Add Slot Button */}
+              <Button
+                type="submit"
+                variant="primary"
+                style={{
+                  height: "44px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  fontWeight: "600",
+                  marginTop: "4px"
+                }}
+              >
+                <Plus size={18} /> Add Slot
+              </Button>
+            </form>
+          </Card>
 
-            <div className="dashboard-main-info-grid">
-                <div className="next-appointment-column">
-                    <Card>
-                        <h3 style={{ margin: "0 0 20px 0", display: "flex", alignItems: "center", gap: "8px", fontSize: "1.1rem" }}>
-                            <CalendarClock size={20} color="#0284c7" /> Add New Time Slot
-                        </h3>
-                        
-                        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "flex-end", marginBottom: "20px" }}>
-                            <div style={{ flex: 1, minWidth: "120px" }}>
-                                <label className="input-label">Day of Week</label>
-                                <select 
-                                    className="field-select" 
-                                    value={newSlot.day} 
-                                    onChange={(e) => setNewSlot({...newSlot, day: e.target.value})}
-                                >
-                                    {days.map(d => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </div>
-                            <div style={{ flex: 1, minWidth: "100px" }}>
-                                <label className="input-label">Start Time</label>
-                                <input 
-                                    type="time" 
-                                    className="field-input" 
-                                    value={newSlot.start}
-                                    onChange={(e) => setNewSlot({...newSlot, start: e.target.value})}
-                                />
-                            </div>
-                            <div style={{ flex: 1, minWidth: "100px" }}>
-                                <label className="input-label">End Time</label>
-                                <input 
-                                    type="time" 
-                                    className="field-input" 
-                                    value={newSlot.end}
-                                    onChange={(e) => setNewSlot({...newSlot, end: e.target.value})}
-                                />
-                            </div>
-                            <Button variant="primary" onClick={addSlot} style={{ height: "42px" }}>
-                                <Plus size={16} /> Add Slot
-                            </Button>
-                        </div>
-                    </Card>
+          {/* Save Button Container */}
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <Button
+              variant="primary"
+              onClick={handleSave}
+              style={{
+                height: "44px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                fontWeight: "600"
+              }}
+            >
+              <Save size={18} /> Save Schedule to Profile
+            </Button>
+          </div>
+        </div>
 
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "24px", marginBottom: "24px" }}>
-                        <Button variant="primary" onClick={handleSave}>Save Schedule to Profile</Button>
+        {/* RIGHT COLUMN: Weekly Overview Card */}
+        <div>
+          <Card>
+            <h3
+              style={{
+                margin: "0 0 20px 0",
+                fontSize: "1.1rem",
+                fontWeight: "700",
+                color: "var(--text-heading)"
+              }}
+            >
+              Weekly Overview
+            </h3>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {days.map((day, idx) => {
+                const slots = schedule[day] || [];
+                const isLast = idx === days.length - 1;
+
+                return (
+                  <div
+                    key={day}
+                    style={{
+                      paddingBottom: isLast ? "0" : "16px",
+                      borderBottom: isLast ? "none" : "1px solid var(--border)"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <span style={{ fontWeight: "700", fontSize: "15px", color: "var(--text-heading)" }}>
+                        {day}
+                      </span>
+                      {slots.length === 0 && (
+                        <span style={{ fontSize: "13px", color: "var(--text-muted)", fontStyle: "italic" }}>
+                          Not Available / Off
+                        </span>
+                      )}
                     </div>
-                </div>
 
-                <div className="quick-actions-column">
-                    <Card>
-                        <h3 style={{ margin: "0 0 20px 0", fontSize: "1.1rem" }}>Weekly Overview</h3>
-                        
-                        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                            {days.map(day => (
-                                <div key={day} style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "16px" }}>
-                                    <h4 style={{ margin: "0 0 8px 0", color: "#0f172a", fontSize: "1rem" }}>{day}</h4>
-                                    
-                                    {schedule[day].length === 0 ? (
-                                        <span style={{ color: "#94a3b8", fontSize: "0.9rem" }}>Not Available / Off</span>
-                                    ) : (
-                                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                                            {schedule[day].map((slot, idx) => (
-                                                <div key={idx} style={{ 
-                                                    display: "flex", alignItems: "center", gap: "8px", 
-                                                    padding: "6px 12px", backgroundColor: "#f1f5f9", 
-                                                    borderRadius: "16px", fontSize: "0.875rem", border: "1px solid #cbd5e1" 
-                                                }}>
-                                                    <Clock size={14} color="#64748b" />
-                                                    <span>{slot}</span>
-                                                    <button 
-                                                        onClick={() => removeSlot(day, idx)}
-                                                        style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 0, display: "flex" }}
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
-                </div>
+                    {slots.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        {slots.map((slot, slotIdx) => (
+                          <div
+                            key={slotIdx}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              padding: "6px 12px",
+                              backgroundColor: "var(--primary-soft)",
+                              border: "1px solid var(--primary-light)",
+                              borderRadius: "20px",
+                              fontSize: "13.5px",
+                              fontWeight: "600",
+                              color: "var(--primary-dark)"
+                            }}
+                          >
+                            <Clock size={14} style={{ color: "var(--primary)" }} />
+                            <span>{slot}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeSlot(day, slotIdx)}
+                              title="Remove time slot"
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                color: "#ef4444",
+                                padding: "2px",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                borderRadius: "4px",
+                                transition: "background 0.2s"
+                              }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-        </main>
-    );
+          </Card>
+        </div>
+      </div>
+    </main>
+  );
 }
 
 export default DoctorSchedule;

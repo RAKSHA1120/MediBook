@@ -14,7 +14,7 @@ import {
   AlertTriangle,
   Receipt
 } from "lucide-react";
-import { getDoctors } from "../utils/storage";
+import { getDoctors, getCurrentPatient, getPatientAppointments } from "../utils/storage";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
@@ -39,6 +39,13 @@ function MyAppointments() {
   // Toast State
   const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
 
+  // Get current patient's isolated appointments
+  const patientAppts = useMemo(() => {
+    const p = getCurrentPatient();
+    if (!p) return [];
+    return getPatientAppointments(p.id);
+  }, [appointments]);
+
   const showNotification = (title, message, type = "success") => {
     setToast({ show: true, type, title, message });
     setTimeout(() => {
@@ -48,29 +55,45 @@ function MyAppointments() {
 
   // Helper to resolve Doctor information
   const getDoctorInfo = (appt) => {
+    if (!appt) return { name: "N/A", specialty: "N/A", hospital: "N/A", location: "", fee: "N/A", initials: "DR" };
     let doc = null;
     const doctorsList = getDoctors();
-    if (appt.doctorId) {
-      doc = doctorsList.find((d) => String(d.id) === String(appt.doctorId));
+    const docIdStr = String(appt.doctorId ?? "").trim();
+    const docNameStr = String(appt.doctorName || appt.doctor || "").trim();
+
+    if (docIdStr !== "") {
+      doc = doctorsList.find((d) => String(d.id ?? "").trim() === docIdStr);
     }
-    if (!doc && appt.doctorName) {
-      doc = doctorsList.find((d) => d.name.toLowerCase() === appt.doctorName.toLowerCase());
+    if (!doc && docNameStr !== "") {
+      const normTargetDocName = docNameStr.toLowerCase();
+      doc = doctorsList.find((d) => String(d.name ?? "").trim().toLowerCase() === normTargetDocName);
     }
 
-    const name = appt.doctorName || doc?.name || "Dr. Emily Carter";
-    const specialty = appt.specialty || doc?.specialty || "Cardiology";
-    const hospital = appt.hospital || doc?.hospital || "MediCare Hospital";
-    const location = appt.location || doc?.location || "Chennai";
-    const fee = appt.consultationFee ?? doc?.consultationFee ?? 800;
+    const rawName = appt.doctorName || appt.doctor || doc?.name;
+    const name = String(rawName ?? "").trim() !== "" ? String(rawName).trim() : "N/A";
+
+    const rawSpec = appt.specialty || appt.type || doc?.specialty || doc?.specialization;
+    const specialty = String(rawSpec ?? "").trim() !== "" ? String(rawSpec).trim() : "N/A";
+
+    const rawHosp = appt.hospital || appt.hospitalName || doc?.hospital || doc?.hospitalName;
+    const hospital = String(rawHosp ?? "").trim() !== "" ? String(rawHosp).trim() : "N/A";
+
+    const rawLoc = appt.location || doc?.location;
+    const location = String(rawLoc ?? "").trim() !== "" ? String(rawLoc).trim() : "";
+
+    const feeVal = appt.consultationFee ?? appt.fee ?? doc?.consultationFee ?? doc?.fee;
+    const fee = feeVal !== null && feeVal !== undefined ? feeVal : "N/A";
 
     // Doctor Initials
-    const initials = name
-      .split(" ")
-      .filter((n) => n.toLowerCase() !== "dr.")
-      .map((n) => n[0])
-      .join("")
-      .substring(0, 2)
-      .toUpperCase() || "DR";
+    const initials = name !== "N/A"
+      ? name
+          .split(" ")
+          .filter((n) => String(n ?? "").toLowerCase() !== "dr.")
+          .map((n) => (n && n[0] ? n[0] : ""))
+          .join("")
+          .substring(0, 2)
+          .toUpperCase() || "DR"
+      : "DR";
 
     return { name, specialty, hospital, location, fee, initials };
   };
@@ -85,25 +108,25 @@ function MyAppointments() {
     return "upcoming";
   };
 
-  // Dynamic tab counts
+  // Dynamic tab counts for current patient
   const tabCounts = useMemo(() => {
     const counts = { Upcoming: 0, Completed: 0, Cancelled: 0 };
-    appointments.forEach((appt) => {
+    patientAppts.forEach((appt) => {
       const norm = getNormalizedStatus(appt.status);
       if (norm === "upcoming") counts.Upcoming++;
       else if (norm === "completed") counts.Completed++;
       else if (norm === "cancelled") counts.Cancelled++;
     });
     return counts;
-  }, [appointments]);
+  }, [patientAppts]);
 
   // Filtered appointments for active tab
   const filteredAppointments = useMemo(() => {
-    return appointments.filter((appt) => {
+    return patientAppts.filter((appt) => {
       const norm = getNormalizedStatus(appt.status);
       return norm === activeTab.toLowerCase();
     });
-  }, [appointments, activeTab]);
+  }, [patientAppts, activeTab]);
 
   // Handle View Action
   const handleViewAppointment = (appt) => {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Calendar, Clock, AlertCircle, CheckCircle2, XCircle, Eye } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import Button from "../components/Button";
@@ -10,7 +11,12 @@ import { getAppointments, updateAppointmentStatus } from "../utils/storage";
 import "./AdminDashboard.css";
 import "./AdminShared.css";
 
+// Type-safe string normalization helpers
+const safeStr = (val) => (val === null || val === undefined ? "" : String(val)).trim();
+const toLowerStr = (val) => safeStr(val).toLowerCase();
+
 function AdminAppointments() {
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("All");
@@ -47,12 +53,12 @@ function AdminAppointments() {
   const stats = useMemo(() => {
     const total = appointments.length;
     const upcoming = appointments.filter(a => {
-      const s = (a.status || "").toLowerCase();
+      const s = toLowerStr(a.status);
       return s === "upcoming" || s === "confirmed" || s === "scheduled";
     }).length;
-    const pending = appointments.filter(a => (a.status || "").toLowerCase() === "pending").length;
-    const completed = appointments.filter(a => (a.status || "").toLowerCase() === "completed").length;
-    const cancelled = appointments.filter(a => (a.status || "").toLowerCase() === "cancelled").length;
+    const pending = appointments.filter(a => toLowerStr(a.status) === "pending").length;
+    const completed = appointments.filter(a => toLowerStr(a.status) === "completed").length;
+    const cancelled = appointments.filter(a => toLowerStr(a.status) === "cancelled").length;
 
     return { total, upcoming, pending, completed, cancelled };
   }, [appointments]);
@@ -78,31 +84,32 @@ function AdminAppointments() {
   const filteredAppointments = useMemo(() => {
     return appointments.filter(apt => {
       // 1. Search filter (Patient, Doctor, Appointment ID)
-      const query = searchTerm.toLowerCase().trim();
-      const pName = (apt.patientName || "Rahul Sharma").toLowerCase();
-      const dName = (apt.doctorName || "Dr. Emily Carter").toLowerCase();
-      const aptId = (apt.id || "").toLowerCase();
+      const query = toLowerStr(searchTerm);
+      const pName = toLowerStr(apt.patientName || apt.patient);
+      const dName = toLowerStr(apt.doctorName || apt.doctor);
+      const aptId = toLowerStr(apt.id);
 
       const matchesSearch = !query || pName.includes(query) || dName.includes(query) || aptId.includes(query);
 
       // 2. Tab Status filter
       let matchesTab = true;
       if (activeTab !== "All") {
-        const s = (apt.status || "").toLowerCase();
+        const s = toLowerStr(apt.status);
         const normStatus = (s === 'scheduled' || s === 'confirmed') ? 'upcoming' : s;
-        matchesTab = normStatus === activeTab.toLowerCase();
+        matchesTab = normStatus === toLowerStr(activeTab);
       }
 
       // 3. Date filter
       let matchesDate = true;
       const todayStr = new Date().toISOString().split('T')[0];
+      const aptDate = safeStr(apt.date);
 
       if (dateFilter === "Today") {
-        matchesDate = apt.date === todayStr;
+        matchesDate = aptDate === todayStr;
       } else if (dateFilter === "Upcoming") {
-        matchesDate = apt.date >= todayStr;
+        matchesDate = aptDate >= todayStr;
       } else if (dateFilter === "Custom" && customDate) {
-        matchesDate = apt.date === customDate;
+        matchesDate = aptDate === customDate;
       }
 
       return matchesSearch && matchesTab && matchesDate;
@@ -257,9 +264,12 @@ function AdminAppointments() {
             </thead>
             <tbody>
               {filteredAppointments.map(apt => {
-                const patientName = apt.patientName || "Rahul Sharma";
-                const doctorName = apt.doctorName || "Dr. Emily Carter";
-                const cleanDocName = doctorName.startsWith("Dr.") ? doctorName : `Dr. ${doctorName}`;
+                const rawPatientName = safeStr(apt.patientName || apt.patient);
+                const patientName = rawPatientName !== "" ? rawPatientName : "N/A";
+                const rawDocName = safeStr(apt.doctorName || apt.doctor);
+                const cleanDocName = rawDocName !== ""
+                  ? (toLowerStr(rawDocName).startsWith("dr.") ? rawDocName : `Dr. ${rawDocName}`)
+                  : "N/A";
                 const { date, time } = formatDateTime(apt.date, apt.time);
 
                 return (
@@ -271,11 +281,16 @@ function AdminAppointments() {
                       </span>
                     </td>
 
-                    {/* PATIENT (Name Only) */}
+                    {/* PATIENT */}
                     <td>
-                      <span style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-heading)" }}>
+                      <button
+                        type="button"
+                        className="patient-name-link"
+                        onClick={() => navigate(`/admin/appointments/${apt.id}`)}
+                        title={`View appointment details for ${patientName}`}
+                      >
                         {patientName}
-                      </span>
+                      </button>
                     </td>
 
                     {/* DOCTOR (Name Only) */}
@@ -314,8 +329,8 @@ function AdminAppointments() {
                       <div className="table-actions-cell" style={{ justifyContent: "flex-end" }}>
                         <button
                           className="icon-action-btn"
-                          title="View Appointment"
-                          onClick={() => handleOpenViewModal(apt)}
+                          title="View Appointment Details"
+                          onClick={() => navigate(`/admin/appointments/${apt.id}`)}
                         >
                           <Eye size={17} />
                         </button>

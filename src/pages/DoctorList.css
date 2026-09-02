@@ -348,6 +348,59 @@
 .sort-select:focus {
   border-color: var(--primary);
 }
+/* ==================================================
+   Hospital Group Sections
+   ================================================== */
+
+.hospital-group-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.hospital-group-section:last-child {
+  margin-bottom: 0;
+}
+
+.hospital-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--primary-soft);
+}
+
+.hospital-group-icon {
+  color: var(--primary);
+  background: var(--primary-soft);
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hospital-group-title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+.hospital-group-count {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 2px 10px;
+  border-radius: 100px;
+  margin-left: auto;
+}
 
 /* ==================================================
    Doctor Grid & Cards (DESIGN NOT CHANGED)

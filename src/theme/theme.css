@@ -79,6 +79,20 @@
    --icon-lg: 24px;
 
    --icon-stroke: 2px;
+
+   /* ================================
+     Layout & Container Tokens
+  ================================= */
+
+   --page-max-width: 1320px;
+   --page-padding-desktop: 32px 48px;
+   --page-padding-tablet: 28px 32px;
+   --page-padding-mobile: 20px 16px;
+
+   --card-radius: 16px;
+   --card-border: 1px solid #d9e7f0;
+   --card-shadow: 0 2px 8px rgba(23, 32, 51, 0.04);
+   --section-gap: 28px;
 }
 
 /* ================================

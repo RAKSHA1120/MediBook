@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Button from "./Button";
 import { getStoredNotifications } from "../data/notifications";
-import { getCurrentUser, clearCurrentUser } from "../utils/storage";
+import { getCurrentUser, getCurrentPatient, getPatientNotifications, clearCurrentUser } from "../utils/storage";
 import "./PatientSidebar.css";
 
 function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) {
@@ -26,15 +26,17 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
   const [isHovered, setIsHovered] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Sync notification unread count dynamically
+  // Sync notification unread count dynamically for current patient
   useEffect(() => {
     const updateUnread = () => {
       try {
-        const notifs = getStoredNotifications();
+        const p = getCurrentPatient();
+        const u = getCurrentUser();
+        const notifs = getPatientNotifications(p?.id, u?.id);
         const unread = notifs.filter((n) => !n.read).length;
-        setUnreadCount(unread > 0 ? unread : 3);
+        setUnreadCount(unread);
       } catch (e) {
-        setUnreadCount(3);
+        setUnreadCount(0);
       }
     };
     updateUnread();

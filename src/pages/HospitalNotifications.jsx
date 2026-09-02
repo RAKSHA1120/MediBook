@@ -5,109 +5,119 @@ import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import NotificationCard from "../components/NotificationCard";
 import {
-  getStoredNotifications,
+  getCurrentUser,
+  getHospitals,
+  getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead
-} from "../data/notifications";
-import { getCurrentUser, getCurrentPatient, getPatientNotifications } from "../utils/storage";
+} from "../utils/storage";
 import "./Notifications.css";
 
-function Notifications() {
+function HospitalNotifications() {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState(() => getPatientNotifications());
+  const [hospital, setHospital] = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const [activeTab, setActiveTab] = useState("all");
 
-  // Sync state if external changes happen
   useEffect(() => {
-    const handleUpdate = () => {
-      const p = getCurrentPatient();
-      const u = getCurrentUser();
-      setNotifications(getPatientNotifications(p?.id, u?.id));
-    };
-    handleUpdate();
+    loadHospitalNotifications();
+
+    const handleUpdate = () => loadHospitalNotifications();
     window.addEventListener("medibook_notifications_updated", handleUpdate);
-    return () => {
-      window.removeEventListener("medibook_notifications_updated", handleUpdate);
-    };
+    return () => window.removeEventListener("medibook_notifications_updated", handleUpdate);
   }, []);
 
-  // Filter Counts
+  const loadHospitalNotifications = () => {
+    const user = getCurrentUser();
+    if (!user) return;
+
+    const hospitals = getHospitals();
+    const hosRecord = hospitals.find((h) => h.id === user.refId || h.name === user.name) || {
+      id: user.refId || "HOS-008",
+      name: user.name || "MediCare Hospital"
+    };
+    setHospital(hosRecord);
+
+    const allNotifs = getNotifications();
+    setNotifications(allNotifs);
+  };
+
   const counts = useMemo(() => {
     const all = notifications.length;
-    const appointments = notifications.filter((n) => n.type === "appointment").length;
+    const appointments = notifications.filter(
+      (n) => n.type === "appointment" || (n.subType && n.subType.includes("apt")) || n.appointmentId
+    ).length;
     const reminders = notifications.filter((n) => n.type === "reminder").length;
-    const system = notifications.filter((n) => n.type === "system").length;
+    const system = notifications.filter((n) => n.type === "system" || !n.type).length;
     const unread = notifications.filter((n) => !n.read).length;
     return { all, appointments, reminders, system, unread };
   }, [notifications]);
 
-  // Filtered Notifications list
   const filteredNotifications = useMemo(() => {
     if (activeTab === "appointments") {
-      return notifications.filter((n) => n.type === "appointment");
+      return notifications.filter(
+        (n) => n.type === "appointment" || (n.subType && n.subType.includes("apt")) || n.appointmentId
+      );
     }
     if (activeTab === "reminders") {
       return notifications.filter((n) => n.type === "reminder");
     }
     if (activeTab === "system") {
-      return notifications.filter((n) => n.type === "system");
+      return notifications.filter((n) => n.type === "system" || !n.type);
     }
     return notifications;
   }, [notifications, activeTab]);
 
-  // Handle Mark All As Read
   const handleMarkAll = () => {
     const updated = markAllNotificationsAsRead();
     setNotifications(updated);
   };
 
-  // Handle Notification Click
   const handleCardClick = (notif) => {
     if (!notif.read) {
-      const updated = markNotificationAsRead(notif.id);
-      setNotifications(updated);
+      markNotificationAsRead(notif.id);
+      loadHospitalNotifications();
     }
     if (notif.appointmentId) {
-      navigate(`/appointment/${notif.appointmentId}`);
+      navigate("/hospital/appointments");
     }
   };
 
-  // Get Empty state copy per tab
   const getEmptyStateProps = () => {
     if (activeTab === "appointments") {
       return {
         icon: Calendar,
         title: "No Appointment Notifications",
-        description: "You don't have any appointment confirmations, rescheduling or cancellation updates."
+        description: "Your hospital has no pending appointment confirmation or cancellation updates."
       };
     }
     if (activeTab === "reminders") {
       return {
         icon: Bell,
-        title: "No Upcoming Reminders",
-        description: "You have no active appointment reminders at this moment."
+        title: "No Facility Reminders",
+        description: "There are no operational or schedule reminders for your hospital."
       };
     }
     if (activeTab === "system") {
       return {
         icon: Info,
         title: "No System Notifications",
-        description: "There are no system updates or general alerts available."
+        description: "There are no system-wide updates or administrative notices."
       };
     }
     return {
       icon: BellOff,
       title: "No Notifications Found",
-      description: "You're all caught up! Important updates and reminders will appear here."
+      description: "You're all caught up! Facility alerts and updates will appear here."
     };
   };
 
   return (
-    <div className="notifications-page">
+    <main className="patient-dashboard-content">
       {/* Page Header */}
       <PageHeader
-        title="Notifications"
-        subtitle="Stay updated with your appointments and important alerts."
+        title="Hospital Notifications"
+        subtitle={`Stay updated with operational alerts and appointments for ${hospital?.name || "your hospital"}`}
         action={
           counts.unread > 0 ? (
             <button className="btn-mark-all-read" onClick={handleMarkAll}>
@@ -119,7 +129,7 @@ function Notifications() {
       />
 
       {/* Filter Tabs Bar */}
-      <div className="notifications-tabs-bar" role="tablist">
+      <div className="notifications-tabs-bar" role="tablist" style={{ marginBottom: "24px" }}>
         <button
           className={`notifications-tab-btn ${activeTab === "all" ? "active" : ""}`}
           onClick={() => setActiveTab("all")}
@@ -175,8 +185,8 @@ function Notifications() {
       ) : (
         <EmptyState {...getEmptyStateProps()} />
       )}
-    </div>
+    </main>
   );
 }
 
-export default Notifications;
+export default HospitalNotifications;

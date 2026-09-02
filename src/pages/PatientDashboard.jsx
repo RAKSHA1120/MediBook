@@ -26,8 +26,14 @@ import {
   ShieldCheck,
   Lock
 } from "lucide-react";
-import { getDoctors, getCurrentUser, getNotifications, addNotification as storageAddNotif } from "../utils/storage";
-import { getStoredNotifications } from "../data/notifications";
+import {
+  getDoctors,
+  getCurrentUser,
+  getCurrentPatient,
+  getPatientAppointments,
+  getPatientNotifications,
+  addNotification as storageAddNotif
+} from "../utils/storage";
 import Navbar from "../components/Navbar";
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -97,15 +103,37 @@ function PatientDashboard() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
   
-  // Notifications / Recent Activity state
-  const [notifications, setNotifications] = useState(() => getStoredNotifications());
-
   const [doctorsList, setDoctorsList] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [currentPatient, setCurrentPatientState] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+
+  const syncPatientData = () => {
+    const user = getCurrentUser();
+    const patient = getCurrentPatient();
+    setCurrentUser(user);
+    setCurrentPatientState(patient);
+    if (patient || user) {
+      setNotifications(getPatientNotifications(patient?.id, user?.id));
+    } else {
+      setNotifications([]);
+    }
+  };
 
   useEffect(() => {
     setDoctorsList(getDoctors());
-    setCurrentUser(getCurrentUser());
+    syncPatientData();
+
+    const handleNotifUpdate = () => {
+      const u = getCurrentUser();
+      const p = getCurrentPatient();
+      if (p || u) {
+        setNotifications(getPatientNotifications(p?.id, u?.id));
+      }
+    };
+
+    window.addEventListener("medibook_notifications_updated", handleNotifUpdate);
+    return () => window.removeEventListener("medibook_notifications_updated", handleNotifUpdate);
   }, []);
 
   // Navigation and action handlers
@@ -114,23 +142,31 @@ function PatientDashboard() {
     navigate("/doctor-profile", { state: { doctor: fullDoc } });
   };
 
-  // Dynamic upcoming appointment from AppointmentContext
+  // Filtered patient appointments
+  const patientAppts = useMemo(() => {
+    if (!currentPatient && !currentUser) return [];
+    return getPatientAppointments(currentPatient?.id || currentUser?.refId || currentUser?.id);
+  }, [currentPatient, currentUser, appointments]);
+
+  // Dynamic upcoming appointment for current patient
   const upcomingAppointment = useMemo(() => {
-    if (!appointments || appointments.length === 0) return null;
-    const upcoming = appointments.find((a) => {
-      if (!a.status) return true;
+    if (!patientAppts || patientAppts.length === 0) return null;
+    const upcoming = patientAppts.find((a) => {
+      if (!a || !a.status) return true;
       const s = String(a.status).toLowerCase();
       return s === "upcoming" || s === "confirmed" || s === "scheduled";
     });
 
     if (!upcoming) return null;
 
-    const doc = doctorsList.find((d) => String(d.id) === String(upcoming.doctorId)) || {};
-    const docName = upcoming.doctorName || doc.name || "Dr. Emily Carter";
+    const doc = doctorsList.find((d) => String(d?.id || "") === String(upcoming?.doctorId || "")) || {};
+    const rawDocName = String(upcoming.doctorName || upcoming.doctor || doc.name || "Dr. Emily Carter");
+    const docName = rawDocName !== "" ? rawDocName : "Dr. Emily Carter";
+    
     const initials = docName
       .split(" ")
-      .filter((n) => n.toLowerCase() !== "dr.")
-      .map((n) => n[0])
+      .filter((n) => String(n || "").toLowerCase() !== "dr.")
+      .map((n) => (n && n[0] ? n[0] : ""))
       .join("")
       .substring(0, 2)
       .toUpperCase() || "EC";
@@ -139,16 +175,16 @@ function PatientDashboard() {
       id: upcoming.id,
       doctorId: upcoming.doctorId,
       doctorName: docName,
-      specialty: upcoming.specialty || doc.specialty || "Cardiology",
-      hospital: upcoming.hospital || doc.hospital || "MediCare Hospital",
+      specialty: upcoming.specialty || doc.specialty || doc.specialization || "General",
+      hospital: upcoming.hospital || upcoming.hospitalName || doc.hospital || doc.hospitalName || "MediCare Hospital",
       location: upcoming.location || doc.location || "Chennai",
       date: upcoming.formattedDate || upcoming.date || "Wed, Aug 26, 2026",
       time: upcoming.time || "09:00 AM",
-      consultationFee: upcoming.consultationFee ?? doc.consultationFee ?? 800,
+      consultationFee: upcoming.consultationFee ?? upcoming.fee ?? doc.consultationFee ?? doc.fee ?? 800,
       status: upcoming.status || "Confirmed",
       initials
     };
-  }, [appointments, doctorsList]);
+  }, [patientAppts, doctorsList]);
 
   const handleMyAppointments = () => {
     navigate("/my-appointments");

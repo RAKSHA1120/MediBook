@@ -16,42 +16,59 @@ function AppointmentCard({
 
   // Resolve Doctor metadata if available
   let doc = null;
-  if (appointment.doctorId) {
-    doc = doctors.find((d) => String(d.id) === String(appointment.doctorId));
+  const docIdStr = String(appointment.doctorId ?? "").trim();
+  const docNameStr = String(appointment.doctorName || appointment.doctor || "").trim();
+
+  if (docIdStr !== "") {
+    doc = doctors.find((d) => String(d.id ?? "").trim() === docIdStr);
   }
-  if (!doc && appointment.doctorName) {
-    doc = doctors.find((d) => d.name.toLowerCase() === appointment.doctorName.toLowerCase());
+  if (!doc && docNameStr !== "") {
+    const normTargetDocName = docNameStr.toLowerCase();
+    doc = doctors.find((d) => String(d.name ?? "").trim().toLowerCase() === normTargetDocName);
   }
 
-  const docName = appointment.doctorName || doc?.name || "Dr. Emily Carter";
-  const specialty = appointment.specialty || doc?.specialty || "Cardiology";
-  const hospital = appointment.hospital || doc?.hospital || "MediCare Hospital";
-  const location = appointment.location || doc?.location || "Chennai";
-  const fee = appointment.consultationFee ?? doc?.consultationFee ?? 800;
+  const rawDocName = appointment.doctorName || appointment.doctor || doc?.name;
+  const docName = String(rawDocName ?? "").trim() !== "" ? String(rawDocName).trim() : "N/A";
 
-  const initials = docName
-    .split(" ")
-    .filter((n) => n.toLowerCase() !== "dr.")
-    .map((n) => n[0])
-    .join("")
-    .substring(0, 2)
-    .toUpperCase() || "DR";
+  const rawSpecialty = appointment.specialty || appointment.type || doc?.specialty || doc?.specialization;
+  const specialty = String(rawSpecialty ?? "").trim() !== "" ? String(rawSpecialty).trim() : "N/A";
 
-  const normStatus = String(appointment.status || "upcoming").toLowerCase();
-  const isUpcoming = normStatus === "upcoming" || normStatus === "confirmed";
+  const rawHospital = appointment.hospital || appointment.hospitalName || doc?.hospital || doc?.hospitalName;
+  const hospital = String(rawHospital ?? "").trim() !== "" ? String(rawHospital).trim() : "N/A";
+
+  const rawLocation = appointment.location || doc?.location;
+  const location = String(rawLocation ?? "").trim() !== "" ? String(rawLocation).trim() : "";
+
+  const feeVal = appointment.consultationFee ?? appointment.fee ?? doc?.consultationFee ?? doc?.fee;
+  const fee = feeVal !== null && feeVal !== undefined ? feeVal : "N/A";
+
+  const initials = docName !== "N/A"
+    ? docName
+        .split(" ")
+        .filter((n) => String(n ?? "").toLowerCase() !== "dr.")
+        .map((n) => (n && n[0] ? n[0] : ""))
+        .join("")
+        .substring(0, 2)
+        .toUpperCase() || "DR"
+    : "DR";
+
+  const normStatus = String(appointment.status || "upcoming").toLowerCase().trim();
+  const isUpcoming = normStatus === "upcoming" || normStatus === "confirmed" || normStatus === "scheduled";
 
   // Readable Date Formatter
-  let displayDate = appointment.formattedDate || appointment.date || "August 26, 2026";
-  if (appointment.date && appointment.date.includes("-")) {
+  let displayDate = appointment.formattedDate || appointment.date || "N/A";
+  if (appointment.date && String(appointment.date).includes("-")) {
     try {
-      const [y, m, d] = appointment.date.split("-");
+      const [y, m, d] = String(appointment.date).split("-");
       if (y && m && d) {
-        const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-        displayDate = dateObj.toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric"
-        });
+        const dateObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+        if (!isNaN(dateObj.getTime())) {
+          displayDate = dateObj.toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric"
+          });
+        }
       }
     } catch (e) {}
   }

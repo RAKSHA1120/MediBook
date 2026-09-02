@@ -108,49 +108,117 @@ function DoctorList() {
   // Combined filtering logic using useMemo
   const filteredDoctors = useMemo(() => {
     return doctorsList.filter((doc) => {
+      if (!doc) return false;
+
       // 1. Search filter: Match against name, specialty, or hospital
-      const query = searchQuery.trim().toLowerCase();
+      const query = String(searchQuery ?? "").trim().toLowerCase();
+      const docName = String(doc.name ?? "").toLowerCase();
+      const docSpec = String(doc.specialty || doc.specialization || "").toLowerCase();
+      const docHosp = String(doc.hospital || doc.hospitalName || "").toLowerCase();
+      const docLoc = String(doc.location ?? "").toLowerCase();
+      const selSpec = String(selectedSpecialty ?? "All").toLowerCase();
+      const selLoc = String(selectedLocation ?? "All").toLowerCase();
+
       const matchesSearch =
         query === "" ||
-        doc.name.toLowerCase().includes(query) ||
-        doc.specialty.toLowerCase().includes(query) ||
-        doc.hospital.toLowerCase().includes(query);
+        docName.includes(query) ||
+        docSpec.includes(query) ||
+        docHosp.includes(query);
 
       // 2. Specialty filter
       const matchesSpecialty =
-        selectedSpecialty === "All" ||
-        doc.specialty.toLowerCase() === selectedSpecialty.toLowerCase() ||
-        (selectedSpecialty === "General Physician" && doc.specialty === "General Physician") ||
-        (selectedSpecialty === "Cardiology" && doc.specialty === "Cardiologist") ||
-        (selectedSpecialty === "Dermatology" && doc.specialty === "Dermatologist") ||
-        (selectedSpecialty === "Pediatrics" && doc.specialty === "Pediatrician");
+        selSpec === "all" ||
+        docSpec === selSpec ||
+        (selSpec === "general physician" && docSpec.includes("general physician")) ||
+        (selSpec === "cardiology" && (docSpec.includes("cardiolog") || docSpec.includes("cardiac"))) ||
+        (selSpec === "dermatology" && docSpec.includes("dermatolog")) ||
+        (selSpec === "pediatrics" && docSpec.includes("pediatric"));
 
       // 3. Location filter
       const matchesLocation =
-        selectedLocation === "All" ||
-        doc.location.toLowerCase() === selectedLocation.toLowerCase();
+        selLoc === "all" ||
+        docLoc === selLoc;
 
       return matchesSearch && matchesSpecialty && matchesLocation;
     });
   }, [doctorsList, searchQuery, selectedSpecialty, selectedLocation]);
 
+  // Helper for Hospital Alphabetical (A-Z) + Doctor Name Alphabetical (A-Z) sorting
+  const sortByHospitalAndDoctor = (a, b) => {
+    const hospA = String(a.hospital || a.hospitalName || "").trim();
+    const hospB = String(b.hospital || b.hospitalName || "").trim();
+
+    if (!hospA && hospB) return 1;
+    if (hospA && !hospB) return -1;
+    if (!hospA && !hospB) {
+      const nameA = String(a.name || "").trim();
+      const nameB = String(b.name || "").trim();
+      return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
+    }
+
+    const hospCompare = hospA.localeCompare(hospB, undefined, { sensitivity: "base" });
+    if (hospCompare !== 0) return hospCompare;
+
+    const nameA = String(a.name || "").trim();
+    const nameB = String(b.name || "").trim();
+    return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
+  };
+
   // Sorting logic using useMemo
   const sortedDoctors = useMemo(() => {
     const docsCopy = [...filteredDoctors];
     if (sortBy === "Rating") {
-      return docsCopy.sort((a, b) => b.rating - a.rating);
+      return docsCopy.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     }
     if (sortBy === "Experience") {
-      return docsCopy.sort((a, b) => b.experience - a.experience);
+      return docsCopy.sort((a, b) => (b.experience ?? 0) - (a.experience ?? 0));
     }
     if (sortBy === "Fee: Low to High") {
-      return docsCopy.sort((a, b) => a.consultationFee - b.consultationFee);
+      return docsCopy.sort((a, b) => (a.consultationFee ?? 0) - (b.consultationFee ?? 0));
     }
     if (sortBy === "Fee: High to Low") {
-      return docsCopy.sort((a, b) => b.consultationFee - a.consultationFee);
+      return docsCopy.sort((a, b) => (b.consultationFee ?? 0) - (a.consultationFee ?? 0));
     }
-    return docsCopy; // Relevance
+    // Default / "Relevance": Sort by Hospital Name (A -> Z), then Doctor Name (A -> Z)
+    return docsCopy.sort(sortByHospitalAndDoctor);
   }, [filteredDoctors, sortBy]);
+  // Group filtered & sorted doctors by Hospital Name
+  const groupedHospitals = useMemo(() => {
+    if (!sortedDoctors || sortedDoctors.length === 0) return [];
+
+    const map = new Map();
+
+    sortedDoctors.forEach((doc) => {
+      const rawHosp = String(doc.hospital || doc.hospitalName || "").trim();
+      const hospName = rawHosp !== "" ? rawHosp : "Hospital Not Specified";
+
+      if (!map.has(hospName)) {
+        map.set(hospName, []);
+      }
+      map.get(hospName).push(doc);
+    });
+
+    // Sort hospital section names alphabetically A -> Z, placing "Hospital Not Specified" at the very end
+    const sortedHospNames = Array.from(map.keys()).sort((a, b) => {
+      if (a === "Hospital Not Specified") return 1;
+      if (b === "Hospital Not Specified") return -1;
+      return a.localeCompare(b, undefined, { sensitivity: "base" });
+    });
+
+    // For each hospital section, sort doctors by doctor name A -> Z
+    return sortedHospNames.map((hospName) => {
+      const docsInHosp = map.get(hospName).sort((a, b) => {
+        const nameA = String(a.name || "").trim();
+        const nameB = String(b.name || "").trim();
+        return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
+      });
+
+      return {
+        hospitalName: hospName,
+        doctors: docsInHosp
+      };
+    });
+  }, [sortedDoctors]);
 
   // Pagination bounds calculation
   const totalPages = Math.ceil(sortedDoctors.length / ITEMS_PER_PAGE);
@@ -358,19 +426,33 @@ function DoctorList() {
             </div>
           </section>
 
-          {/* Doctors Grid / Empty State */}
-          <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
-            {paginatedDoctors.length > 0 ? (
-              <div className="doctors-list-grid">
-                {paginatedDoctors.map((doc) => (
-                  <DoctorCard
-                    key={doc.id}
-                    doctor={doc}
-                    onViewProfile={(d) => navigate("/doctor-profile", { state: { doctor: d } })}
-                    onBook={(d) => handleBookAppointment(d)}
-                  />
-                ))}
-              </div>
+          {/* Hospital Grouped Doctors / Empty State */}
+          <section style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+            {groupedHospitals.length > 0 ? (
+              groupedHospitals.map((group) => (
+                <div key={group.hospitalName} className="hospital-group-section">
+                  <div className="hospital-group-header">
+                    <div className="hospital-group-icon">
+                      <Building2 size={20} />
+                    </div>
+                    <h2 className="hospital-group-title">{group.hospitalName}</h2>
+                    <span className="hospital-group-count">
+                      {group.doctors.length} {group.doctors.length === 1 ? "Doctor" : "Doctors"}
+                    </span>
+                  </div>
+
+                  <div className="doctors-list-grid">
+                    {group.doctors.map((doc) => (
+                      <DoctorCard
+                        key={doc.id}
+                        doctor={doc}
+                        onViewProfile={(d) => navigate("/doctor-profile", { state: { doctor: d } })}
+                        onBook={(d) => handleBookAppointment(d)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))
             ) : (
               /* Reusable Empty State */
               <EmptyState

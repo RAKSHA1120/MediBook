@@ -21,10 +21,10 @@ function DoctorCard({ doctor, onViewProfile, onBook, className = "" }) {
   } = doctor;
 
   // Compute initials
-  const initials = name
+  const initials = String(name ?? "Dr. Emily Carter")
     .split(" ")
-    .filter((n) => n.toLowerCase() !== "dr.")
-    .map((n) => n[0])
+    .filter((n) => String(n ?? "").toLowerCase() !== "dr.")
+    .map((n) => (n && n[0] ? n[0] : ""))
     .join("")
     .substring(0, 2)
     .toUpperCase() || "DR";

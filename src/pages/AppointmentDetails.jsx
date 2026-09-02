@@ -27,23 +27,39 @@ import DateSelector from "../components/DateSelector";
 import TimeSlot, { TimeSlotGroup } from "../components/TimeSlot";
 import StatusBadge from "../components/StatusBadge";
 import PageHeader from "../components/PageHeader";
-import PrimaryButton from "../components/PrimaryButton";
-import SecondaryButton from "../components/SecondaryButton";
 import AppointmentSlip from "../components/AppointmentSlip";
+import EmptyState from "../components/EmptyState";
 import { addNotification } from "../data/notifications";
 import { useAppointments } from "../context/AppointmentContext";
 import { getStoredPatientProfile } from "../data/patientProfile";
+import { getCurrentUser, getCurrentPatient } from "../utils/storage";
 import "./AppointmentDetails.css";
 
 function AppointmentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { appointments, cancelAppointment, rescheduleAppointment, isSlotBooked } = useAppointments();
+  const { appointments, cancelAppointment, rescheduleAppointment } = useAppointments();
 
   // Find target appointment
   const currentAppt = useMemo(() => {
     return appointments.find((a) => String(a.id) === String(id));
   }, [appointments, id]);
+
+  const currentUser = getCurrentUser();
+  const currentPatient = getCurrentPatient();
+
+  const isAccessAllowed = useMemo(() => {
+    if (!currentAppt) return false;
+    if (!currentUser || currentUser.role !== "patient") return true;
+    const pId = String(currentPatient?.id || currentUser?.refId || currentUser?.id || "").trim().toLowerCase();
+    const pName = String(currentPatient?.name || currentUser?.name || "").trim().toLowerCase();
+    const aptPId = String(currentAppt.patientId || "").trim().toLowerCase();
+    const aptPName = String(currentAppt.patientName || currentAppt.patient || "").trim().toLowerCase();
+    
+    if (aptPId && pId && aptPId === pId) return true;
+    if (aptPName && pName && aptPName === pName) return true;
+    return false;
+  }, [currentAppt, currentUser, currentPatient]);
 
   // Reschedule UI States
   const [isRescheduling, setIsRescheduling] = useState(false);
@@ -68,8 +84,6 @@ function AppointmentDetails() {
     }, 4500);
   };
 
-
-
   // Helper to resolve Doctor Information
   const getDoctorInfo = (appt) => {
     if (!appt) return null;
@@ -78,7 +92,7 @@ function AppointmentDetails() {
       doc = doctors.find((d) => String(d.id) === String(appt.doctorId));
     }
     if (!doc && appt.doctorName) {
-      doc = doctors.find((d) => d.name.toLowerCase() === appt.doctorName.toLowerCase());
+      doc = doctors.find((d) => String(d.name || "").toLowerCase() === String(appt.doctorName || "").toLowerCase());
     }
 
     const name = appt.doctorName || doc?.name || "Dr. Emily Carter";
@@ -200,8 +214,8 @@ function AppointmentDetails() {
     return disabledSlotsMap[newSelectedDate] || [];
   }, [newSelectedDate, disabledSlotsMap]);
 
-  // If appointment not found, show clean Error state
-  if (!currentAppt) {
+  // If appointment not found or unauthorized, show clean Error state
+  if (!currentAppt || !isAccessAllowed) {
     return (
       <div className="appointment-details-page">
         <div className="details-not-found-card">
@@ -210,7 +224,7 @@ function AppointmentDetails() {
           </div>
           <h2 className="not-found-title">Appointment Not Found</h2>
           <p className="not-found-desc">
-            The appointment you're looking for could not be found or may have been removed.
+            The appointment you're looking for could not be found or you do not have permission to view it.
           </p>
           <Button variant="primary" onClick={() => navigate("/my-appointments")}>
             <ArrowLeft size={16} style={{ marginRight: "6px" }} />
@@ -234,7 +248,6 @@ function AppointmentDetails() {
   const handleConfirmRescheduleSubmit = () => {
     if (!newSelectedDate || !newSelectedSlot) return;
 
-    // Create formatted readable date
     let formattedNewDate = newSelectedDate;
     try {
       const [y, m, d] = newSelectedDate.split("-");
