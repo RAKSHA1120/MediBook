@@ -1,4 +1,5 @@
 import { initialDoctorsData, initialPatientsData, adminRecentAppointments } from "../data/adminMockData";
+import defaultDoctors from "../data/doctors";
 import uniqueAppts from "../data/patientAppointments";
 import { INITIAL_NOTIFICATIONS } from "../data/notifications";
 import { generateLoginId, generatePassword } from "./idGenerator";
@@ -199,7 +200,12 @@ export const initializeDemoData = () => {
   });
 
   // Merge doctor mock data
-  const mergedDoctors = [...initialDoctorsData];
+  const mergedDoctors = [...defaultDoctors];
+  initialDoctorsData.forEach((d) => {
+    if (!mergedDoctors.some((ex) => String(ex.id) === String(d.id))) {
+      mergedDoctors.push(d);
+    }
+  });
 
   // Ensure every doctor has hospital association
   mergedDoctors.forEach((doc, idx) => {
@@ -385,8 +391,23 @@ export const enrichDoctors = (doctors) => {
     const finalHosId = doc.hospitalId || (nameMapping ? nameMapping.hospitalId : mappedId);
     const finalHosName = doc.hospital || (nameMapping ? nameMapping.hospital : rawHos);
 
+    const spec = doc.specialty || doc.specialization || "General Physician";
+    const feeVal = doc.consultationFee !== undefined ? Number(doc.consultationFee) : (doc.fee !== undefined ? Number(doc.fee) : 800);
+    const expVal = typeof doc.experience === "number" ? doc.experience : (parseInt(doc.experience) || 10);
+    const ratVal = doc.rating !== undefined ? Number(doc.rating) : 4.8;
+    const revVal = doc.reviewCount !== undefined ? Number(doc.reviewCount) : 124;
+    const locVal = doc.location || "Chennai";
+
     return {
       ...doc,
+      specialty: spec,
+      specialization: spec,
+      consultationFee: feeVal,
+      fee: feeVal,
+      experience: expVal,
+      rating: ratVal,
+      reviewCount: revVal,
+      location: locVal,
       hospital: finalHosName,
       hospitalId: finalHosId
     };
@@ -460,7 +481,13 @@ export const enrichAppointments = (appointments, enrichedDocs = null) => {
 
 // Doctors API
 export const getDoctors = () => {
-  const doctors = getStorage(KEYS.DOCTORS, []);
+  let doctors = getStorage(KEYS.DOCTORS, []);
+  if (!Array.isArray(doctors) || doctors.length < defaultDoctors.length) {
+    const existingIds = new Set((doctors || []).map((d) => String(d.id)));
+    const missing = defaultDoctors.filter((d) => !existingIds.has(String(d.id)));
+    doctors = [...(doctors || []), ...missing];
+    setStorage(KEYS.DOCTORS, doctors);
+  }
   return enrichDoctors(doctors);
 };
 export const addDoctor = (doctor) => {
