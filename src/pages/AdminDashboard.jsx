@@ -10,7 +10,7 @@ import {
   ClipboardList,
   UserPlus
 } from "lucide-react";
-import { getDoctors, getPatients, getAppointments } from "../utils/storage";
+import { getDoctors, getPatients, getAppointments, getHospitals } from "../utils/storage";
 import { getHospitalsStorage } from "./AdminHospitals";
 import StatusBadge from "../components/StatusBadge";
 import "./AdminDashboard.css";
@@ -29,89 +29,41 @@ function AdminDashboard() {
 
   const [recentAppointments, setRecentAppointments] = useState([]);
   const [recentRegistrations, setRecentRegistrations] = useState([]);
+  const [recentDoctors, setRecentDoctors] = useState([]);
 
   useEffect(() => {
+    const loadDashboardData = () => {
+      const hospitals = getHospitals();
+      const docs = getDoctors();
+      const pats = getPatients();
+      const appts = getAppointments();
+
+      const todayStr = new Date().toISOString().split("T")[0];
+
+      setStats({
+        totalHospitals: hospitals.length,
+        totalDoctors: docs.length,
+        totalPatients: pats.length,
+        totalAppointments: appts.length,
+        todayAppointments: appts.filter(a => a.date === todayStr || String(a.date).toLowerCase().includes("today")).length,
+        upcomingAppointments: appts.filter(a => (a.status || "").toLowerCase() === "confirmed" || (a.status || "").toLowerCase() === "pending").length,
+        activeDoctors: docs.filter(d => (d.status || "Active").toLowerCase() === "active").length
+      });
+
+      setRecentAppointments(appts.slice(-4).reverse());
+      setRecentDoctors(docs.slice(-4).reverse());
+    };
+
     loadDashboardData();
 
-    const handleUpdate = () => loadDashboardData();
-    window.addEventListener("medibook_appointments_updated", handleUpdate);
-    window.addEventListener("medibook_hospitals_updated", handleUpdate);
+    window.addEventListener("medibook_hospitals_updated", loadDashboardData);
+    window.addEventListener("storage", loadDashboardData);
 
     return () => {
-      window.removeEventListener("medibook_appointments_updated", handleUpdate);
-      window.removeEventListener("medibook_hospitals_updated", handleUpdate);
+      window.removeEventListener("medibook_hospitals_updated", loadDashboardData);
+      window.removeEventListener("storage", loadDashboardData);
     };
   }, []);
-
-  const loadDashboardData = () => {
-    const docs = getDoctors();
-    const pats = getPatients();
-    const appts = getAppointments();
-    const hospitals = getHospitalsStorage();
-
-    const todayStr = new Date().toISOString().split("T")[0];
-
-    // Compute stats dynamically from mock data
-    const todayCount = appts.filter(
-      a => a.date === todayStr || String(a.date).toLowerCase().includes("today")
-    ).length;
-
-    const upcomingCount = appts.filter(
-      a => a.status === "Upcoming" || a.status === "Confirmed" || a.status === "Pending"
-    ).length;
-
-    const activeDocsCount = docs.filter(
-      d => d.status === "Active" || String(d.availability).toLowerCase().includes("today")
-    ).length;
-
-    setStats({
-      totalHospitals: hospitals.length,
-      totalDoctors: docs.length,
-      totalPatients: pats.length,
-      totalAppointments: appts.length,
-      todayAppointments: todayCount,
-      upcomingAppointments: upcomingCount,
-      activeDoctors: activeDocsCount
-    });
-
-    // Recent Appointments (latest 4)
-    setRecentAppointments(appts.slice(-4).reverse());
-
-    // Recent Registrations (Doctors, Patients, Hospitals)
-    const regs = [];
-
-    docs.slice(-2).reverse().forEach(d => {
-      regs.push({
-        id: `reg-doc-${d.id}`,
-        name: d.name.toLowerCase().startsWith("dr.") ? d.name : `Dr. ${d.name}`,
-        type: "doctor",
-        dateText: `${d.specialization || d.specialty || "Doctor"} • Registered`,
-        navPath: "/admin/doctors"
-      });
-    });
-
-    pats.slice(-2).reverse().forEach(p => {
-      regs.push({
-        id: `reg-pat-${p.id}`,
-        name: p.name,
-        type: "patient",
-        dateText: `${p.date || "Today"} • Patient Account`,
-        navPath: "/admin/patients"
-      });
-    });
-
-    hospitals.slice(-2).reverse().forEach(h => {
-      regs.push({
-        id: `reg-hos-${h.id}`,
-        name: h.name,
-        type: "hospital",
-        dateText: `${h.location} • Healthcare Facility`,
-        navPath: "/admin/hospitals"
-      });
-    });
-
-    setRecentRegistrations(regs);
-  };
 
   return (
     <main className="patient-dashboard-content">
@@ -229,7 +181,8 @@ function AdminDashboard() {
 
       {/* TIER 3: RECENT ACTIVITY (Recent Appointments & Recent Registrations) */}
       <section className="dashboard-main-info-grid">
-        {/* Left Column: Recent Appointments */}
+
+        {/* Left Column: Recent Appointments (using recent-activity-card style) */}
         <div className="next-appointment-column">
           <div className="section-header">
             <h3 className="section-main-title">Recent Appointments</h3>

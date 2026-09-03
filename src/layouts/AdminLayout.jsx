@@ -15,6 +15,18 @@ function AdminLayout({ children }) {
     localStorage.setItem("medibook_admin_sidebar_collapsed", isCollapsed);
   }, [isCollapsed]);
 
+  const [adminUser, setAdminUser] = useState(() => {
+    try {
+      const userStr = localStorage.getItem("medibook_current_user");
+      if (userStr) return JSON.parse(userStr);
+      return null;
+    } catch (e) { return null; }
+  });
+
+  if (!adminUser || adminUser.role !== "admin") {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="patient-dashboard-layout">
       {/* Dynamic Collapsible Sidebar */}

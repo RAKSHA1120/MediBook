@@ -1,67 +1,183 @@
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { CheckCheck, Bell, Calendar, Info, BellOff } from "lucide-react";
 import PageHeader from "../components/PageHeader";
-import Card from "../components/Card";
-import Button from "../components/Button";
-import { useState, useEffect } from "react";
-import { getNotifications, markNotificationAsRead, getCurrentUser } from "../utils/storage";
-import { CheckCheck } from "lucide-react";
+import EmptyState from "../components/EmptyState";
+import NotificationCard from "../components/NotificationCard";
+import {
+  getCurrentUser,
+  getCurrentDoctor,
+  getDoctorNotifications,
+  markNotificationAsRead,
+  markAllDoctorNotificationsAsRead
+} from "../utils/storage";
+import "./Notifications.css";
 
 function DoctorNotifications() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
+  const [activeTab, setActiveTab] = useState("all");
 
   useEffect(() => {
-    loadNotifications();
-    const handleUpdate = () => loadNotifications();
+    loadDoctorNotifications();
+
+    const handleUpdate = () => loadDoctorNotifications();
     window.addEventListener("medibook_notifications_updated", handleUpdate);
     return () => window.removeEventListener("medibook_notifications_updated", handleUpdate);
   }, []);
 
-  const loadNotifications = () => {
+  const loadDoctorNotifications = () => {
     const user = getCurrentUser();
-    const allNotifs = getNotifications();
-    // Filter notifications for this doctor. Since it's a demo, we show notifications mentioning them
-    // or appointment notifications in general if their name is involved.
-    const myNotifs = allNotifs.filter(n => 
-        (user && n.message?.toLowerCase().includes(user.name?.toLowerCase().replace("dr. ", ""))) ||
-        n.type === "appointment_booking"
-    );
-    setNotifications(myNotifs);
+    const doc = getCurrentDoctor();
+    const doctorNotifs = getDoctorNotifications(doc?.id, user?.id);
+    setNotifications(doctorNotifs);
   };
 
-  const handleMarkAllRead = () => {
-     const unread = notifications.filter(n => !n.read);
-     unread.forEach(n => markNotificationAsRead(n.id));
-     loadNotifications();
+  const counts = useMemo(() => {
+    const all = notifications.length;
+    const appointments = notifications.filter(
+      (n) => n.type === "appointment" || n.type === "appointment_booking" || n.appointmentId
+    ).length;
+    const reminders = notifications.filter((n) => n.type === "reminder").length;
+    const system = notifications.filter((n) => n.type === "system" || (!n.type && !n.appointmentId)).length;
+    const unread = notifications.filter((n) => !n.read).length;
+    return { all, appointments, reminders, system, unread };
+  }, [notifications]);
+
+  const filteredNotifications = useMemo(() => {
+    if (activeTab === "appointments") {
+      return notifications.filter(
+        (n) => n.type === "appointment" || n.type === "appointment_booking" || n.appointmentId
+      );
+    }
+    if (activeTab === "reminders") {
+      return notifications.filter((n) => n.type === "reminder");
+    }
+    if (activeTab === "system") {
+      return notifications.filter((n) => n.type === "system" || (!n.type && !n.appointmentId));
+    }
+    return notifications;
+  }, [notifications, activeTab]);
+
+  const handleMarkAll = () => {
+    const user = getCurrentUser();
+    const doc = getCurrentDoctor();
+    markAllDoctorNotificationsAsRead(doc?.id, user?.id);
+    loadDoctorNotifications();
+  };
+
+  const handleCardClick = (notif) => {
+    if (!notif.read) {
+      markNotificationAsRead(notif.id);
+      loadDoctorNotifications();
+    }
+    if (notif.appointmentId) {
+      navigate(`/doctor/appointments`);
+    }
+  };
+
+  const getEmptyStateProps = () => {
+    if (activeTab === "appointments") {
+      return {
+        icon: Calendar,
+        title: "No Patient Appointment Alerts",
+        description: "You have no upcoming appointment updates or patient schedule changes."
+      };
+    }
+    if (activeTab === "reminders") {
+      return {
+        icon: Bell,
+        title: "No Clinical Reminders",
+        description: "You have no active patient reminders or consultation alerts."
+      };
+    }
+    if (activeTab === "system") {
+      return {
+        icon: Info,
+        title: "No System Notifications",
+        description: "There are no hospital or system administration notices available."
+      };
+    }
+    return {
+      icon: BellOff,
+      title: "No Notifications Found",
+      description: "You're all caught up! Patient updates and appointment notifications will appear here."
+    };
   };
 
   return (
     <main className="patient-dashboard-content">
-      <PageHeader 
-        title="Notifications" 
+      {/* Page Header */}
+      <PageHeader
+        title="Notifications"
         subtitle="Stay updated on your upcoming appointments and patient alerts."
-      >
-        <div style={{ display: "flex", gap: "10px" }}>
-            <Button variant="outline" size="sm" onClick={handleMarkAllRead}>
-                <CheckCheck size={16} style={{marginRight: "5px"}}/> Mark All Read
-            </Button>
-        </div>
-      </PageHeader>
+        action={
+          counts.unread > 0 ? (
+            <button className="btn-mark-all-read" onClick={handleMarkAll}>
+              <CheckCheck size={16} />
+              <span>Mark all as read</span>
+            </button>
+          ) : null
+        }
+      />
 
-      <div className="recent-activity-card">
-        <div className="recent-activity-list">
-          {notifications.map(notif => (
-            <div key={notif.id} className="activity-item" style={{ borderLeft: !notif.read ? "4px solid #0284c7" : "1px solid #e2e8f0", backgroundColor: !notif.read ? "#f0f9ff" : "#ffffff" }}>
-              <div className="activity-content">
-                <div className="activity-title-row">
-                  <h4 className="activity-title" style={{ color: "#0f172a" }}>{notif.title}</h4>
-                  <span className="activity-time" style={{ color: "#64748b" }}>{notif.createdAt || notif.time}</span>
-                </div>
-                <p className="activity-message" style={{ color: "#334155" }}>{notif.message}</p>
-              </div>
-            </div>
-          ))}
-          {notifications.length === 0 && <p style={{padding: '1rem', color: '#64748b'}}>No notifications yet.</p>}
-        </div>
+      {/* Filter Tabs Bar */}
+      <div className="notifications-tabs-bar" role="tablist" style={{ marginBottom: "24px" }}>
+        <button
+          className={`notifications-tab-btn ${activeTab === "all" ? "active" : ""}`}
+          onClick={() => setActiveTab("all")}
+          role="tab"
+          aria-selected={activeTab === "all"}
+        >
+          <span>All</span>
+          <span className="notifications-tab-count">{counts.all}</span>
+        </button>
+
+        <button
+          className={`notifications-tab-btn ${activeTab === "appointments" ? "active" : ""}`}
+          onClick={() => setActiveTab("appointments")}
+          role="tab"
+          aria-selected={activeTab === "appointments"}
+        >
+          <span>Appointments</span>
+          <span className="notifications-tab-count">{counts.appointments}</span>
+        </button>
+
+        <button
+          className={`notifications-tab-btn ${activeTab === "reminders" ? "active" : ""}`}
+          onClick={() => setActiveTab("reminders")}
+          role="tab"
+          aria-selected={activeTab === "reminders"}
+        >
+          <span>Reminders</span>
+          <span className="notifications-tab-count">{counts.reminders}</span>
+        </button>
+
+        <button
+          className={`notifications-tab-btn ${activeTab === "system" ? "active" : ""}`}
+          onClick={() => setActiveTab("system")}
+          role="tab"
+          aria-selected={activeTab === "system"}
+        >
+          <span>System</span>
+          <span className="notifications-tab-count">{counts.system}</span>
+        </button>
       </div>
+
+      {/* Notification Cards List */}
+      {filteredNotifications.length > 0 ? (
+        <div className="notifications-list">
+          {filteredNotifications.map((notif) => (
+            <NotificationCard
+              key={notif.id}
+              notification={notif}
+              onClick={handleCardClick}
+            />
+          ))}
+        </div>
+      ) : (
+        <EmptyState {...getEmptyStateProps()} />
+      )}
     </main>
   );
 }

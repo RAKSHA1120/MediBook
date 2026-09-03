@@ -4,7 +4,6 @@ import DesignSystem from "../pages/DesignSystem";
 import Login from "../pages/Login";
 import PatientDashboard from "../pages/PatientDashboard";
 import DoctorList from "../pages/DoctorList";
-import DoctorProfile from "../pages/DoctorProfile";
 import AppointmentBooking from "../pages/AppointmentBooking";
 import BookingSuccess from "../pages/BookingSuccess";
 import Dashboard from "../pages/Dashboard";
@@ -15,6 +14,7 @@ import DoctorPatientDetails from "../pages/DoctorPatientDetails";
 import DoctorSchedule from "../pages/DoctorSchedule";
 import DoctorNotifications from "../pages/DoctorNotifications";
 import DoctorSettings from "../pages/DoctorSettings";
+import DoctorProfile from "../pages/DoctorProfile";
 
 import PatientLayout from "../layouts/PatientLayout";
 import MyAppointments from "../pages/MyAppointments";
@@ -38,17 +38,28 @@ import AdminProfile from "../pages/AdminProfile";
 import AdminSettings from "../pages/AdminSettings";
 import AdminHelpSupport from "../pages/AdminHelpSupport";
 
+import HospitalLayout from "../layouts/HospitalLayout";
+import HospitalDashboard from "../pages/HospitalDashboard";
+import HospitalDoctors from "../pages/HospitalDoctors";
+import HospitalAppointments from "../pages/HospitalAppointments";
+import HospitalPatients from "../pages/HospitalPatients";
+import HospitalNotifications from "../pages/HospitalNotifications";
+import HospitalProfile from "../pages/HospitalProfile";
+import HospitalSettings from "../pages/HospitalSettings";
+
 function AppRoutes() {
   return (
     <ErrorBoundary>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        
+        <Route path="/login" element={<Login initialTab="signin" />} />
+        <Route path="/signup" element={<Login initialTab="signup" />} />
+        <Route path="/register" element={<Login initialTab="signup" />} />
+
         {/* All Patient Pages Wrapped in PatientLayout */}
         <Route path="/patient-dashboard" element={<PatientLayout><PatientDashboard /></PatientLayout>} />
+        <Route path="/find-doctor" element={<PatientLayout><DoctorList /></PatientLayout>} />
         <Route path="/doctors" element={<PatientLayout><DoctorList /></PatientLayout>} />
-        <Route path="/doctor-profile" element={<PatientLayout><DoctorProfile /></PatientLayout>} />
         <Route path="/book-appointment" element={<PatientLayout><AppointmentBooking /></PatientLayout>} />
         <Route path="/booking-success" element={<PatientLayout><BookingSuccess /></PatientLayout>} />
 
@@ -61,6 +72,7 @@ function AppRoutes() {
         <Route path="/settings" element={<PatientLayout><Settings /></PatientLayout>} />
         <Route path="/help-support" element={<PatientLayout><HelpSupport /></PatientLayout>} />
 
+
         <Route path="/design-system" element={<DesignSystem />} />
 
         {/* Doctor Routes */}
@@ -72,6 +84,16 @@ function AppRoutes() {
         <Route path="/doctor/notifications" element={<PatientLayout><DoctorNotifications /></PatientLayout>} />
         <Route path="/doctor/profile" element={<PatientLayout><DoctorProfile /></PatientLayout>} />
         <Route path="/doctor/settings" element={<PatientLayout><DoctorSettings /></PatientLayout>} />
+
+        {/* Hospital Routes */}
+        <Route path="/hospital-dashboard" element={<HospitalLayout><HospitalDashboard /></HospitalLayout>} />
+        <Route path="/hospital/dashboard" element={<HospitalLayout><HospitalDashboard /></HospitalLayout>} />
+        <Route path="/hospital/doctors" element={<HospitalLayout><HospitalDoctors /></HospitalLayout>} />
+        <Route path="/hospital/appointments" element={<HospitalLayout><HospitalAppointments /></HospitalLayout>} />
+        <Route path="/hospital/patients" element={<HospitalLayout><HospitalPatients /></HospitalLayout>} />
+        <Route path="/hospital/notifications" element={<HospitalLayout><HospitalNotifications /></HospitalLayout>} />
+        <Route path="/hospital/profile" element={<HospitalLayout><HospitalProfile /></HospitalLayout>} />
+        <Route path="/hospital/settings" element={<HospitalLayout><HospitalSettings /></HospitalLayout>} />
 
         {/* All Admin Pages Wrapped in AdminLayout */}
         <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />

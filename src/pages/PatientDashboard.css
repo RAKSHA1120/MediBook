@@ -17,9 +17,10 @@
   flex-direction: column;
 }
 
-/* Reusable Master Patient Page Content Container */
+/* Reusable Master Patient & Doctor Page Content Container */
 .patient-page-content,
 .patient-dashboard-content,
+.admin-page-container,
 .doctors-content,
 .my-appointments-page,
 .appointment-details-page,
@@ -28,10 +29,10 @@
 .settings-page,
 .help-support-page {
   flex: 1;
-  max-width: 1200px;
+  max-width: var(--page-max-width, 1320px);
   width: 100%;
   margin: 0 auto;
-  padding: 24px 24px 48px;
+  padding: 32px 48px;
   display: flex;
   flex-direction: column;
   gap: 28px;

@@ -18,7 +18,6 @@ import {
   CalendarDays,
   Printer
 } from "lucide-react";
-import doctors from "../data/doctors";
 import { TIME_SLOTS, getMockBookedAppointments, getMockDisabledAppointments } from "../data/appointments";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
@@ -27,23 +26,73 @@ import DateSelector from "../components/DateSelector";
 import TimeSlot, { TimeSlotGroup } from "../components/TimeSlot";
 import StatusBadge from "../components/StatusBadge";
 import PageHeader from "../components/PageHeader";
-import PrimaryButton from "../components/PrimaryButton";
-import SecondaryButton from "../components/SecondaryButton";
 import AppointmentSlip from "../components/AppointmentSlip";
+import EmptyState from "../components/EmptyState";
 import { addNotification } from "../data/notifications";
 import { useAppointments } from "../context/AppointmentContext";
 import { getStoredPatientProfile } from "../data/patientProfile";
+import { getCurrentUser, getCurrentPatient, getDoctors, getAppointments } from "../utils/storage";
+import { checkIsSlotBooked, normalizeStatus } from "../utils/appointmentStorage";
 import "./AppointmentDetails.css";
 
 function AppointmentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { appointments, cancelAppointment, rescheduleAppointment, isSlotBooked } = useAppointments();
+  const { appointments, cancelAppointment, rescheduleAppointment } = useAppointments();
 
-  // Find target appointment
+  // Find target appointment from context or global storage
   const currentAppt = useMemo(() => {
-    return appointments.find((a) => String(a.id) === String(id));
+    if (!id) return null;
+    const targetIdStr = String(id).trim().toLowerCase();
+
+    // 1. Search in context appointments
+    let found = appointments.find((a) => String(a.id || "").trim().toLowerCase() === targetIdStr);
+
+    // 2. Search in global storage appointments
+    if (!found) {
+      const allAppts = getAppointments();
+      found = allAppts.find((a) => String(a.id || "").trim().toLowerCase() === targetIdStr);
+    }
+
+    return found || null;
   }, [appointments, id]);
+
+  const currentUser = getCurrentUser();
+  const currentPatient = getCurrentPatient();
+
+  const isAccessAllowed = useMemo(() => {
+    if (!currentAppt) return false;
+    if (!currentUser || currentUser.role !== "patient") return true;
+
+    const pId = String(currentPatient?.id || currentUser?.refId || currentUser?.id || "p1").trim().toLowerCase();
+    const pName = String(currentPatient?.name || currentUser?.name || "").trim().toLowerCase();
+    const pContact = String(currentPatient?.contact || currentPatient?.mobile || currentUser?.mobile || "").trim().toLowerCase();
+
+    const aptPId = String(currentAppt.patientId || "").trim().toLowerCase();
+    const aptPName = String(currentAppt.patientName || currentAppt.patient || "").trim().toLowerCase();
+    const aptPContact = String(currentAppt.patientContact || currentAppt.patientMobile || currentAppt.contact || "").trim().toLowerCase();
+
+    // Unassigned legacy appointment fallback
+    if (!aptPId && !aptPName && !aptPContact) return true;
+
+    // Direct ID match (including P1 / P_1 equivalence)
+    if (aptPId && (aptPId === pId || (pId === "p1" && aptPId === "p_1") || (pId === "p_1" && aptPId === "p1"))) return true;
+
+    // Name match
+    if (aptPName && pName && (aptPName === pName || aptPName.includes(pName) || pName.includes(aptPName))) return true;
+
+    // Contact match
+    if (aptPContact && pContact && (aptPContact === pContact || aptPContact === "9876543210")) return true;
+
+    // Default demo patient fallback
+    if (pId === "p1" || pId === "p_1" || pName.includes("rahul") || pName.includes("raksha")) {
+      if (aptPId === "p1" || aptPId === "p_1" || aptPName === "patient" || !aptPId) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [currentAppt, currentUser, currentPatient]);
 
   // Reschedule UI States
   const [isRescheduling, setIsRescheduling] = useState(false);
@@ -68,32 +117,46 @@ function AppointmentDetails() {
     }, 4500);
   };
 
-
-
-  // Helper to resolve Doctor Information
+  // Helper to resolve Doctor Information dynamically
   const getDoctorInfo = (appt) => {
     if (!appt) return null;
+
     let doc = null;
-    if (appt.doctorId) {
-      doc = doctors.find((d) => String(d.id) === String(appt.doctorId));
+    const doctorsList = getDoctors();
+    const docIdStr = String(appt.doctorId ?? "").trim();
+    const docNameStr = String(appt.doctorName || appt.doctor || "").trim();
+
+    if (docIdStr !== "") {
+      doc = doctorsList.find((d) => String(d.id ?? "").trim() === docIdStr);
     }
-    if (!doc && appt.doctorName) {
-      doc = doctors.find((d) => d.name.toLowerCase() === appt.doctorName.toLowerCase());
+    if (!doc && docNameStr !== "") {
+      const normTargetDocName = docNameStr.toLowerCase();
+      doc = doctorsList.find((d) => String(d.name ?? "").trim().toLowerCase() === normTargetDocName);
     }
 
-    const name = appt.doctorName || doc?.name || "Dr. Emily Carter";
-    const specialty = appt.specialty || doc?.specialty || "Cardiology";
-    const hospital = appt.hospital || doc?.hospital || "MediCare Hospital";
-    const location = appt.location || doc?.location || "Chennai";
-    const fee = appt.consultationFee ?? doc?.consultationFee ?? 800;
-    const experience = doc?.experience ?? 12;
-    const rating = doc?.rating ?? 4.8;
-    const reviewCount = doc?.reviewCount ?? 124;
+    const rawName = appt.doctorName || appt.doctor || doc?.name;
+    const name = String(rawName ?? "").trim() !== "" ? String(rawName).trim() : "Dr. Sarah Smith";
+
+    const rawSpec = appt.specialty || appt.specialization || appt.type || doc?.specialty || doc?.specialization;
+    const specialty = String(rawSpec ?? "").trim() !== "" ? String(rawSpec).trim() : "Cardiology";
+
+    const rawHosp = appt.hospital || appt.hospitalName || doc?.hospital || doc?.hospitalName;
+    const hospital = String(rawHosp ?? "").trim() !== "" ? String(rawHosp).trim() : "City Heart Center";
+
+    const rawLoc = appt.location || doc?.location;
+    const location = String(rawLoc ?? "").trim() !== "" ? String(rawLoc).trim() : "Chennai";
+
+    const feeVal = appt.consultationFee ?? appt.fee ?? doc?.consultationFee ?? doc?.fee;
+    const fee = feeVal !== null && feeVal !== undefined ? feeVal : 1000;
+
+    const experience = appt.experience || doc?.experience || 12;
+    const rating = appt.rating || doc?.rating || 4.8;
+    const reviewCount = appt.reviewCount || doc?.reviewCount || 124;
 
     const initials = name
       .split(" ")
       .filter((n) => n.toLowerCase() !== "dr.")
-      .map((n) => n[0])
+      .map((n) => (n && n[0] ? n[0] : ""))
       .join("")
       .substring(0, 2)
       .toUpperCase() || "DR";
@@ -162,18 +225,18 @@ function AppointmentDetails() {
 
   const docInfo = getDoctorInfo(currentAppt);
   const bookedSlotsMap = useMemo(() => {
-    return getMockBookedAppointments(docInfo?.docObj?.id || 1);
-  }, [docInfo?.docObj?.id]);
+    return getMockBookedAppointments(1);
+  }, []);
 
   const disabledSlotsMap = useMemo(() => {
-    return getMockDisabledAppointments(docInfo?.docObj?.id || 1);
-  }, [docInfo?.docObj?.id]);
+    return getMockDisabledAppointments(1);
+  }, []);
 
   const isDateBooked = (dateString) => {
     const dateObj = upcomingDates.find((d) => d.dateString === dateString);
     if (!dateObj) return true;
 
-    const workingDays = docInfo?.docObj?.availableDays || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const workingDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     const isWorkingDay = workingDays.some(
       (day) =>
         day.toLowerCase() === dateObj.dayName.toLowerCase() ||
@@ -192,16 +255,33 @@ function AppointmentDetails() {
 
   const currentBookedSlots = useMemo(() => {
     if (!newSelectedDate) return [];
-    return bookedSlotsMap[newSelectedDate] || [];
-  }, [newSelectedDate, bookedSlotsMap]);
+    const doctorId = currentAppt?.doctorId || docInfo?.docObj?.id;
+    const doctorName = docInfo?.name || currentAppt?.doctorName || currentAppt?.doctor;
+    const currentId = currentAppt?.id;
+
+    const booked = [];
+    const allSlots = [
+      ...(TIME_SLOTS?.Morning || []),
+      ...(TIME_SLOTS?.Afternoon || []),
+      ...(TIME_SLOTS?.Evening || [])
+    ];
+
+    allSlots.forEach((slot) => {
+      if (checkIsSlotBooked(appointments, doctorId, newSelectedDate, slot, currentId, doctorName)) {
+        booked.push(slot);
+      }
+    });
+
+    return booked;
+  }, [newSelectedDate, appointments, currentAppt, docInfo]);
 
   const currentDisabledSlots = useMemo(() => {
     if (!newSelectedDate) return [];
     return disabledSlotsMap[newSelectedDate] || [];
   }, [newSelectedDate, disabledSlotsMap]);
 
-  // If appointment not found, show clean Error state
-  if (!currentAppt) {
+  // If appointment not found or unauthorized, show clean Error state
+  if (!currentAppt || !isAccessAllowed) {
     return (
       <div className="appointment-details-page">
         <div className="details-not-found-card">
@@ -210,7 +290,7 @@ function AppointmentDetails() {
           </div>
           <h2 className="not-found-title">Appointment Not Found</h2>
           <p className="not-found-desc">
-            The appointment you're looking for could not be found or may have been removed.
+            The appointment you're looking for could not be found or you do not have permission to view it.
           </p>
           <Button variant="primary" onClick={() => navigate("/my-appointments")}>
             <ArrowLeft size={16} style={{ marginRight: "6px" }} />
@@ -234,7 +314,6 @@ function AppointmentDetails() {
   const handleConfirmRescheduleSubmit = () => {
     if (!newSelectedDate || !newSelectedSlot) return;
 
-    // Create formatted readable date
     let formattedNewDate = newSelectedDate;
     try {
       const [y, m, d] = newSelectedDate.split("-");
@@ -257,12 +336,17 @@ function AppointmentDetails() {
     setShowRescheduleConfirmModal(false);
     setIsRescheduling(false);
 
+    const pId = currentAppt.patientId || getCurrentPatient()?.id || getCurrentUser()?.refId || getCurrentUser()?.id || "P1";
+    const uId = getCurrentUser()?.id || "U_P1";
+
     addNotification({
       type: "appointment",
       subType: "rescheduled",
       title: "Appointment Rescheduled",
       message: `Your appointment with ${docInfo.name} has been rescheduled to ${formattedNewDate} at ${newSelectedSlot}.`,
-      appointmentId: currentAppt.id
+      appointmentId: currentAppt.id,
+      patientId: pId,
+      userId: uId
     });
 
     showNotification(
@@ -277,12 +361,17 @@ function AppointmentDetails() {
     cancelAppointment(currentAppt.id);
     setShowCancelModal(false);
 
+    const pId = currentAppt.patientId || getCurrentPatient()?.id || getCurrentUser()?.refId || getCurrentUser()?.id || "P1";
+    const uId = getCurrentUser()?.id || "U_P1";
+
     addNotification({
       type: "appointment",
       subType: "cancelled",
       title: "Appointment Cancelled",
-      message: `Your appointment with ${docInfo.name} on ${displayDate} has been cancelled.`,
-      appointmentId: currentAppt.id
+      message: `Your appointment with ${docInfo.name} has been cancelled.`,
+      appointmentId: currentAppt.id,
+      patientId: pId,
+      userId: uId
     });
 
     showNotification(

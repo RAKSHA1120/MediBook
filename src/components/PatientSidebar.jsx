@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Button from "./Button";
 import { getStoredNotifications } from "../data/notifications";
-import { getCurrentUser, clearCurrentUser } from "../utils/storage";
+import { getCurrentUser, getCurrentPatient, getCurrentDoctor, getPatientNotifications, getDoctorNotifications, clearCurrentUser } from "../utils/storage";
 import "./PatientSidebar.css";
 
 function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) {
@@ -26,19 +26,24 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
   const [isHovered, setIsHovered] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Sync notification unread count dynamically
+  // Sync notification unread count dynamically for current patient / doctor
   useEffect(() => {
     const updateUnread = () => {
       try {
-        const notifs = getStoredNotifications();
-        const currentUser = getCurrentUser();
-        let unread = 0;
-        if (!currentUser) {
-            unread = notifs.filter((n) => !n.read).length;
+        const u = getCurrentUser();
+        if (u && u.role === "doctor") {
+          const doc = getCurrentDoctor();
+          const docId = doc?.id ?? u?.refId ?? u?.id;
+          const notifs = getDoctorNotifications(docId, u?.id);
+          const unread = notifs.filter((n) => !n.read).length;
+          setUnreadCount(unread);
         } else {
-            unread = notifs.filter((n) => !n.read && (!n.userId || n.userId === currentUser.id || n.userId === currentUser.refId)).length;
+          const p = getCurrentPatient();
+          const pId = p?.id ?? u?.refId ?? u?.id;
+          const notifs = getPatientNotifications(pId, u?.id);
+          const unread = notifs.filter((n) => !n.read).length;
+          setUnreadCount(unread);
         }
-        setUnreadCount(unread);
       } catch (e) {
         setUnreadCount(0);
       }
@@ -63,14 +68,13 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
 
   const patientItems = [
     { path: "/patient-dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { path: "/doctors", label: "Find Doctor", icon: Search },
+    { path: "/find-doctor", label: "Find Doctor", icon: Search },
     { path: "/my-appointments", label: "My Appointments", icon: Calendar, altPath: "/appointments" },
     { path: "/notifications", label: "Notifications", icon: Bell, showBadge: true },
     { path: "/profile", label: "Profile", icon: User },
     { path: "/settings", label: "Settings", icon: Settings },
     { path: "/help-support", label: "Help & Support", icon: HelpCircle }
   ];
-
   const doctorItems = [
     { path: "/doctor/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/doctor/appointments", label: "My Appointments", icon: Calendar },
@@ -109,9 +113,8 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
   return (
     <>
       <aside
-        className={`patient-sidebar ${isCollapsed ? "collapsed" : "expanded"} ${
-          isCollapsed && isHovered ? "hover-expanded" : ""
-        } ${isMobileOpen ? "open" : ""}`}
+        className={`patient-sidebar ${isCollapsed ? "collapsed" : "expanded"} ${isCollapsed && isHovered ? "hover-expanded" : ""
+          } ${isMobileOpen ? "open" : ""}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -171,29 +174,31 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
 
         {/* Footer: Need Help & Logout */}
         <div className="patient-sidebar-footer">
-          {isExpanded ? (
-            <div className="support-card">
-              <span className="support-card-title">Need Help?</span>
-              <p className="support-card-text">
-                Our support team is available 24/7 to answer your queries.
-              </p>
-              <Button
-                variant="primary"
-                size="sm"
-                className="btn-support"
+          {!isDoctor && (
+            isExpanded ? (
+              <div className="support-card">
+                <span className="support-card-title">Need Help?</span>
+                <p className="support-card-text">
+                  Our support team is available 24/7 to answer your queries.
+                </p>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="btn-support"
+                  onClick={() => handleNavClick("/help-support")}
+                >
+                  Contact Support
+                </Button>
+              </div>
+            ) : (
+              <div
+                className="support-card-collapsed"
+                title="Need Help? Contact Support"
                 onClick={() => handleNavClick("/help-support")}
               >
-                Contact Support
-              </Button>
-            </div>
-          ) : (
-            <div
-              className="support-card-collapsed"
-              title="Need Help? Contact Support"
-              onClick={() => handleNavClick("/help-support")}
-            >
-              <HelpCircle size={20} className="support-compact-icon" />
-            </div>
+                <HelpCircle size={20} className="support-compact-icon" />
+              </div>
+            )
           )}
 
           <button

@@ -15,6 +15,9 @@ export const DEFAULT_APPOINTMENTS = [
     hospital: "MediCare Hospital",
     location: "Chennai",
     consultationFee: 800,
+    patientId: "P1",
+    patientName: "Patient",
+    patientContact: "9876543210",
     date: "2026-08-26",
     formattedDate: "Wednesday, Aug 26, 2026",
     time: "10:00 AM",
@@ -29,6 +32,9 @@ export const DEFAULT_APPOINTMENTS = [
     hospital: "Apollo Hospital",
     location: "Chennai",
     consultationFee: 700,
+    patientId: "P1",
+    patientName: "Patient",
+    patientContact: "9876543210",
     date: "2026-08-20",
     formattedDate: "Thursday, Aug 20, 2026",
     time: "02:30 PM",
@@ -43,6 +49,9 @@ export const DEFAULT_APPOINTMENTS = [
     hospital: "Fortis Healthcare",
     location: "Chennai",
     consultationFee: 900,
+    patientId: "P1",
+    patientName: "Patient",
+    patientContact: "9876543210",
     date: "2026-08-15",
     formattedDate: "Saturday, Aug 15, 2026",
     time: "11:00 AM",
@@ -112,17 +121,73 @@ export const saveStoredAppointments = (appointments) => {
 };
 
 /**
- * Checks if a specific time slot is booked by an active (non-cancelled) appointment.
+ * Normalizes time string to standard format (e.g. "9:00 AM" -> "09:00 AM")
  */
-export const checkIsSlotBooked = (appointments, doctorId, date, time) => {
-  if (!doctorId || !date || !time || !Array.isArray(appointments)) return false;
-  const targetKey = getSlotKey(doctorId, date, time);
+export const normalizeTime = (timeStr) => {
+  if (!timeStr) return "";
+  let t = String(timeStr).trim().toUpperCase();
+  if (/^\d:\d{2}\s*(AM|PM)$/.test(t)) {
+    t = "0" + t;
+  }
+  return t;
+};
+
+/**
+ * Checks if two doctor references match by ID or Name
+ */
+export const isSameDoctor = (docAId, docAName, docBId, docBName) => {
+  const normIdA = String(docAId ?? "").trim().toLowerCase();
+  const normIdB = String(docBId ?? "").trim().toLowerCase();
+  if (normIdA && normIdB && normIdA === normIdB) return true;
+
+  const normNameA = String(docAName ?? "").trim().toLowerCase().replace(/^dr\.\s+/i, "");
+  const normNameB = String(docBName ?? "").trim().toLowerCase().replace(/^dr\.\s+/i, "");
+  if (normNameA && normNameB && normNameA === normNameB) return true;
+
+  return false;
+};
+
+/**
+ * Checks if a specific time slot is booked by an active (non-cancelled, non-completed) appointment.
+ * Optionally excludes an appointment currently being rescheduled.
+ */
+export const checkIsSlotBooked = (appointments, doctorId, date, time, excludeAppointmentId = null, doctorName = null) => {
+  if (!date || !time || !Array.isArray(appointments)) return false;
+  const targetDate = String(date).trim();
+  const targetTime = normalizeTime(time);
+  const excludeIdStr = excludeAppointmentId ? String(excludeAppointmentId).trim().toLowerCase() : null;
 
   return appointments.some((appt) => {
-    if (!appt || !appt.doctorId || !appt.date || !appt.time) return false;
-    const status = normalizeStatus(appt.status);
-    if (status === "cancelled") return false; // Cancelled appointments release the slot!
-    const key = getSlotKey(appt.doctorId, appt.date, appt.time);
-    return key === targetKey;
+    if (!appt || !appt.date || !appt.time) return false;
+
+    // 1. Exclude the appointment currently being rescheduled
+    if (excludeIdStr && String(appt.id ?? "").trim().toLowerCase() === excludeIdStr) {
+      return false;
+    }
+
+    // 2. Only active/upcoming/confirmed appointments block slots. Cancelled and Completed do NOT block.
+    const normStatus = normalizeStatus(appt.status);
+    if (normStatus === "cancelled" || normStatus === "completed") {
+      return false;
+    }
+
+    // 3. Match Date
+    if (String(appt.date).trim() !== targetDate) {
+      return false;
+    }
+
+    // 4. Match Time
+    if (normalizeTime(appt.time) !== targetTime) {
+      return false;
+    }
+
+    // 5. Match Doctor (by ID or Name)
+    const apptDocId = appt.doctorId;
+    const apptDocName = appt.doctorName || appt.doctor;
+    if (doctorId || doctorName) {
+      return isSameDoctor(apptDocId, apptDocName, doctorId, doctorName);
+    }
+
+    return true;
   });
 };

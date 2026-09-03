@@ -124,6 +124,24 @@
   color: var(--text-muted);
 }
 
+.patient-name-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-heading);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s ease, text-decoration 0.15s ease;
+}
+
+.patient-name-link:hover {
+  color: var(--primary, #2f6fa3);
+  text-decoration: underline;
+}
+
 /* ==================================================
    Compact Icon Actions & Dropdown Popover
    ================================================== */

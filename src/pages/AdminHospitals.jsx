@@ -267,6 +267,7 @@ function AdminHospitals() {
       setHospitals(updatedList);
       saveHospitalsStorage(updatedList);
     } else {
+      const loginId = formData.email.split("@")[0] || formData.name.toLowerCase().replace(/[^a-z0-9]/g, "");
       const newHospital = {
         id: `HOS-${String(hospitals.length + 1).padStart(3, "0")}`,
         name: formData.name.trim(),
@@ -279,11 +280,26 @@ function AdminHospitals() {
         address: formData.address.trim(),
         doctorsCount: 1,
         specialty: formData.category,
-        bedCount: 100
+        bedCount: 100,
+        loginId,
+        password: "hospital123"
       };
       const updatedList = [newHospital, ...hospitals];
       setHospitals(updatedList);
       saveHospitalsStorage(updatedList);
+
+      const users = JSON.parse(localStorage.getItem("medibook_users") || "[]");
+      users.push({
+        id: `U_${newHospital.id}`,
+        loginId,
+        mobile: loginId,
+        password: "hospital123",
+        role: "hospital",
+        name: newHospital.name,
+        refId: newHospital.id,
+        status: "Active"
+      });
+      localStorage.setItem("medibook_users", JSON.stringify(users));
     }
 
     setIsFormModalOpen(false);

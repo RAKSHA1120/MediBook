@@ -1,27 +1,23 @@
 import { useState } from "react";
-import { Lock, LogOut, ShieldCheck, Bell, CheckCircle2, AlertCircle, KeyRound, Smartphone } from "lucide-react";
+import { Lock, LogOut, ShieldCheck, Bell, CheckCircle2, AlertCircle, KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, getUsers, clearCurrentUser } from "../utils/storage";
 import PageHeader from "../components/PageHeader";
 import Card from "../components/Card";
 import Input from "../components/Input";
 import Button from "../components/Button";
-import "../pages/AdminShared.css";
+import "./AdminShared.css";
 
-function DoctorSettings() {
+function HospitalSettings() {
   const navigate = useNavigate();
-  const [passwordData, setPasswordData] = useState({
-    current: "",
-    new: "",
-    confirm: ""
-  });
+  const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailAlerts: true,
-    appointmentReminders: true,
-    cancellationAlerts: true
+  const [notifications, setNotifications] = useState({
+    appointmentAlerts: true,
+    cancellationAlerts: true,
+    weeklyReports: false
   });
 
   const handlePasswordChange = (e) => {
@@ -33,10 +29,10 @@ function DoctorSettings() {
     if (!user) return;
 
     const users = getUsers();
-    const userIndex = users.findIndex((u) => u.id === user.id);
+    const userIndex = users.findIndex((u) => u.id === user.id || u.refId === user.refId);
 
     if (userIndex === -1) {
-      setError("User record not found.");
+      setError("Hospital user record not found.");
       return;
     }
 
@@ -55,7 +51,6 @@ function DoctorSettings() {
       return;
     }
 
-    // Update password
     users[userIndex].password = passwordData.new;
     localStorage.setItem("medibook_users", JSON.stringify(users));
 
@@ -71,13 +66,11 @@ function DoctorSettings() {
 
   return (
     <main className="patient-dashboard-content">
-      {/* 1. Page Header */}
-      <section className="greeting-section" style={{ marginBottom: "20px" }}>
-        <h2 className="greeting-title">Settings</h2>
-        <p className="greeting-subtitle">Manage your account preferences and security settings.</p>
-      </section>
+      <PageHeader
+        title="Hospital Settings"
+        subtitle="Manage facility credentials, notifications, and security preferences"
+      />
 
-      {/* Toast Feedback Banners */}
       {success && (
         <div
           style={{
@@ -120,15 +113,8 @@ function DoctorSettings() {
         </div>
       )}
 
-      {/* 2. Grid Layout for Settings Cards */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "24px"
-        }}
-      >
-        {/* Card 1: Change Password Security Card */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        {/* Card 1: Change Password */}
         <Card>
           <h3
             style={{
@@ -178,7 +164,7 @@ function DoctorSettings() {
           </form>
         </Card>
 
-        {/* Card 2: Notification Preferences Card */}
+        {/* Card 2: Notification Preferences */}
         <Card>
           <h3
             style={{
@@ -197,46 +183,33 @@ function DoctorSettings() {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "12px", borderBottom: "1px solid var(--border)" }}>
               <div>
-                <div style={{ fontWeight: "600", fontSize: "14.5px", color: "var(--text-heading)" }}>Email Notifications</div>
-                <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>Receive email updates for new patient bookings.</div>
+                <div style={{ fontWeight: "600", fontSize: "14.5px", color: "var(--text-heading)" }}>Appointment Booking Alerts</div>
+                <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>Receive alerts when patients book with your doctors.</div>
               </div>
               <input
                 type="checkbox"
-                checked={notificationSettings.emailAlerts}
-                onChange={(e) => setNotificationSettings({ ...notificationSettings, emailAlerts: e.target.checked })}
+                checked={notifications.appointmentAlerts}
+                onChange={(e) => setNotifications({ ...notifications, appointmentAlerts: e.target.checked })}
                 style={{ width: "18px", height: "18px", accentColor: "var(--primary)", cursor: "pointer" }}
               />
             </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "12px", borderBottom: "1px solid var(--border)" }}>
               <div>
-                <div style={{ fontWeight: "600", fontSize: "14.5px", color: "var(--text-heading)" }}>Appointment Reminders</div>
-                <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>Receive daily appointment schedule summaries.</div>
+                <div style={{ fontWeight: "600", fontSize: "14.5px", color: "var(--text-heading)" }}>Cancellation Notifications</div>
+                <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>Receive alerts when appointments are cancelled.</div>
               </div>
               <input
                 type="checkbox"
-                checked={notificationSettings.appointmentReminders}
-                onChange={(e) => setNotificationSettings({ ...notificationSettings, appointmentReminders: e.target.checked })}
-                style={{ width: "18px", height: "18px", accentColor: "var(--primary)", cursor: "pointer" }}
-              />
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <div style={{ fontWeight: "600", fontSize: "14.5px", color: "var(--text-heading)" }}>Cancellation Alerts</div>
-                <div style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>Get instant alerts when a patient cancels or reschedules.</div>
-              </div>
-              <input
-                type="checkbox"
-                checked={notificationSettings.cancellationAlerts}
-                onChange={(e) => setNotificationSettings({ ...notificationSettings, cancellationAlerts: e.target.checked })}
+                checked={notifications.cancellationAlerts}
+                onChange={(e) => setNotifications({ ...notifications, cancellationAlerts: e.target.checked })}
                 style={{ width: "18px", height: "18px", accentColor: "var(--primary)", cursor: "pointer" }}
               />
             </div>
           </div>
         </Card>
 
-        {/* Card 3: Session & Account Security Card */}
+        {/* Card 3: Session Security */}
         <Card>
           <h3
             style={{
@@ -249,11 +222,11 @@ function DoctorSettings() {
               gap: "8px"
             }}
           >
-            <ShieldCheck size={20} style={{ color: "var(--primary)" }} /> Session & Account Security
+            <ShieldCheck size={20} style={{ color: "var(--primary)" }} /> Account Security
           </h3>
 
           <p style={{ color: "var(--text-muted)", fontSize: "14px", marginBottom: "20px", lineHeight: "1.5" }}>
-            Log out of your active session on this device. You will need your Login ID and password to sign back in.
+            Sign out of your active hospital administrator session.
           </p>
 
           <Button
@@ -276,4 +249,4 @@ function DoctorSettings() {
   );
 }
 
-export default DoctorSettings;
+export default HospitalSettings;

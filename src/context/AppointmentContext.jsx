@@ -59,28 +59,28 @@ export function AppointmentProvider({ children }) {
   // Reschedule an existing appointment
   const rescheduleAppointment = useCallback((appointmentId, newDate, newTime, newFormattedDate) => {
     const current = getStoredAppointments();
-    const apptToReschedule = current.find((a) => String(a.id) === String(appointmentId));
+    const targetIdStr = String(appointmentId ?? "").trim().toLowerCase();
+    const apptToReschedule = current.find((a) => String(a.id ?? "").trim().toLowerCase() === targetIdStr);
     if (!apptToReschedule) {
       return { success: false, message: "Appointment not found." };
     }
 
-    // Check if the target new slot is already booked by ANOTHER appointment
-    const isBooked = current.some((a) => {
-      if (String(a.id) === String(appointmentId)) return false; // Ignore current appointment's old slot
-      if (normalizeStatus(a.status) === "cancelled") return false;
-      return (
-        String(a.doctorId) === String(apptToReschedule.doctorId) &&
-        String(a.date) === String(newDate) &&
-        String(a.time) === String(newTime)
-      );
-    });
+    // Check if the target new slot is already booked by ANOTHER appointment for the same doctor
+    const isBooked = checkIsSlotBooked(
+      current,
+      apptToReschedule.doctorId,
+      newDate,
+      newTime,
+      appointmentId,
+      apptToReschedule.doctorName || apptToReschedule.doctor
+    );
 
     if (isBooked) {
       return { success: false, message: "The selected new time slot is already booked." };
     }
 
     const updated = current.map((a) => {
-      if (String(a.id) === String(appointmentId)) {
+      if (String(a.id ?? "").trim().toLowerCase() === targetIdStr) {
         return {
           ...a,
           date: newDate,

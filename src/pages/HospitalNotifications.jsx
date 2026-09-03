@@ -1,31 +1,43 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCheck, Bell, Calendar, Info, BellOff, Trash2 } from "lucide-react";
+import { CheckCheck, Bell, Calendar, Info, BellOff } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import NotificationCard from "../components/NotificationCard";
 import {
+  getCurrentUser,
+  getHospitals,
   getNotifications,
   markNotificationAsRead,
-  markAllNotificationsAsRead,
-  clearAllNotifications
+  markAllNotificationsAsRead
 } from "../utils/storage";
 import "./Notifications.css";
 
-function AdminNotifications() {
+function HospitalNotifications() {
   const navigate = useNavigate();
+  const [hospital, setHospital] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [activeTab, setActiveTab] = useState("all");
 
   useEffect(() => {
-    loadAdminNotifications();
+    loadHospitalNotifications();
 
-    const handleUpdate = () => loadAdminNotifications();
+    const handleUpdate = () => loadHospitalNotifications();
     window.addEventListener("medibook_notifications_updated", handleUpdate);
     return () => window.removeEventListener("medibook_notifications_updated", handleUpdate);
   }, []);
 
-  const loadAdminNotifications = () => {
+  const loadHospitalNotifications = () => {
+    const user = getCurrentUser();
+    if (!user) return;
+
+    const hospitals = getHospitals();
+    const hosRecord = hospitals.find((h) => h.id === user.refId || h.name === user.name) || {
+      id: user.refId || "HOS-008",
+      name: user.name || "MediCare Hospital"
+    };
+    setHospital(hosRecord);
+
     const allNotifs = getNotifications();
     setNotifications(allNotifs);
   };
@@ -33,10 +45,10 @@ function AdminNotifications() {
   const counts = useMemo(() => {
     const all = notifications.length;
     const appointments = notifications.filter(
-      (n) => n.type === "appointment" || n.type === "appointment_booking" || n.appointmentId
+      (n) => n.type === "appointment" || (n.subType && n.subType.includes("apt")) || n.appointmentId
     ).length;
     const reminders = notifications.filter((n) => n.type === "reminder").length;
-    const system = notifications.filter((n) => n.type === "system" || (!n.type && !n.appointmentId)).length;
+    const system = notifications.filter((n) => n.type === "system" || !n.type).length;
     const unread = notifications.filter((n) => !n.read).length;
     return { all, appointments, reminders, system, unread };
   }, [notifications]);
@@ -44,35 +56,30 @@ function AdminNotifications() {
   const filteredNotifications = useMemo(() => {
     if (activeTab === "appointments") {
       return notifications.filter(
-        (n) => n.type === "appointment" || n.type === "appointment_booking" || n.appointmentId
+        (n) => n.type === "appointment" || (n.subType && n.subType.includes("apt")) || n.appointmentId
       );
     }
     if (activeTab === "reminders") {
       return notifications.filter((n) => n.type === "reminder");
     }
     if (activeTab === "system") {
-      return notifications.filter((n) => n.type === "system" || (!n.type && !n.appointmentId));
+      return notifications.filter((n) => n.type === "system" || !n.type);
     }
     return notifications;
   }, [notifications, activeTab]);
 
   const handleMarkAll = () => {
-    markAllNotificationsAsRead();
-    loadAdminNotifications();
-  };
-
-  const handleClearAll = () => {
-    clearAllNotifications();
-    loadAdminNotifications();
+    const updated = markAllNotificationsAsRead();
+    setNotifications(updated);
   };
 
   const handleCardClick = (notif) => {
     if (!notif.read) {
       markNotificationAsRead(notif.id);
-      loadAdminNotifications();
+      loadHospitalNotifications();
     }
     if (notif.appointmentId) {
-      navigate(`/admin/appointments/${notif.appointmentId}`);
+      navigate("/hospital/appointments");
     }
   };
 
@@ -80,28 +87,28 @@ function AdminNotifications() {
     if (activeTab === "appointments") {
       return {
         icon: Calendar,
-        title: "No System Appointment Alerts",
-        description: "There are no appointment activity logs recorded across the network."
+        title: "No Appointment Notifications",
+        description: "Your hospital has no pending appointment confirmation or cancellation updates."
       };
     }
     if (activeTab === "reminders") {
       return {
         icon: Bell,
-        title: "No System Reminders",
-        description: "There are no pending operational reminders for system administrators."
+        title: "No Facility Reminders",
+        description: "There are no operational or schedule reminders for your hospital."
       };
     }
     if (activeTab === "system") {
       return {
         icon: Info,
-        title: "No System Logs",
-        description: "There are no system update or maintenance notifications."
+        title: "No System Notifications",
+        description: "There are no system-wide updates or administrative notices."
       };
     }
     return {
       icon: BellOff,
       title: "No Notifications Found",
-      description: "You're all caught up! System logs and admin alerts will appear here."
+      description: "You're all caught up! Facility alerts and updates will appear here."
     };
   };
 
@@ -109,31 +116,15 @@ function AdminNotifications() {
     <main className="patient-dashboard-content">
       {/* Page Header */}
       <PageHeader
-        title="Notifications"
-        subtitle="System alerts, registrations, and important updates"
+        title="Hospital Notifications"
+        subtitle={`Stay updated with operational alerts and appointments for ${hospital?.name || "your hospital"}`}
         action={
-          <div style={{ display: "flex", gap: "10px" }}>
-            {counts.unread > 0 && (
-              <button className="btn-mark-all-read" onClick={handleMarkAll}>
-                <CheckCheck size={16} />
-                <span>Mark all as read</span>
-              </button>
-            )}
-            {notifications.length > 0 && (
-              <button
-                className="btn-mark-all-read"
-                onClick={handleClearAll}
-                style={{
-                  background: "#fef2f2",
-                  color: "#dc2626",
-                  borderColor: "#fecaca"
-                }}
-              >
-                <Trash2 size={16} />
-                <span>Clear all</span>
-              </button>
-            )}
-          </div>
+          counts.unread > 0 ? (
+            <button className="btn-mark-all-read" onClick={handleMarkAll}>
+              <CheckCheck size={16} />
+              <span>Mark all as read</span>
+            </button>
+          ) : null
         }
       />
 
@@ -198,4 +189,4 @@ function AdminNotifications() {
   );
 }
 
-export default AdminNotifications;
+export default HospitalNotifications;

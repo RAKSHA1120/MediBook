@@ -14,7 +14,7 @@ import {
   AlertTriangle,
   Receipt
 } from "lucide-react";
-import { getDoctors, getCurrentUser } from "../utils/storage";
+import { getDoctors, getCurrentPatient, getCurrentUser, getPatientAppointments, addNotification } from "../utils/storage";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
@@ -24,17 +24,11 @@ import EmptyState from "../components/EmptyState";
 import "./MyAppointments.css";
 
 import { useAppointments } from "../context/AppointmentContext";
-import { useEffect } from "react";
 
 function MyAppointments() {
   const navigate = useNavigate();
   const { appointments, cancelAppointment } = useAppointments();
   const [activeTab, setActiveTab] = useState("Upcoming");
-  const [currentUser, setCurrentUser] = useState(null);
-
-  useEffect(() => {
-    setCurrentUser(getCurrentUser());
-  }, []);
 
   // Modal States
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -45,6 +39,12 @@ function MyAppointments() {
   // Toast State
   const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
 
+  // Get current patient's isolated appointments
+  const patientAppts = useMemo(() => {
+    const p = getCurrentPatient();
+    return getPatientAppointments(p?.id, appointments);
+  }, [appointments]);
+
   const showNotification = (title, message, type = "success") => {
     setToast({ show: true, type, title, message });
     setTimeout(() => {
@@ -54,29 +54,45 @@ function MyAppointments() {
 
   // Helper to resolve Doctor information
   const getDoctorInfo = (appt) => {
+    if (!appt) return { name: "N/A", specialty: "N/A", hospital: "N/A", location: "", fee: "N/A", initials: "DR" };
     let doc = null;
     const doctorsList = getDoctors();
-    if (appt.doctorId) {
-      doc = doctorsList.find((d) => String(d.id) === String(appt.doctorId));
+    const docIdStr = String(appt.doctorId ?? "").trim();
+    const docNameStr = String(appt.doctorName || appt.doctor || "").trim();
+
+    if (docIdStr !== "") {
+      doc = doctorsList.find((d) => String(d.id ?? "").trim() === docIdStr);
     }
-    if (!doc && appt.doctorName) {
-      doc = doctorsList.find((d) => d.name.toLowerCase() === appt.doctorName.toLowerCase());
+    if (!doc && docNameStr !== "") {
+      const normTargetDocName = docNameStr.toLowerCase();
+      doc = doctorsList.find((d) => String(d.name ?? "").trim().toLowerCase() === normTargetDocName);
     }
 
-    const name = appt.doctorName || doc?.name || "Dr. Emily Carter";
-    const specialty = appt.specialty || doc?.specialty || "Cardiology";
-    const hospital = appt.hospital || doc?.hospital || "MediCare Hospital";
-    const location = appt.location || doc?.location || "Chennai";
-    const fee = appt.consultationFee ?? doc?.consultationFee ?? 800;
+    const rawName = appt.doctorName || appt.doctor || doc?.name;
+    const name = String(rawName ?? "").trim() !== "" ? String(rawName).trim() : "N/A";
+
+    const rawSpec = appt.specialty || appt.type || doc?.specialty || doc?.specialization;
+    const specialty = String(rawSpec ?? "").trim() !== "" ? String(rawSpec).trim() : "N/A";
+
+    const rawHosp = appt.hospital || appt.hospitalName || doc?.hospital || doc?.hospitalName;
+    const hospital = String(rawHosp ?? "").trim() !== "" ? String(rawHosp).trim() : "N/A";
+
+    const rawLoc = appt.location || doc?.location;
+    const location = String(rawLoc ?? "").trim() !== "" ? String(rawLoc).trim() : "";
+
+    const feeVal = appt.consultationFee ?? appt.fee ?? doc?.consultationFee ?? doc?.fee;
+    const fee = feeVal !== null && feeVal !== undefined ? feeVal : "N/A";
 
     // Doctor Initials
-    const initials = name
-      .split(" ")
-      .filter((n) => n.toLowerCase() !== "dr.")
-      .map((n) => n[0])
-      .join("")
-      .substring(0, 2)
-      .toUpperCase() || "DR";
+    const initials = name !== "N/A"
+      ? name
+          .split(" ")
+          .filter((n) => String(n ?? "").toLowerCase() !== "dr.")
+          .map((n) => (n && n[0] ? n[0] : ""))
+          .join("")
+          .substring(0, 2)
+          .toUpperCase() || "DR"
+      : "DR";
 
     return { name, specialty, hospital, location, fee, initials };
   };
@@ -91,31 +107,25 @@ function MyAppointments() {
     return "upcoming";
   };
 
-  const myAppointmentsList = useMemo(() => {
-      if (!currentUser) return [];
-      // Only show appointments that belong to this patient
-      return appointments.filter(a => a.patientId === currentUser.refId || a.patientId === currentUser.id || a.patientName === currentUser.name);
-  }, [appointments, currentUser]);
-
-  // Dynamic tab counts
+  // Dynamic tab counts for current patient
   const tabCounts = useMemo(() => {
     const counts = { Upcoming: 0, Completed: 0, Cancelled: 0 };
-    myAppointmentsList.forEach((appt) => {
+    patientAppts.forEach((appt) => {
       const norm = getNormalizedStatus(appt.status);
       if (norm === "upcoming") counts.Upcoming++;
       else if (norm === "completed") counts.Completed++;
       else if (norm === "cancelled") counts.Cancelled++;
     });
     return counts;
-  }, [myAppointmentsList]);
+  }, [patientAppts]);
 
   // Filtered appointments for active tab
   const filteredAppointments = useMemo(() => {
-    return myAppointmentsList.filter((appt) => {
+    return patientAppts.filter((appt) => {
       const norm = getNormalizedStatus(appt.status);
       return norm === activeTab.toLowerCase();
     });
-  }, [myAppointmentsList, activeTab]);
+  }, [patientAppts, activeTab]);
 
   // Handle View Action
   const handleViewAppointment = (appt) => {
@@ -134,6 +144,21 @@ function MyAppointments() {
 
     cancelAppointment(appointmentToCancel.id);
     setShowCancelModal(false);
+
+    const docName = appointmentToCancel.doctorName || appointmentToCancel.doctor || "the doctor";
+    const pId = appointmentToCancel.patientId || getCurrentPatient()?.id || getCurrentUser()?.refId || getCurrentUser()?.id || "P1";
+    const uId = getCurrentUser()?.id || "U_P1";
+
+    addNotification({
+      type: "appointment",
+      subType: "cancelled",
+      title: "Appointment Cancelled",
+      message: `Your appointment with ${docName} has been cancelled.`,
+      appointmentId: appointmentToCancel.id,
+      patientId: pId,
+      userId: uId
+    });
+
     setAppointmentToCancel(null);
 
     showNotification(
@@ -236,7 +261,7 @@ function MyAppointments() {
                 : XCircle
             }
             actionLabel={activeTab === "Upcoming" ? "Find a Doctor" : undefined}
-            onAction={activeTab === "Upcoming" ? () => navigate("/doctors") : undefined}
+            onAction={activeTab === "Upcoming" ? () => navigate("/find-doctor") : undefined}
           />
         )}
       </div>

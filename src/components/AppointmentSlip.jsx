@@ -3,7 +3,6 @@ import { Heart, Printer, CheckCircle2, ShieldCheck, MapPin, Building2, Calendar,
 import StatusBadge from "./StatusBadge";
 import Button from "./Button";
 import { getStoredPatientProfile } from "../data/patientProfile";
-import doctors from "../data/doctors";
 import "./AppointmentSlip.css";
 
 function AppointmentSlip({ appointment, patient, showPrintBtn = true, onPrint }) {
@@ -11,23 +10,14 @@ function AppointmentSlip({ appointment, patient, showPrintBtn = true, onPrint })
 
   // Resolve Patient profile fallback if missing
   const patientData = patient || getStoredPatientProfile();
-  const patientName = patientData?.name || "Raksha";
+  const patientName = appointment?.patientName || appointment?.patient || patientData?.name || "Rahul Sharma";
 
-  // Resolve Doctor data from doctors array if partial
-  let docObj = null;
-  if (appointment.doctorId) {
-    docObj = doctors.find((d) => String(d.id) === String(appointment.doctorId));
-  }
-  if (!docObj && appointment.doctorName) {
-    docObj = doctors.find((d) => d.name.toLowerCase() === appointment.doctorName.toLowerCase());
-  }
-
-  const doctorName = appointment.doctorName || docObj?.name || "Dr. Emily Carter";
-  const specialty = appointment.specialty || docObj?.specialty || "Cardiology";
-  const hospital = appointment.hospital || docObj?.hospital || "MediCare Hospital";
-  const location = appointment.location || docObj?.location || "Chennai";
-  const fee = appointment.consultationFee ?? appointment.fee ?? docObj?.consultationFee ?? 800;
-  const appointmentId = appointment.id || "MB-APT-20260826-101";
+  const doctorName = appointment?.doctorName || appointment?.doctor || "Dr. Sarah Smith";
+  const specialty = appointment?.specialty || appointment?.specialization || "Cardiology";
+  const hospital = appointment?.hospital || appointment?.hospitalName || "City Heart Center";
+  const location = appointment?.location || "Chennai";
+  const fee = appointment?.consultationFee ?? appointment?.fee ?? 1000;
+  const appointmentId = appointment?.id || "MB-APT-20260826-101";
 
   // Format Readable Date
   let displayDate = appointment.formattedDate || appointment.date || "August 26, 2026";

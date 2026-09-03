@@ -5,34 +5,37 @@ import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import NotificationCard from "../components/NotificationCard";
 import {
-  getStoredNotifications,
+  getCurrentUser,
+  getCurrentPatient,
+  getPatientNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead
-} from "../data/notifications";
+} from "../utils/storage";
 import "./Notifications.css";
 
 function Notifications() {
   const navigate = useNavigate();
-  const [allNotifications, setAllNotifications] = useState(() => getStoredNotifications());
+  const [notifications, setNotifications] = useState(() => {
+    const p = getCurrentPatient();
+    const u = getCurrentUser();
+    return getPatientNotifications(p?.id, u?.id);
+  });
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
 
-  // Sync state if external changes happen
   useEffect(() => {
-    import("../utils/storage").then(module => setCurrentUser(module.getCurrentUser()));
     const handleUpdate = () => {
-      setAllNotifications(getStoredNotifications());
+      const u = getCurrentUser();
+      const p = getCurrentPatient();
+      setCurrentUser(u);
+      setNotifications(getPatientNotifications(p?.id, u?.id));
     };
+    handleUpdate();
     window.addEventListener("medibook_notifications_updated", handleUpdate);
     return () => {
       window.removeEventListener("medibook_notifications_updated", handleUpdate);
     };
   }, []);
-
-  const notifications = useMemo(() => {
-    if (!currentUser) return [];
-    return allNotifications.filter(n => !n.userId || n.userId === currentUser.id || n.userId === currentUser.refId);
-  }, [allNotifications, currentUser]);
 
   // Filter Counts
   const counts = useMemo(() => {
@@ -60,18 +63,22 @@ function Notifications() {
 
   // Handle Mark All As Read
   const handleMarkAll = () => {
-    const updated = markAllNotificationsAsRead();
-    setAllNotifications(updated);
+    const p = getCurrentPatient();
+    const u = getCurrentUser();
+    markAllNotificationsAsRead(p?.id, u?.id);
+    setNotifications(getPatientNotifications(p?.id, u?.id));
   };
 
   // Handle Notification Click
   const handleCardClick = (notif) => {
     if (!notif.read) {
-      const updated = markNotificationAsRead(notif.id);
-      setAllNotifications(updated);
+      markNotificationAsRead(notif.id);
+      const p = getCurrentPatient();
+      const u = getCurrentUser();
+      setNotifications(getPatientNotifications(p?.id, u?.id));
     }
     if (notif.appointmentId) {
-      navigate(`/appointment/${notif.appointmentId}`);
+      navigate(`/appointments/${notif.appointmentId}`);
     }
   };
 

@@ -6,19 +6,16 @@ import "./DoctorCard.css";
 function DoctorCard({ doctor, onViewProfile, onBook, className = "" }) {
   if (!doctor) return null;
 
-  const {
-    id,
-    name = "Dr. Emily Carter",
-    specialty = "Cardiology",
-    qualification = "MBBS, MD",
-    hospital = "MediCare Hospital",
-    location = "Chennai",
-    experience = 12,
-    rating = 4.8,
-    reviewCount = 124,
-    consultationFee = 800,
-    availability = "Available Today"
-  } = doctor;
+  const rawName = doctor.name || "Medical Specialist";
+  const name = rawName.toLowerCase().startsWith("dr.") ? rawName : `Dr. ${rawName}`;
+  const specialty = doctor.specialty || doctor.specialization || "General Physician";
+  const qualification = doctor.qualification || "MBBS, MD";
+  const hospital = doctor.hospital || "MediCare Hospital";
+  const location = doctor.location || "Chennai";
+  const experience = typeof doctor.experience === "number" ? doctor.experience : parseInt(doctor.experience) || 10;
+  const rating = doctor.rating !== undefined ? doctor.rating : 4.8;
+  const reviewCount = doctor.reviewCount !== undefined ? doctor.reviewCount : 124;
+  const consultationFee = doctor.consultationFee !== undefined ? doctor.consultationFee : (doctor.fee !== undefined ? doctor.fee : 800);
 
   // Compute initials
   const initials = name
@@ -62,7 +59,7 @@ function DoctorCard({ doctor, onViewProfile, onBook, className = "" }) {
 
         <div className="doctor-detail-item">
           <Briefcase size={14} />
-          <span>{experience} years exp.</span>
+          <span>{experience} yrs exp.</span>
         </div>
 
         <div className="doctor-detail-item">
