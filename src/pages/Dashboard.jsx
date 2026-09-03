@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getAppointments, updateAppointmentStatus, getCurrentUser } from "../utils/storage";
+import { getAppointmentsForDoctor, updateAppointmentStatus, getCurrentUser, getCurrentDoctor } from "../utils/storage";
 import StatusBadge from "../components/StatusBadge";
 import {
   CalendarCheck,
@@ -18,60 +18,17 @@ function Dashboard() {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [currentDoctor, setCurrentDoctor] = useState(null);
 
   const loadDoctorData = () => {
     const user = getCurrentUser();
+    const doc = getCurrentDoctor();
     setCurrentUser(user);
-    if (user) {
-      const allAppts = getAppointments();
-      let myAppts = allAppts.filter(
-        (a) =>
-          a.doctorId === user.refId ||
-          a.doctorId === user.id ||
-          (a.doctorName && String(a.doctorName).toLowerCase().includes(String(user.name || "").toLowerCase()))
-      );
-
-      // Auto-inject demo appointments for new doctors so the dashboard isn't completely empty for testing
-      if (myAppts.length === 0) {
-        const d = new Date();
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const dd = String(d.getDate()).padStart(2, "0");
-        const localToday = `${yyyy}-${mm}-${dd}`;
-
-        const demoAppts = [
-          {
-            id: `APT-DEMO-1-${Date.now()}`,
-            patientId: "P_1",
-            patientName: "Raksha",
-            patient: "Raksha",
-            doctorId: user.refId || user.id || "DOC-101",
-            doctorName: user.name || "Dr. Emily Carter",
-            date: localToday,
-            time: "10:30 AM",
-            type: "General Checkup",
-            status: "Upcoming"
-          },
-          {
-            id: `APT-DEMO-2-${Date.now()}`,
-            patientId: "P_2",
-            patientName: "Amit Patel",
-            patient: "Amit Patel",
-            doctorId: user.refId || user.id || "DOC-101",
-            doctorName: user.name || "Dr. Emily Carter",
-            date: localToday,
-            time: "02:00 PM",
-            type: "Follow-up Consultation",
-            status: "Pending"
-          }
-        ];
-
-        const updatedAppts = [...allAppts, ...demoAppts];
-        localStorage.setItem("medibook_appointments", JSON.stringify(updatedAppts));
-        myAppts = demoAppts;
-        window.dispatchEvent(new Event("medibook_appointments_updated"));
-      }
-
+    setCurrentDoctor(doc);
+    if (user || doc) {
+      const docId = doc?.id ?? user?.refId ?? user?.id;
+      const docName = doc?.name ?? user?.name;
+      const myAppts = getAppointmentsForDoctor(docId, docName);
       setAppointments(myAppts);
     }
   };
@@ -85,20 +42,53 @@ function Dashboard() {
     };
   }, []);
 
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const todayStr = `${yyyy}-${mm}-${dd}`;
+  const isTodayDate = (dateStr) => {
+    if (!dateStr) return false;
+    const cleanDate = String(dateStr).trim().toLowerCase();
+    if (cleanDate.includes("today")) return true;
 
-  const todaysAppointments = appointments.filter(
-    (a) => a.date === todayStr || String(a.date).toLowerCase().includes("today")
-  );
-  const upcomingAppointments = appointments.filter(
-    (a) => a.status === "Upcoming" || a.status === "Confirmed"
-  );
-  const completedAppointments = appointments.filter((a) => a.status === "Completed");
-  const pendingAppointments = appointments.filter((a) => a.status === "Pending");
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const todayISO = `${yyyy}-${mm}-${dd}`;
+
+    if (cleanDate === todayISO) return true;
+
+    try {
+      const parsedDate = new Date(dateStr);
+      if (!isNaN(parsedDate.getTime())) {
+        return (
+          parsedDate.getFullYear() === d.getFullYear() &&
+          parsedDate.getMonth() === d.getMonth() &&
+          parsedDate.getDate() === d.getDate()
+        );
+      }
+    } catch (e) {}
+
+    return false;
+  };
+
+  const todaysAppointments = appointments.filter((a) => {
+    const s = String(a.status || "").trim().toLowerCase();
+    if (s === "cancelled") return false;
+    return isTodayDate(a.date);
+  });
+
+  const upcomingAppointments = appointments.filter((a) => {
+    const s = String(a.status || "").trim().toLowerCase();
+    return s === "upcoming" || s === "confirmed" || s === "scheduled";
+  });
+
+  const completedAppointments = appointments.filter((a) => {
+    const s = String(a.status || "").trim().toLowerCase();
+    return s === "completed";
+  });
+
+  const pendingAppointments = appointments.filter((a) => {
+    const s = String(a.status || "").trim().toLowerCase();
+    return s === "pending";
+  });
 
   const handleStatusChange = (id, newStatus) => {
     updateAppointmentStatus(id, newStatus);
@@ -108,7 +98,7 @@ function Dashboard() {
   };
 
   // Format doctor name cleanly
-  const rawName = currentUser?.name || "Emily Carter";
+  const rawName = currentDoctor?.name || currentUser?.name || "Doctor";
   const doctorDisplayName = rawName.toLowerCase().startsWith("dr.") ? rawName : `Dr. ${rawName}`;
 
   return (

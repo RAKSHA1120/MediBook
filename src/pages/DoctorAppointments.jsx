@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Search, Eye, Calendar, CalendarCheck, Clock, CheckCircle2, AlertCircle } from "lucide-react";
-import { getAppointments, updateAppointmentStatus, getCurrentUser, getPatients } from "../utils/storage";
+import { getAppointmentsForDoctor, updateAppointmentStatus, getCurrentUser, getCurrentDoctor, getPatients } from "../utils/storage";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
 import EmptyState from "../components/EmptyState";
@@ -26,22 +26,11 @@ function DoctorAppointments() {
 
   const loadAppointments = () => {
     const user = getCurrentUser();
-    if (user) {
-      const allAppts = getAppointments();
-      const userRefIdStr = String(user.refId ?? "").trim();
-      const userIdStr = String(user.id ?? "").trim();
-      const userNameStr = String(user.name ?? "").toLowerCase().trim();
-
-      const myAppts = allAppts.filter((a) => {
-        const docIdStr = String(a.doctorId ?? "").trim();
-        const docNameStr = String(a.doctorName || a.doctor || "").toLowerCase().trim();
-
-        return (
-          (userRefIdStr !== "" && docIdStr === userRefIdStr) ||
-          (userIdStr !== "" && docIdStr === userIdStr) ||
-          (userNameStr !== "" && docNameStr.includes(userNameStr))
-        );
-      });
+    const doc = getCurrentDoctor();
+    if (user || doc) {
+      const docId = doc?.id ?? user?.refId ?? user?.id;
+      const docName = doc?.name ?? user?.name;
+      const myAppts = getAppointmentsForDoctor(docId, docName);
       setAppointments(myAppts);
     }
   };

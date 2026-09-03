@@ -5,11 +5,12 @@ import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import NotificationCard from "../components/NotificationCard";
 import {
-  getStoredNotifications,
+  getCurrentUser,
+  getCurrentPatient,
+  getPatientNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead
-} from "../data/notifications";
-import { getCurrentUser, getCurrentPatient, getPatientNotifications } from "../utils/storage";
+} from "../utils/storage";
 import "./Notifications.css";
 
 function Notifications() {
@@ -62,9 +63,9 @@ function Notifications() {
 
   // Handle Mark All As Read
   const handleMarkAll = () => {
-    markAllNotificationsAsRead();
     const p = getCurrentPatient();
     const u = getCurrentUser();
+    markAllNotificationsAsRead(p?.id, u?.id);
     setNotifications(getPatientNotifications(p?.id, u?.id));
   };
 
@@ -77,7 +78,7 @@ function Notifications() {
       setNotifications(getPatientNotifications(p?.id, u?.id));
     }
     if (notif.appointmentId) {
-      navigate(`/appointment/${notif.appointmentId}`);
+      navigate(`/appointments/${notif.appointmentId}`);
     }
   };
 

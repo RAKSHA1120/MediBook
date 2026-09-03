@@ -138,12 +138,15 @@ function PatientProfile() {
       return;
     }
 
-    // Generate formatted DOB if yyyy-mm-dd
+    // Generate formatted DOB if yyyy-mm-dd (display as DD-MM-YYYY)
     let formattedDob = formData.formattedDob || formData.dob;
     if (formData.dob && formData.dob.includes("-")) {
-      const [y, m, d] = formData.dob.split("-");
-      if (y && m && d) {
-        formattedDob = `${d}/${m}/${y}`;
+      const parts = formData.dob.split("-");
+      if (parts.length === 3 && parts[0].length === 4) {
+        const [y, m, d] = parts;
+        if (y && m && d) {
+          formattedDob = `${d}-${m}-${y}`;
+        }
       }
     }
 
@@ -158,7 +161,7 @@ function PatientProfile() {
 
     showNotification(
       "Profile Updated",
-      "Your profile details have been saved successfully.",
+      "Profile updated successfully.",
       "success"
     );
   };

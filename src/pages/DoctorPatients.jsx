@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Search, Eye, Users, UserCheck, CalendarCheck, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getAppointments, getCurrentUser, getPatients } from "../utils/storage";
+import { getAppointmentsForDoctor, getCurrentUser, getCurrentDoctor, getPatients } from "../utils/storage";
 import StatusBadge from "../components/StatusBadge";
 import EmptyState from "../components/EmptyState";
 import "../pages/AdminShared.css";
@@ -20,23 +20,12 @@ function DoctorPatients() {
 
   const loadPatients = () => {
     const user = getCurrentUser();
-    if (user) {
-      const allAppts = getAppointments();
-      const userRefIdStr = String(user.refId ?? "").trim();
-      const userIdStr = String(user.id ?? "").trim();
-      const userNameStr = String(user.name ?? "").toLowerCase().trim();
+    const doc = getCurrentDoctor();
+    if (user || doc) {
+      const docId = doc?.id ?? user?.refId ?? user?.id;
+      const docName = doc?.name ?? user?.name;
 
-      const myAppts = allAppts.filter((a) => {
-        const docIdStr = String(a.doctorId ?? "").trim();
-        const docNameStr = String(a.doctorName || a.doctor || "").toLowerCase().trim();
-
-        return (
-          (userRefIdStr !== "" && docIdStr === userRefIdStr) ||
-          (userIdStr !== "" && docIdStr === userIdStr) ||
-          (userNameStr !== "" && docNameStr.includes(userNameStr))
-        );
-      });
-
+      const myAppts = getAppointmentsForDoctor(docId, docName);
       const allPatients = getPatients();
       const patientMap = new Map();
 
@@ -48,14 +37,14 @@ function DoctorPatients() {
           const idStr = String(p.id ?? "").trim();
           const nameStr = String(p.name ?? "").toLowerCase().trim();
           return (
-            (pIdStr !== "" && pIdStr.toLowerCase() !== "n/a" && idStr === pIdStr) ||
+            (pIdStr !== "" && pIdStr.toLowerCase() !== "n/a" && idStr.toLowerCase() === pIdStr.toLowerCase()) ||
             (pNameStr !== "" && nameStr === pNameStr.toLowerCase())
           );
         });
 
-        const key = matchedPatient?.id
-          ? `id-${matchedPatient.id}`
-          : (pIdStr !== "" && pIdStr.toLowerCase() !== "n/a" ? `id-${pIdStr}` : `name-${pNameStr.toLowerCase()}`);
+        const resolvedId = matchedPatient?.id || (pIdStr !== "" && pIdStr.toLowerCase() !== "n/a" ? pIdStr : `P-${pNameStr.replace(/\s+/g, "")}`);
+        const key = String(resolvedId).trim().toLowerCase();
+        const aptDate = apt.date || "Today";
 
         if (!patientMap.has(key)) {
           patientMap.set(key, {
@@ -63,38 +52,24 @@ function DoctorPatients() {
             name: matchedPatient?.name || pNameStr || "Patient",
             age: matchedPatient?.age ? `${matchedPatient.age} yrs` : (matchedPatient?.ageGender ? String(matchedPatient.ageGender) : "32 yrs"),
             gender: matchedPatient?.gender || "Male",
-            contact: matchedPatient?.contact || matchedPatient?.phone || apt.contact || "N/A",
+            contact: matchedPatient?.contact || matchedPatient?.phone || apt.patientContact || apt.contact || "N/A",
             email: matchedPatient?.email || "N/A",
             status: matchedPatient?.status || "Active",
-            lastAppointment: apt.date || "Today",
+            lastAppointment: aptDate,
             appointmentsCount: 1
           });
         } else {
           const existing = patientMap.get(key);
           existing.appointmentsCount += 1;
-          if (apt.date) {
-            existing.lastAppointment = apt.date;
+          if (aptDate && aptDate !== "Today") {
+            if (!existing.lastAppointment || existing.lastAppointment === "Today" || new Date(aptDate) > new Date(existing.lastAppointment)) {
+              existing.lastAppointment = aptDate;
+            }
           }
         }
       });
 
-      // Fallback: If no appointments mapped yet, present system patients so dashboard isn't completely empty
-      let finalPatientsList = Array.from(patientMap.values());
-      if (finalPatientsList.length === 0) {
-        finalPatientsList = allPatients.map((p) => ({
-          id: p.id,
-          name: p.name,
-          age: p.age ? `${p.age} yrs` : "N/A",
-          gender: p.gender || "N/A",
-          contact: p.contact || p.phone || "N/A",
-          email: p.email || "N/A",
-          status: p.status || "Active",
-          lastAppointment: p.lastVisit || p.date || "No appointments",
-          appointmentsCount: 1
-        }));
-      }
-
-      setDoctorPatients(finalPatientsList);
+      setDoctorPatients(Array.from(patientMap.values()));
     }
   };
 

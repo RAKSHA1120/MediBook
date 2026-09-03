@@ -33,6 +33,7 @@ import TimeSlot, { TimeSlotGroup } from "../components/TimeSlot";
 import BookingSummary from "../components/BookingSummary";
 import Toast from "../components/Toast";
 import { addNotification } from "../data/notifications";
+import { getCurrentPatient, getCurrentUser } from "../utils/storage";
 import "./AppointmentBooking.css";
 
 import { useAppointments } from "../context/AppointmentContext";
@@ -218,18 +219,29 @@ function AppointmentBooking() {
     const randomSuffix = Math.floor(100 + Math.random() * 900).toString();
     const generatedAptId = `MB-APT-${yyyymmdd}-${randomSuffix}`;
 
+    const currUser = getCurrentUser();
+    const currPatient = getCurrentPatient();
+
+    const pId = currPatient?.id || currUser?.refId || currUser?.id || "P1";
+    const pName = currPatient?.name || currUser?.name || "Rahul Sharma";
+    const pContact = currPatient?.contact || currPatient?.mobile || currUser?.mobile || "9876543210";
+
     const newAppt = {
       id: generatedAptId,
       doctorId: doctor.id,
       doctorName: doctor.name,
-      specialty: doctor.specialty,
-      hospital: doctor.hospital,
+      specialty: doctor.specialty || doctor.specialization || "Cardiology",
+      hospital: doctor.hospital || "MediCare Hospital",
       location: doctor.location || "Chennai",
-      consultationFee: doctor.consultationFee || 800,
+      consultationFee: doctor.consultationFee ?? doctor.fee ?? 800,
+      fee: doctor.consultationFee ?? doctor.fee ?? 800,
       date: selectedDate,
       formattedDate: formatReadableDate(selectedDate),
       time: selectedSlot,
       status: "confirmed",
+      patientId: pId,
+      patientName: pName,
+      patientContact: pContact,
       createdAt: new Date().toISOString()
     };
     
@@ -243,8 +255,22 @@ function AppointmentBooking() {
       type: "appointment",
       subType: "confirmed",
       title: "Appointment Confirmed",
-      message: `Your appointment with ${doctor.name} on ${formatReadableDate(selectedDate)} at ${selectedSlot} has been confirmed.`,
-      appointmentId: generatedAptId
+      message: `Your appointment with ${doctor.name} is confirmed for ${formatReadableDate(selectedDate)} at ${selectedSlot}.`,
+      appointmentId: generatedAptId,
+      patientId: pId,
+      userId: currUser?.id || "U_P1"
+    });
+
+    addNotification({
+      type: "appointment",
+      subType: "confirmed",
+      targetRole: "doctor",
+      doctorId: doctor.id,
+      doctorName: doctor.name,
+      title: "New Patient Consultation",
+      message: `Patient ${currUser?.name || "Rahul Sharma"} booked a consultation for ${formatReadableDate(selectedDate)} at ${selectedSlot}.`,
+      appointmentId: generatedAptId,
+      patientId: pId
     });
 
     navigate("/booking-success", {
@@ -345,7 +371,7 @@ function AppointmentBooking() {
                   <Button variant="primary" onClick={() => navigate("/patient-dashboard")}>
                     Go to Patient Dashboard
                   </Button>
-                  <Button variant="outline" onClick={() => navigate("/doctors")}>
+                  <Button variant="outline" onClick={() => navigate("/find-doctor")}>
                     Book Another Appointment
                   </Button>
                 </div>

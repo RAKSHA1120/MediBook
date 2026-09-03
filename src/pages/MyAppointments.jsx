@@ -14,7 +14,7 @@ import {
   AlertTriangle,
   Receipt
 } from "lucide-react";
-import { getDoctors, getCurrentPatient, getPatientAppointments } from "../utils/storage";
+import { getDoctors, getCurrentPatient, getCurrentUser, getPatientAppointments, addNotification } from "../utils/storage";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
@@ -42,8 +42,7 @@ function MyAppointments() {
   // Get current patient's isolated appointments
   const patientAppts = useMemo(() => {
     const p = getCurrentPatient();
-    if (!p) return [];
-    return getPatientAppointments(p.id);
+    return getPatientAppointments(p?.id, appointments);
   }, [appointments]);
 
   const showNotification = (title, message, type = "success") => {
@@ -145,6 +144,21 @@ function MyAppointments() {
 
     cancelAppointment(appointmentToCancel.id);
     setShowCancelModal(false);
+
+    const docName = appointmentToCancel.doctorName || appointmentToCancel.doctor || "the doctor";
+    const pId = appointmentToCancel.patientId || getCurrentPatient()?.id || getCurrentUser()?.refId || getCurrentUser()?.id || "P1";
+    const uId = getCurrentUser()?.id || "U_P1";
+
+    addNotification({
+      type: "appointment",
+      subType: "cancelled",
+      title: "Appointment Cancelled",
+      message: `Your appointment with ${docName} has been cancelled.`,
+      appointmentId: appointmentToCancel.id,
+      patientId: pId,
+      userId: uId
+    });
+
     setAppointmentToCancel(null);
 
     showNotification(
@@ -247,7 +261,7 @@ function MyAppointments() {
                 : XCircle
             }
             actionLabel={activeTab === "Upcoming" ? "Find a Doctor" : undefined}
-            onAction={activeTab === "Upcoming" ? () => navigate("/doctors") : undefined}
+            onAction={activeTab === "Upcoming" ? () => navigate("/find-doctor") : undefined}
           />
         )}
       </div>

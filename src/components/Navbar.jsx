@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Bell,
   ChevronDown,
@@ -9,8 +9,14 @@ import {
   Stethoscope,
   Menu,
 } from "lucide-react";
-import { getStoredNotifications } from "../data/notifications";
-import { getCurrentUser } from "../utils/storage";
+import {
+  getCurrentUser,
+  getCurrentDoctor,
+  getCurrentPatient,
+  getDoctorNotifications,
+  getPatientNotifications,
+  getNotifications
+} from "../utils/storage";
 
 function Navbar({
   userName = "Raksha N",
@@ -22,27 +28,74 @@ function Navbar({
   onProfileClick,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const handleNotifUpdate = () => {
-      const allNotifications = getStoredNotifications();
-      const currentUser = getCurrentUser();
-      if (!currentUser) {
-          setUnreadCount(allNotifications.filter(n => !n.read).length);
-      } else {
-          setUnreadCount(allNotifications.filter(n => !n.read && (!n.userId || n.userId === currentUser.id || n.userId === currentUser.refId)).length);
+      try {
+        const user = getCurrentUser();
+        let unread = 0;
+
+        if (user && user.role === "doctor") {
+          const doc = getCurrentDoctor();
+          const docId = doc?.id ?? user?.refId ?? user?.id;
+          const notifs = getDoctorNotifications(docId, user?.id);
+          unread = notifs.filter((n) => !n.read).length;
+        } else if (user && user.role === "patient") {
+          const patient = getCurrentPatient();
+          const pId = patient?.id ?? user?.refId ?? user?.id;
+          const notifs = getPatientNotifications(pId, user?.id);
+          unread = notifs.filter((n) => !n.read).length;
+        } else {
+          const allNotifications = getNotifications();
+          unread = allNotifications.filter((n) => !n.read).length;
+        }
+
+        setUnreadCount(unread);
+      } catch (e) {
+        setUnreadCount(0);
       }
     };
-    
+
     // Initial fetch
     handleNotifUpdate();
-    
+
     window.addEventListener("medibook_notifications_updated", handleNotifUpdate);
     return () => {
       window.removeEventListener("medibook_notifications_updated", handleNotifUpdate);
     };
   }, []);
+
+  const handleBellClick = () => {
+    if (onNotificationClick) {
+      onNotificationClick();
+    } else {
+      const user = getCurrentUser();
+      if (user?.role === "doctor" || location.pathname.startsWith("/doctor")) {
+        navigate("/doctor/notifications");
+      } else if (user?.role === "admin" || location.pathname.startsWith("/admin")) {
+        navigate("/admin/notifications");
+      } else {
+        navigate("/notifications");
+      }
+    }
+  };
+
+  const handleProfileClick = () => {
+    if (onProfileClick) {
+      onProfileClick();
+    } else {
+      const user = getCurrentUser();
+      if (user?.role === "doctor" || location.pathname.startsWith("/doctor")) {
+        navigate("/doctor/profile");
+      } else if (user?.role === "admin" || location.pathname.startsWith("/admin")) {
+        navigate("/admin/profile");
+      } else {
+        navigate("/profile");
+      }
+    }
+  };
 
   return (
     <header className="navbar">
@@ -79,13 +132,7 @@ function Navbar({
         <button
           className="navbar-icon-button"
           title="Notifications"
-          onClick={() => {
-            if (onNotificationClick) {
-              onNotificationClick();
-            } else {
-              navigate("/notifications");
-            }
-          }}
+          onClick={handleBellClick}
         >
           <Bell size={20} />
 
@@ -99,14 +146,8 @@ function Navbar({
         {/* Profile */}
         <button
           className="navbar-profile"
-          title="View Patient Profile"
-          onClick={() => {
-            if (onProfileClick) {
-              onProfileClick();
-            } else {
-              navigate("/profile");
-            }
-          }}
+          title="View Profile"
+          onClick={handleProfileClick}
         >
           <span className="profile-avatar">
             {avatarLetter}

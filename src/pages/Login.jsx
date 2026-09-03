@@ -278,7 +278,7 @@ function Login({ initialTab = "signin" }) {
           }
         });
         const newPatientId = `P-${maxNum + 1}`;
-        const patientName = `Patient (${digitsOnly.slice(-4)})`;
+        const patientName = "Patient";
 
         addPatient({
           id: newPatientId,
@@ -327,11 +327,18 @@ function Login({ initialTab = "signin" }) {
         }
         if (user.role === "doctor") {
           const doctorRecord = doctors.find(
-            (d) => d.id === user.refId || d.loginId === user.loginId
+            (d) => String(d.id).toLowerCase() === String(user.refId).toLowerCase() || d.loginId === user.loginId
           );
           if (doctorRecord && doctorRecord.status !== "Active") {
             setErrors({ mobile: "Your doctor account is inactive. Contact administrator." });
             return;
+          }
+          if (doctorRecord) {
+            user = {
+              ...user,
+              refId: doctorRecord.id,
+              name: doctorRecord.name.startsWith("Dr.") ? doctorRecord.name : `Dr. ${doctorRecord.name}`
+            };
           }
         }
 

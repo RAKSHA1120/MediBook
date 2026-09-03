@@ -380,7 +380,7 @@ function AdminAppointments() {
               <div>
                 <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>PATIENT NAME</label>
                 <div style={{ fontSize: "14.5px", fontWeight: "600", color: "var(--text-heading)", marginTop: "4px" }}>
-                  {selectedAppointment.patientName || "Rahul Sharma"}
+                  {selectedAppointment.patientName || selectedAppointment.patient || "Patient"}
                 </div>
               </div>
               <div>
