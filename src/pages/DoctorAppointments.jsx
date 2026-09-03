@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { Search, Eye, Calendar, CalendarCheck, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Search, Eye, Calendar, CalendarCheck, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { getAppointmentsForDoctor, updateAppointmentStatus, getCurrentUser, getCurrentDoctor, getPatients } from "../utils/storage";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
@@ -10,6 +10,8 @@ import "../pages/AdminDashboard.css";
 
 function DoctorAppointments() {
   const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -18,26 +20,111 @@ function DoctorAppointments() {
   const [consultationNotes, setConsultationNotes] = useState("");
   const [prescribedMedicines, setPrescribedMedicines] = useState("");
 
+  // Helper to format backend time strings (e.g. "10:30:00" -> "10:30 AM")
+  const formatBackendTime = (timeStr) => {
+    if (!timeStr) return "10:30 AM";
+    if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+    const parts = timeStr.split(":");
+    if (parts.length >= 2) {
+      let hours = parseInt(parts[0], 10);
+      const minutes = parts[1];
+      const ampm = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      const hh = String(hours).padStart(2, "0");
+      return `${hh}:${minutes} ${ampm}`;
+    }
+    return timeStr;
+  };
+
+  // Map backend response fields to frontend contract
+  const normalizeBackendAppointment = (apt) => {
+    const rawDate = apt.appointmentDate ? String(apt.appointmentDate).split("T")[0] : "";
+    const displayTime = formatBackendTime(apt.appointmentTime);
+    const apptReason = apt.reason || apt.appointmentType || "Consultation";
+
+    return {
+      id: apt.id,
+      patientId: apt.patientId,
+      patientName: apt.patientName || "Patient",
+      doctorId: apt.doctorId,
+      doctorName: apt.doctorName || "Doctor",
+      hospitalId: apt.hospitalId,
+      hospitalName: apt.hospitalName || "MediCare Hospital",
+      hospital: apt.hospitalName || "MediCare Hospital",
+      appointmentDate: apt.appointmentDate,
+      date: rawDate,
+      time: displayTime,
+      appointmentTime: apt.appointmentTime,
+      status: apt.status || "Pending",
+      appointmentType: apt.appointmentType || "Consultation",
+      specialty: apt.appointmentType || "Consultation",
+      type: apptReason,
+      reason: apptReason,
+      consultationFee: apt.consultationFee ?? 500,
+      fee: apt.consultationFee ?? 500,
+      createdAt: apt.createdAt,
+      updatedAt: apt.updatedAt
+    };
+  };
+
+  // Load appointments from backend API GET /api/Appointments
+  const loadAppointments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("https://localhost:7050/api/Appointments");
+      if (!response.ok) {
+        throw new Error(`Server returned HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      const allApiAppts = Array.isArray(data) ? data.map(normalizeBackendAppointment) : [];
+
+      const user = getCurrentUser();
+      const doc = getCurrentDoctor();
+      const rawDocId = doc?.id ?? user?.refId ?? user?.id;
+      const rawDocName = doc?.name ?? user?.name;
+
+      const docIdInt = parseInt(String(rawDocId || "").replace(/\D/g, ""), 10);
+      const normDocName = String(rawDocName || "").trim().toLowerCase();
+
+      // Filter appointments belonging to current doctor
+      const myAppts = allApiAppts.filter((apt) => {
+        const aptDocIdInt = parseInt(String(apt.doctorId || "").replace(/\D/g, ""), 10);
+        const aptDocNameStr = String(apt.doctorName || "").trim().toLowerCase();
+
+        // 1. Doctor ID match
+        if (docIdInt && aptDocIdInt && docIdInt === aptDocIdInt) return true;
+
+        // 2. Doctor Name match
+        if (normDocName && aptDocNameStr && (normDocName === aptDocNameStr || normDocName.includes(aptDocNameStr) || aptDocNameStr.includes(normDocName))) return true;
+
+        // 3. Fallback for doctor ID 1 / default doctor if no specific doctor ID
+        if ((!docIdInt || docIdInt === 1) && (!aptDocIdInt || aptDocIdInt === 1)) return true;
+
+        return false;
+      });
+
+      setAppointments(myAppts);
+    } catch (err) {
+      console.error("Error loading doctor appointments from backend:", err);
+      setError("Unable to connect to backend server. Please verify ASP.NET Core API is running.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadAppointments();
     window.addEventListener("medibook_appointments_updated", loadAppointments);
     return () => window.removeEventListener("medibook_appointments_updated", loadAppointments);
-  }, []);
-
-  const loadAppointments = () => {
-    const user = getCurrentUser();
-    const doc = getCurrentDoctor();
-    if (user || doc) {
-      const docId = doc?.id ?? user?.refId ?? user?.id;
-      const docName = doc?.name ?? user?.name;
-      const myAppts = getAppointmentsForDoctor(docId, docName);
-      setAppointments(myAppts);
-    }
-  };
+  }, [loadAppointments]);
 
   const handleStatusChange = (id, newStatus) => {
+    setAppointments((prev) =>
+      prev.map((a) => (String(a.id) === String(id) ? { ...a, status: newStatus } : a))
+    );
     updateAppointmentStatus(id, newStatus);
-    loadAppointments();
   };
 
   // Stats calculations
@@ -253,9 +340,24 @@ function DoctorAppointments() {
         Showing <strong>{filteredAppointments.length}</strong> of <strong>{appointments.length}</strong> appointments
       </div>
 
-      {/* 5. Appointments Table / Empty State */}
+      {/* 5. Appointments Table / Empty State / Loading State */}
       <div className="admin-table-card">
-        {filteredAppointments.length === 0 ? (
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px", gap: "12px" }}>
+            <Loader2 size={36} style={{ color: "var(--primary)", animation: "spin 1s linear infinite" }} />
+            <p style={{ fontSize: "15px", fontWeight: "500", color: "var(--text-muted)", margin: 0 }}>
+              Loading assigned appointments...
+            </p>
+          </div>
+        ) : error ? (
+          <EmptyState
+            title="Failed to load appointments"
+            description={error}
+            icon={AlertCircle}
+            actionLabel="Try Again"
+            onAction={loadAppointments}
+          />
+        ) : filteredAppointments.length === 0 ? (
           <EmptyState
             title="No appointments found."
             description="We couldn't find any appointments matching your search query or status filter."

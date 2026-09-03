@@ -10,7 +10,8 @@ function BookingSummary({
   selectedTime,
   consultationFee,
   onConfirm,
-  isConfirmed = false
+  isConfirmed = false,
+  isSubmitting = false
 }) {
   const fee = consultationFee || doctor?.consultationFee || 0;
   const total = fee; // Total = Consultation Fee
@@ -76,9 +77,9 @@ function BookingSummary({
             variant="primary"
             className="btn-confirm-appointment"
             onClick={onConfirm}
-            disabled={isConfirmed}
+            disabled={isConfirmed || isSubmitting}
           >
-            Confirm Appointment
+            {isSubmitting ? "Booking..." : "Confirm Appointment"}
           </Button>
         </div>
       ) : (

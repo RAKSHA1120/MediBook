@@ -17,6 +17,68 @@ export function AppointmentProvider({ children }) {
     setAppointments(fresh);
   }, []);
 
+  // Fetch live appointments from ASP.NET Core API GET /api/Appointments
+  const fetchBackendAppointments = useCallback(async () => {
+    try {
+      const response = await fetch("https://localhost:7050/api/Appointments");
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const formatBackendTime = (timeStr) => {
+            if (!timeStr) return "10:30 AM";
+            if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+            const parts = timeStr.split(":");
+            if (parts.length >= 2) {
+              let hours = parseInt(parts[0], 10);
+              const minutes = parts[1];
+              const ampm = hours >= 12 ? "PM" : "AM";
+              hours = hours % 12;
+              hours = hours ? hours : 12;
+              const hh = String(hours).padStart(2, "0");
+              return `${hh}:${minutes} ${ampm}`;
+            }
+            return timeStr;
+          };
+
+          const normalizedBackend = data.map((apt) => ({
+            id: apt.id,
+            patientId: apt.patientId,
+            patientName: apt.patientName || "Patient",
+            doctorId: apt.doctorId,
+            doctorName: apt.doctorName || "Doctor",
+            hospitalId: apt.hospitalId,
+            hospitalName: apt.hospitalName || "MediCare Hospital",
+            hospital: apt.hospitalName || "MediCare Hospital",
+            appointmentDate: apt.appointmentDate,
+            date: apt.appointmentDate ? String(apt.appointmentDate).split("T")[0] : "",
+            time: formatBackendTime(apt.appointmentTime),
+            appointmentTime: apt.appointmentTime,
+            status: apt.status || "Pending",
+            appointmentType: apt.appointmentType || "Consultation",
+            specialty: apt.appointmentType || "Consultation",
+            reason: apt.reason || "Regular consultation",
+            consultationFee: apt.consultationFee ?? 500,
+            fee: apt.consultationFee ?? 500,
+            createdAt: apt.createdAt,
+            updatedAt: apt.updatedAt
+          }));
+
+          setAppointments((prev) => {
+            const existingIds = new Set(normalizedBackend.map((b) => String(b.id)));
+            const extraLocal = prev.filter((p) => !existingIds.has(String(p.id)));
+            return [...normalizedBackend, ...extraLocal];
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch backend appointments in AppointmentContext:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBackendAppointments();
+  }, [fetchBackendAppointments]);
+
   useEffect(() => {
     const handleUpdate = () => {
       reloadAppointments();

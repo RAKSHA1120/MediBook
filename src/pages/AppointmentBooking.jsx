@@ -77,8 +77,32 @@ function AppointmentBooking() {
   // Toast State
   const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
   
-  // Success Confirmation State
+  // Loading & Success Confirmation State
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
+
+  // Helper to format time strings (e.g. "10:30 AM", "02:15 PM") to backend HH:mm:ss format
+  const formatTimeToHHmmss = (timeStr) => {
+    if (!timeStr) return "09:00:00";
+    if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr.trim())) {
+      return timeStr.trim();
+    }
+    const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+    if (!match) return "09:00:00";
+
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2];
+    const modifier = match[3] ? match[3].toUpperCase() : null;
+
+    if (modifier === "PM" && hours < 12) {
+      hours += 12;
+    } else if (modifier === "AM" && hours === 12) {
+      hours = 0;
+    }
+
+    const hh = String(hours).padStart(2, "0");
+    return `${hh}:${minutes}:00`;
+  };
 
   // Generate initials for avatar
   const getInitials = (name = "") => {
@@ -201,11 +225,11 @@ function AppointmentBooking() {
     setSelectedSlot("");
   };
 
-  // Handle Confirm Booking
-  const handleConfirmAppointment = () => {
-    if (!selectedDate || !selectedSlot) return;
+  // Handle Confirm Booking by calling ASP.NET Core API (POST /api/Appointments)
+  const handleConfirmAppointment = async () => {
+    if (!selectedDate || !selectedSlot || isSubmitting) return;
 
-    // Check again if slot is booked
+    // Check frontend slot availability state before calling API
     if (isSlotBooked(doctor.id, selectedDate, selectedSlot)) {
       showNotification(
         "Slot Unavailable",
@@ -215,77 +239,146 @@ function AppointmentBooking() {
       return;
     }
 
-    const yyyymmdd = selectedDate.replace(/-/g, "");
-    const randomSuffix = Math.floor(100 + Math.random() * 900).toString();
-    const generatedAptId = `MB-APT-${yyyymmdd}-${randomSuffix}`;
+    setIsSubmitting(true);
 
-    const currUser = getCurrentUser();
-    const currPatient = getCurrentPatient();
+    try {
+      const currUser = getCurrentUser();
+      const currPatient = getCurrentPatient();
 
-    const pId = currPatient?.id || currUser?.refId || currUser?.id || "P1";
-    const pName = currPatient?.name || currUser?.name || "Rahul Sharma";
-    const pContact = currPatient?.contact || currPatient?.mobile || currUser?.mobile || "9876543210";
+      // Dynamically resolve integer IDs from current authentication context
+      const rawPatientId = currPatient?.id || currPatient?.patientId || currUser?.refId || currUser?.id || 1;
+      const patientId = parseInt(String(rawPatientId).replace(/\D/g, ""), 10) || 1;
 
-    const newAppt = {
-      id: generatedAptId,
-      doctorId: doctor.id,
-      doctorName: doctor.name,
-      specialty: doctor.specialty || doctor.specialization || "Cardiology",
-      hospital: doctor.hospital || "MediCare Hospital",
-      location: doctor.location || "Chennai",
-      consultationFee: doctor.consultationFee ?? doctor.fee ?? 800,
-      fee: doctor.consultationFee ?? doctor.fee ?? 800,
-      date: selectedDate,
-      formattedDate: formatReadableDate(selectedDate),
-      time: selectedSlot,
-      status: "confirmed",
-      patientId: pId,
-      patientName: pName,
-      patientContact: pContact,
-      createdAt: new Date().toISOString()
-    };
-    
-    const result = addAppointment(newAppt);
-    if (!result.success) {
-      showNotification("Booking Failed", result.message, "error");
-      return;
-    }
+      const doctorId = parseInt(String(doctor?.id || 1).replace(/\D/g, ""), 10) || 1;
+      
+      let rawHosId = doctor?.hospitalId;
+      if (!rawHosId && typeof doctor?.hospital === 'object') {
+        rawHosId = doctor.hospital.id;
+      }
+      const hospitalId = parseInt(String(rawHosId || 1).replace(/\D/g, ""), 10) || 1;
 
-    addNotification({
-      type: "appointment",
-      subType: "confirmed",
-      title: "Appointment Confirmed",
-      message: `Your appointment with ${doctor.name} is confirmed for ${formatReadableDate(selectedDate)} at ${selectedSlot}.`,
-      appointmentId: generatedAptId,
-      patientId: pId,
-      userId: currUser?.id || "U_P1"
-    });
+      const formattedTime = formatTimeToHHmmss(selectedSlot);
+      const feeVal = doctor?.consultationFee ?? doctor?.fee ?? 500;
 
-    addNotification({
-      type: "appointment",
-      subType: "confirmed",
-      targetRole: "doctor",
-      doctorId: doctor.id,
-      doctorName: doctor.name,
-      title: "New Patient Consultation",
-      message: `Patient ${currUser?.name || "Rahul Sharma"} booked a consultation for ${formatReadableDate(selectedDate)} at ${selectedSlot}.`,
-      appointmentId: generatedAptId,
-      patientId: pId
-    });
+      const payload = {
+        patientId,
+        doctorId,
+        hospitalId,
+        appointmentDate: selectedDate,
+        appointmentTime: formattedTime,
+        status: "Pending",
+        appointmentType: "Consultation",
+        reason: "Regular consultation",
+        consultationFee: feeVal
+      };
 
-    navigate("/booking-success", {
-      state: {
-        appointmentId: generatedAptId,
-        doctor,
-        specialty: doctor.specialty,
-        hospital: doctor.hospital,
+      const response = await fetch("https://localhost:7050/api/Appointments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      // Handle HTTP 409 Conflict (Slot already booked)
+      if (response.status === 409) {
+        showNotification(
+          "Slot Unavailable",
+          "The selected time slot is already booked. Please select another time.",
+          "error"
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Handle general API errors
+      if (!response.ok) {
+        let errMessage = "Failed to create appointment. Please try again.";
+        try {
+          const errData = await response.json();
+          if (errData?.message) errMessage = errData.message;
+        } catch (_) {}
+        showNotification("Booking Error", errMessage, "error");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // HTTP 201 Created
+      const createdAppt = await response.json();
+
+      const pId = currPatient?.id || currUser?.refId || currUser?.id || "P1";
+      const pName = createdAppt.patientName || currPatient?.name || currUser?.name || "Patient";
+      const pContact = currPatient?.contact || currPatient?.mobile || currUser?.mobile || "9876543210";
+      const docHospitalName = createdAppt.hospitalName || doctor.hospital || "MediCare Hospital";
+
+      // Cache created appointment in frontend local context to sync UI & My Appointments
+      const localApptObj = {
+        id: createdAppt.id,
+        doctorId: doctor.id,
+        doctorName: createdAppt.doctorName || doctor.name,
+        specialty: doctor.specialty || doctor.specialization || "Cardiology",
+        hospital: docHospitalName,
+        location: doctor.location || "Chennai",
+        consultationFee: createdAppt.consultationFee ?? feeVal,
+        fee: createdAppt.consultationFee ?? feeVal,
         date: selectedDate,
         formattedDate: formatReadableDate(selectedDate),
         time: selectedSlot,
-        fee: doctor.consultationFee,
-        total: doctor.consultationFee
-      }
-    });
+        status: (createdAppt.status || "Pending").toLowerCase(),
+        patientId: pId,
+        patientName: pName,
+        patientContact: pContact,
+        createdAt: createdAppt.createdAt || new Date().toISOString()
+      };
+
+      addAppointment(localApptObj);
+
+      addNotification({
+        type: "appointment",
+        subType: "confirmed",
+        title: "Appointment Confirmed",
+        message: `Your appointment with ${doctor.name} is confirmed for ${formatReadableDate(selectedDate)} at ${selectedSlot}.`,
+        appointmentId: createdAppt.id,
+        patientId: pId,
+        userId: currUser?.id || "U_P1"
+      });
+
+      addNotification({
+        type: "appointment",
+        subType: "confirmed",
+        targetRole: "doctor",
+        doctorId: doctor.id,
+        doctorName: doctor.name,
+        title: "New Patient Consultation",
+        message: `Patient ${pName} booked a consultation for ${formatReadableDate(selectedDate)} at ${selectedSlot}.`,
+        appointmentId: createdAppt.id,
+        patientId: pId
+      });
+
+      // Navigate to Booking Success page with backend appointment ID
+      navigate("/booking-success", {
+        state: {
+          appointmentId: createdAppt.id,
+          doctor,
+          specialty: doctor.specialty,
+          hospital: docHospitalName,
+          date: selectedDate,
+          formattedDate: formatReadableDate(selectedDate),
+          time: selectedSlot,
+          fee: createdAppt.consultationFee ?? feeVal,
+          total: createdAppt.consultationFee ?? feeVal
+        }
+      });
+    } catch (err) {
+      console.error("Appointment booking error:", err);
+      showNotification(
+        "Network Error",
+        "Unable to connect to backend server. Please verify ASP.NET Core API is running.",
+        "error"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleMyAppointments = () => {
@@ -492,6 +585,7 @@ function AppointmentBooking() {
                   consultationFee={doctor?.consultationFee || 800}
                   onConfirm={handleConfirmAppointment}
                   isConfirmed={isConfirmed}
+                  isSubmitting={isSubmitting}
                 />
               </div>
             </div>
