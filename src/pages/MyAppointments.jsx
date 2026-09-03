@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Calendar,
@@ -12,7 +12,9 @@ import {
   Eye,
   X,
   AlertTriangle,
-  Receipt
+  Receipt,
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import { getDoctors, getCurrentPatient, getCurrentUser, getPatientAppointments, addNotification } from "../utils/storage";
 import Button from "../components/Button";
@@ -30,6 +32,11 @@ function MyAppointments() {
   const { appointments, cancelAppointment } = useAppointments();
   const [activeTab, setActiveTab] = useState("Upcoming");
 
+  // API State
+  const [apiAppointments, setApiAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   // Modal States
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -39,11 +46,102 @@ function MyAppointments() {
   // Toast State
   const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
 
-  // Get current patient's isolated appointments
+  // Fetch Appointments from ASP.NET Core backend (GET /api/Appointments)
+  const fetchAppointments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("https://localhost:7050/api/Appointments");
+      if (!response.ok) {
+        throw new Error(`Server returned HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      setApiAppointments(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error loading appointments from backend:", err);
+      setError("Unable to connect to backend server. Please check if the ASP.NET Core API is running.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
+
+  // Helper to format backend time strings (e.g. "10:30:00" -> "10:30 AM")
+  const formatBackendTime = (timeStr) => {
+    if (!timeStr) return "10:30 AM";
+    if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+    const parts = timeStr.split(":");
+    if (parts.length >= 2) {
+      let hours = parseInt(parts[0], 10);
+      const minutes = parts[1];
+      const ampm = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      const hh = String(hours).padStart(2, "0");
+      return `${hh}:${minutes} ${ampm}`;
+    }
+    return timeStr;
+  };
+
+  // Map backend response fields to frontend contract
+  const normalizeApiAppointment = (apt) => {
+    const rawDate = apt.appointmentDate ? String(apt.appointmentDate).split("T")[0] : "";
+    const displayTime = formatBackendTime(apt.appointmentTime);
+
+    return {
+      id: apt.id,
+      patientId: apt.patientId,
+      patientName: apt.patientName || "Patient",
+      doctorId: apt.doctorId,
+      doctorName: apt.doctorName || "Doctor",
+      hospitalId: apt.hospitalId,
+      hospitalName: apt.hospitalName || "MediCare Hospital",
+      hospital: apt.hospitalName || "MediCare Hospital",
+      appointmentDate: apt.appointmentDate,
+      date: rawDate,
+      time: displayTime,
+      appointmentTime: apt.appointmentTime,
+      status: apt.status || "Pending",
+      appointmentType: apt.appointmentType || "Consultation",
+      specialty: apt.appointmentType || "Consultation",
+      reason: apt.reason || "Regular consultation",
+      consultationFee: apt.consultationFee ?? 500,
+      fee: apt.consultationFee ?? 500,
+      createdAt: apt.createdAt,
+      updatedAt: apt.updatedAt
+    };
+  };
+
+  // Dynamically filter appointments belonging to currently logged-in patient
   const patientAppts = useMemo(() => {
     const p = getCurrentPatient();
-    return getPatientAppointments(p?.id, appointments);
-  }, [appointments]);
+    const u = getCurrentUser();
+
+    // Use backend API data if available, otherwise fallback to context
+    const sourceList = apiAppointments.length > 0 ? apiAppointments.map(normalizeApiAppointment) : appointments;
+
+    const pIdInt = parseInt(String(p?.id || p?.patientId || u?.refId || u?.id || "").replace(/\D/g, ""), 10);
+    const pNameStr = String(p?.name || u?.name || "").trim().toLowerCase();
+
+    return sourceList.filter((apt) => {
+      const aptPIdInt = parseInt(String(apt.patientId || "").replace(/\D/g, ""), 10);
+      const aptPNameStr = String(apt.patientName || "").trim().toLowerCase();
+
+      // 1. Direct numeric patient ID match
+      if (pIdInt && aptPIdInt && pIdInt === aptPIdInt) return true;
+
+      // 2. Patient Name match
+      if (pNameStr && aptPNameStr && (pNameStr === aptPNameStr || pNameStr.includes(aptPNameStr) || aptPNameStr.includes(pNameStr))) return true;
+
+      // 3. Fallback for default patient ID 1 / P1
+      if ((!pIdInt || pIdInt === 1) && (!aptPIdInt || aptPIdInt === 1)) return true;
+
+      return false;
+    });
+  }, [apiAppointments, appointments]);
 
   const showNotification = (title, message, type = "success") => {
     setToast({ show: true, type, title, message });
@@ -100,8 +198,8 @@ function MyAppointments() {
   // Normalization helper for appointment status
   const getNormalizedStatus = (status) => {
     if (!status) return "upcoming";
-    const s = String(status).toLowerCase();
-    if (s === "upcoming" || s === "confirmed") return "upcoming";
+    const s = String(status).toLowerCase().trim();
+    if (s === "upcoming" || s === "confirmed" || s === "pending" || s === "scheduled") return "upcoming";
     if (s === "completed") return "completed";
     if (s === "cancelled") return "cancelled";
     return "upcoming";
@@ -141,6 +239,10 @@ function MyAppointments() {
   // Handle Confirm Cancel
   const handleConfirmCancel = () => {
     if (!appointmentToCancel) return;
+
+    setApiAppointments((prev) =>
+      prev.map((a) => (String(a.id) === String(appointmentToCancel.id) ? { ...a, status: "Cancelled" } : a))
+    );
 
     cancelAppointment(appointmentToCancel.id);
     setShowCancelModal(false);
@@ -221,9 +323,24 @@ function MyAppointments() {
         </button>
       </div>
 
-      {/* Appointments List */}
+      {/* Appointments List with Loading & Error States */}
       <div className="my-appointments-list">
-        {filteredAppointments.length > 0 ? (
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px", gap: "12px" }}>
+            <Loader2 size={36} style={{ color: "var(--primary)", animation: "spin 1s linear infinite" }} />
+            <p style={{ fontSize: "15px", fontWeight: 500, color: "var(--text-muted)", margin: 0 }}>
+              Loading your appointments...
+            </p>
+          </div>
+        ) : error ? (
+          <EmptyState
+            title="Failed to load appointments"
+            description={error}
+            icon={AlertCircle}
+            actionLabel="Try Again"
+            onAction={fetchAppointments}
+          />
+        ) : filteredAppointments.length > 0 ? (
           filteredAppointments.map((appt) => {
             const statusNorm = getNormalizedStatus(appt.status);
 

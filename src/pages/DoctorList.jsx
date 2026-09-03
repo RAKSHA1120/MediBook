@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Stethoscope, X, Building2 } from "lucide-react";
-import { getDoctors, getHospitals } from "../utils/storage";
+import { Stethoscope, X, Building2, Loader2, AlertCircle } from "lucide-react";
+import { getHospitals } from "../utils/storage";
 import Button from "../components/Button";
 import Select from "../components/Select";
 import Toast from "../components/Toast";
@@ -53,16 +53,69 @@ const matchSpecialty = (docSpecialty, selected) => {
   return s1.includes(s2) || s2.includes(s1);
 };
 
+// Normalize API response object into standard Doctor shape
+const normalizeDoctor = (doc) => {
+  const hospitalName = typeof doc.hospital === "object" && doc.hospital !== null
+    ? doc.hospital.name
+    : (typeof doc.hospital === "string" ? doc.hospital : "MediCare Hospital");
+
+  const hospitalId = doc.hospitalId ?? (typeof doc.hospital === "object" && doc.hospital !== null ? doc.hospital.id : null);
+  const spec = doc.specialization || doc.specialty || "General Physician";
+
+  return {
+    id: doc.id,
+    userId: doc.userId ?? null,
+    name: doc.name || "Dr. Medical",
+    specialty: spec,
+    specialization: spec,
+    qualification: doc.qualification || "MBBS, MD",
+    experience: typeof doc.experience === "number" ? doc.experience : (parseInt(doc.experience) || 0),
+    email: doc.email || "",
+    mobile: doc.mobile || "",
+    consultationFee: doc.consultationFee ?? doc.fee ?? 500,
+    fee: doc.consultationFee ?? doc.fee ?? 500,
+    profileImage: doc.profileImage ?? null,
+    location: doc.location || (typeof doc.hospital === "object" && doc.hospital !== null ? doc.hospital.location : "Chennai"),
+    status: doc.status || "Active",
+    hospital: hospitalName,
+    hospitalId: hospitalId,
+    // Safe frontend fallbacks for fields non-existent in backend DB:
+    rating: doc.rating ?? 4.8,
+    reviewCount: doc.reviewCount ?? 124,
+    availability: doc.availability || "Available Today"
+  };
+};
+
 function DoctorList() {
   const location = useLocation();
   const navigate = useNavigate();
 
   const [doctorsList, setDoctorsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch full doctors list from storage on mount
+  const fetchDoctorsFromApi = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("https://localhost:7050/api/doctors");
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+      const data = await response.json();
+      const normalized = (Array.isArray(data) ? data : []).map(normalizeDoctor);
+      setDoctorsList(normalized);
+    } catch (err) {
+      console.error("Error fetching doctors from API:", err);
+      setError("Unable to connect to the backend server (https://localhost:7050/api/doctors). Please ensure the backend API is running.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch full doctors list from backend API on mount
   useEffect(() => {
-    const docs = getDoctors();
-    setDoctorsList(docs);
+    fetchDoctorsFromApi();
   }, []);
 
   // Search & Filter states
@@ -78,6 +131,8 @@ function DoctorList() {
   // Doctor profile modal state
   const [selectedProfileDoctor, setSelectedProfileDoctor] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState(null);
 
   // Sorting and Pagination states
   const [sortBy, setSortBy] = useState("Relevance");
@@ -296,9 +351,28 @@ function DoctorList() {
     setCurrentPage(1);
   };
 
-  const handleViewProfile = (doc) => {
-    setSelectedProfileDoctor(doc);
+  // Fetch individual doctor profile details from backend API on View Profile click
+  const handleViewProfile = async (doc) => {
+    if (!doc || !doc.id) return;
     setIsProfileModalOpen(true);
+    setProfileLoading(true);
+    setProfileError(null);
+    setSelectedProfileDoctor(null);
+
+    try {
+      const response = await fetch(`https://localhost:7050/api/doctors/${doc.id}`);
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+      const data = await response.json();
+      const normalized = normalizeDoctor(data);
+      setSelectedProfileDoctor(normalized);
+    } catch (err) {
+      console.error(`Error fetching profile for doctor ID ${doc.id}:`, err);
+      setProfileError(`Unable to fetch doctor profile from backend API (https://localhost:7050/api/doctors/${doc.id}).`);
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   const handleBookAppointment = (doc) => {
@@ -417,9 +491,30 @@ function DoctorList() {
           </div>
         </section>
 
-        {/* Doctors Grid / Grouped by Hospital / Empty State */}
+        {/* Doctors Grid / Grouped by Hospital / Loading / Error / Empty State */}
         <section style={{ display: "flex", flexDirection: "column", gap: "var(--space-lg)" }}>
-          {groupedDoctors.length > 0 ? (
+          {loading ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px", gap: "12px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)" }}>
+              <Loader2 size={36} style={{ color: "var(--primary)", animation: "spin 1s linear infinite" }} />
+              <p style={{ fontSize: "15px", fontWeight: "500", color: "var(--text-muted)", margin: 0 }}>
+                Loading doctors from backend server...
+              </p>
+              <style>{`
+                @keyframes spin {
+                  from { transform: rotate(0deg); }
+                  to { transform: rotate(360deg); }
+                }
+              `}</style>
+            </div>
+          ) : error ? (
+            <EmptyState
+              title="Backend API Error"
+              description={error}
+              icon={AlertCircle}
+              actionLabel="Retry Connection"
+              onAction={fetchDoctorsFromApi}
+            />
+          ) : groupedDoctors.length > 0 ? (
             groupedDoctors.map((group) => (
               <div key={group.key} className="hospital-doctor-group">
                 <div className="hospital-group-header">
@@ -492,7 +587,27 @@ function DoctorList() {
         onClose={() => setIsProfileModalOpen(false)}
         title="Doctor Profile Details"
       >
-        {selectedProfileDoctor && (
+        {profileLoading ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px", gap: "12px" }}>
+            <Loader2 size={32} style={{ color: "var(--primary)", animation: "spin 1s linear infinite" }} />
+            <p style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-muted)", margin: 0 }}>
+              Loading doctor profile...
+            </p>
+          </div>
+        ) : profileError ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "12px 0" }}>
+            <EmptyState
+              title="Profile Load Failed"
+              description={profileError}
+              icon={AlertCircle}
+            />
+            <div className="form-actions" style={{ display: "flex", justifyContent: "flex-end" }}>
+              <Button variant="outline" onClick={() => setIsProfileModalOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        ) : selectedProfileDoctor ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             {/* Header Profile Section */}
             <div style={{ display: "flex", gap: "16px", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "16px" }}>
@@ -561,6 +676,24 @@ function DoctorList() {
                   {selectedProfileDoctor.availability || "Available Today"}
                 </div>
               </div>
+
+              {selectedProfileDoctor.email && (
+                <div>
+                  <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>EMAIL</label>
+                  <div style={{ fontSize: "14.5px", fontWeight: "600", color: "var(--text-heading)", marginTop: "4px" }}>
+                    {selectedProfileDoctor.email}
+                  </div>
+                </div>
+              )}
+
+              {selectedProfileDoctor.mobile && (
+                <div>
+                  <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>MOBILE</label>
+                  <div style={{ fontSize: "14.5px", fontWeight: "600", color: "var(--text-heading)", marginTop: "4px" }}>
+                    {selectedProfileDoctor.mobile}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Actions */}
@@ -579,7 +712,7 @@ function DoctorList() {
               </Button>
             </div>
           </div>
-        )}
+        ) : null}
       </Modal>
 
       {/* Toast Notification */}

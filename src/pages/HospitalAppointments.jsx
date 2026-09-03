@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { CalendarDays, Search, Eye, Filter } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { CalendarDays, Search, Eye, Filter, Loader2, AlertCircle } from "lucide-react";
 import {
   getCurrentUser,
   getHospitals,
@@ -9,36 +9,122 @@ import PageHeader from "../components/PageHeader";
 import SearchBox from "../components/SearchBox";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
+import EmptyState from "../components/EmptyState";
 import Button from "../components/Button";
 import "./AdminShared.css";
 
 function HospitalAppointments() {
   const [hospital, setHospital] = useState(null);
   const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
-  useEffect(() => {
-    loadHospitalAppointments();
-  }, []);
+  // Helper to format backend time strings (e.g. "10:30:00" -> "10:30 AM")
+  const formatBackendTime = (timeStr) => {
+    if (!timeStr) return "10:30 AM";
+    if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+    const parts = timeStr.split(":");
+    if (parts.length >= 2) {
+      let hours = parseInt(parts[0], 10);
+      const minutes = parts[1];
+      const ampm = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      const hh = String(hours).padStart(2, "0");
+      return `${hh}:${minutes} ${ampm}`;
+    }
+    return timeStr;
+  };
 
-  const loadHospitalAppointments = () => {
+  // Map backend response fields to frontend contract
+  const normalizeBackendAppointment = (apt) => {
+    const rawDate = apt.appointmentDate ? String(apt.appointmentDate).split("T")[0] : "";
+    const displayTime = formatBackendTime(apt.appointmentTime);
+    const apptReason = apt.reason || apt.appointmentType || "Consultation";
+
+    return {
+      id: apt.id,
+      patientId: apt.patientId,
+      patientName: apt.patientName || "Patient",
+      doctorId: apt.doctorId,
+      doctorName: apt.doctorName || "Doctor",
+      hospitalId: apt.hospitalId,
+      hospitalName: apt.hospitalName || "MediCare Hospital",
+      hospital: apt.hospitalName || "MediCare Hospital",
+      appointmentDate: apt.appointmentDate,
+      date: rawDate,
+      time: displayTime,
+      appointmentTime: apt.appointmentTime,
+      status: apt.status || "Pending",
+      appointmentType: apt.appointmentType || "Consultation",
+      specialty: apt.appointmentType || "Consultation",
+      type: apptReason,
+      reason: apptReason,
+      consultationFee: apt.consultationFee ?? 500,
+      fee: apt.consultationFee ?? 500,
+      createdAt: apt.createdAt,
+      updatedAt: apt.updatedAt
+    };
+  };
+
+  // Load appointments from backend API GET /api/Appointments
+  const loadHospitalAppointments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
     const user = getCurrentUser();
-    if (!user) return;
-
     const hospitals = getHospitals();
-    const hosRecord = hospitals.find((h) => h.id === user.refId || h.name === user.name) || {
-      id: user.refId || "HOS-008",
-      name: user.name || "MediCare Hospital"
+    const hosRecord = hospitals.find((h) => h.id === user?.refId || h.name === user?.name) || {
+      id: user?.refId || 1,
+      name: user?.name || "MediCare Hospital"
     };
 
     setHospital(hosRecord);
-    const identifier = hosRecord.id || hosRecord.name;
-    const hosAppts = getHospitalAppointments(identifier);
-    setAppointments(hosAppts);
-  };
+
+    try {
+      const response = await fetch("https://localhost:7050/api/Appointments");
+      if (!response.ok) {
+        throw new Error(`Server returned HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      const allApiAppts = Array.isArray(data) ? data.map(normalizeBackendAppointment) : [];
+
+      const hosIdInt = parseInt(String(hosRecord.id || user?.refId || user?.id || "").replace(/\D/g, ""), 10);
+      const hosNameStr = String(hosRecord.name || user?.name || "").trim().toLowerCase();
+
+      // Filter appointments for current hospital
+      const myAppts = allApiAppts.filter((apt) => {
+        const aptHosIdInt = parseInt(String(apt.hospitalId || "").replace(/\D/g, ""), 10);
+        const aptHosNameStr = String(apt.hospitalName || "").trim().toLowerCase();
+
+        // 1. Direct hospital ID match
+        if (hosIdInt && aptHosIdInt && hosIdInt === aptHosIdInt) return true;
+
+        // 2. Hospital name match
+        if (hosNameStr && aptHosNameStr && (hosNameStr === aptHosNameStr || hosNameStr.includes(aptHosNameStr) || aptHosNameStr.includes(hosNameStr))) return true;
+
+        // 3. Fallback for default hospital ID 1 / MediCare Hospital
+        if ((!hosIdInt || hosIdInt === 1) && (!aptHosIdInt || aptHosIdInt === 1)) return true;
+
+        return false;
+      });
+
+      setAppointments(myAppts);
+    } catch (err) {
+      console.error("Error loading hospital appointments from backend:", err);
+      setError("Unable to connect to backend server. Please check if ASP.NET Core API is running.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadHospitalAppointments();
+  }, [loadHospitalAppointments]);
 
   const handleSearchChange = (val) => {
     if (typeof val === "string") setSearchTerm(val);
@@ -109,75 +195,92 @@ function HospitalAppointments() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="table-responsive">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th style={{ width: "25%" }}>PATIENT</th>
-                <th style={{ width: "25%" }}>DOCTOR</th>
-                <th style={{ width: "20%" }}>DATE & TIME</th>
-                <th style={{ width: "18%" }}>TYPE / REASON</th>
-                <th style={{ width: "12%" }}>STATUS</th>
-                <th style={{ width: "8%", textAlign: "right" }}>ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAppointments.map((apt) => (
-                <tr key={apt.id}>
-                  <td>
-                    <div className="user-info-cell">
-                      <div className="user-avatar">{getInitials(apt.patientName || "P")}</div>
-                      <div className="user-details">
-                        <span className="user-name">{apt.patientName || "Patient"}</span>
-                        <span className="user-subtext">{apt.patientId || apt.id}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span style={{ fontWeight: "600", color: "var(--text-heading)" }}>
-                      {apt.doctorName || "Doctor"}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", flexDirection: "column" }}>
-                      <span style={{ fontWeight: "600", color: "var(--text-heading)" }}>{apt.date}</span>
-                      <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{apt.time}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                      {apt.specialty || apt.type || "Consultation"}
-                    </span>
-                  </td>
-                  <td>
-                    <StatusBadge status={apt.status || "Confirmed"} />
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <button
-                      className="icon-action-btn"
-                      title="View Details"
-                      onClick={() => {
-                        setSelectedAppointment(apt);
-                        setIsViewModalOpen(true);
-                      }}
-                    >
-                      <Eye size={17} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-
-              {filteredAppointments.length === 0 && (
+        {/* Table & Loading/Error States */}
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px", gap: "12px" }}>
+            <Loader2 size={36} style={{ color: "var(--primary)", animation: "spin 1s linear infinite" }} />
+            <p style={{ fontSize: "15px", fontWeight: "500", color: "var(--text-muted)", margin: 0 }}>
+              Loading hospital appointments...
+            </p>
+          </div>
+        ) : error ? (
+          <EmptyState
+            title="Failed to load appointments"
+            description={error}
+            icon={AlertCircle}
+            actionLabel="Try Again"
+            onAction={loadHospitalAppointments}
+          />
+        ) : (
+          <div className="table-responsive">
+            <table className="admin-table">
+              <thead>
                 <tr>
-                  <td colSpan="6" style={{ textAlign: "center", padding: "28px", color: "var(--text-muted)" }}>
-                    No appointments found for your search criteria.
-                  </td>
+                  <th style={{ width: "25%" }}>PATIENT</th>
+                  <th style={{ width: "25%" }}>DOCTOR</th>
+                  <th style={{ width: "20%" }}>DATE & TIME</th>
+                  <th style={{ width: "18%" }}>TYPE / REASON</th>
+                  <th style={{ width: "12%" }}>STATUS</th>
+                  <th style={{ width: "8%", textAlign: "right" }}>ACTIONS</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredAppointments.map((apt) => (
+                  <tr key={apt.id}>
+                    <td>
+                      <div className="user-info-cell">
+                        <div className="user-avatar">{getInitials(apt.patientName || "P")}</div>
+                        <div className="user-details">
+                          <span className="user-name">{apt.patientName || "Patient"}</span>
+                          <span className="user-subtext">{apt.patientId || apt.id}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span style={{ fontWeight: "600", color: "var(--text-heading)" }}>
+                        {apt.doctorName || "Doctor"}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontWeight: "600", color: "var(--text-heading)" }}>{apt.date}</span>
+                        <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{apt.time}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                        {apt.specialty || apt.type || "Consultation"}
+                      </span>
+                    </td>
+                    <td>
+                      <StatusBadge status={apt.status || "Confirmed"} />
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <button
+                        className="icon-action-btn"
+                        title="View Details"
+                        onClick={() => {
+                          setSelectedAppointment(apt);
+                          setIsViewModalOpen(true);
+                        }}
+                      >
+                        <Eye size={17} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {filteredAppointments.length === 0 && (
+                  <tr>
+                    <td colSpan="6" style={{ textAlign: "center", padding: "28px", color: "var(--text-muted)" }}>
+                      No appointments found for your search criteria.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Appointment View Modal */}

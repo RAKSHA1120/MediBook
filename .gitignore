@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# .NET backend files
+MediBook.Api/.vs/
+MediBook.Api/bin/
+MediBook.Api/obj/
+MediBook.Api/*.csproj.user
