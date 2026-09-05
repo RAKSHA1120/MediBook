@@ -9,14 +9,8 @@ import {
   Stethoscope,
   Menu,
 } from "lucide-react";
-import {
-  getCurrentUser,
-  getCurrentDoctor,
-  getCurrentPatient,
-  getDoctorNotifications,
-  getPatientNotifications,
-  getNotifications
-} from "../utils/storage";
+import { getCurrentUser } from "../utils/auth";
+
 
 function Navbar({
   userName = "Raksha N",

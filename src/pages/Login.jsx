@@ -9,13 +9,15 @@ import {
   BarChart3,
   HeartPulse,
   CheckCircle2,
+  Stethoscope
 } from "lucide-react";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import FormField from "../components/FormField";
 import Checkbox from "../components/Checkbox";
 import hospitalIllustration from "../assets/hospital_appointment_illustration.png";
-import { getUsers, addUser, getPatients, addPatient, setCurrentUser, getDoctors } from "../utils/storage";
+import { setCurrentUser } from "../utils/auth";
+import { api } from "../utils/api";
 import "./Login.css";
 
 function Login({ initialTab = "signin" }) {
@@ -34,7 +36,11 @@ function Login({ initialTab = "signin" }) {
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState("");
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [isAdminMode, setIsAdminMode] = useState(false);
+  
+  // Login Modes: "patient", "admin", "doctor"
+  const [loginMode, setLoginMode] = useState("patient");
+  const isAdminMode = loginMode === "admin";
+  const isDoctorMode = loginMode === "doctor";
 
   const handleMobileChange = (e) => {
     const val = e.target.value;
@@ -61,7 +67,7 @@ function Login({ initialTab = "signin" }) {
     setSuccessMessage("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
 
@@ -69,128 +75,28 @@ function Login({ initialTab = "signin" }) {
     const newErrors = {};
 
     if (activeTab === "signup") {
-      // 1. Full Name Validation
       const trimmedName = name.trim();
-      if (!trimmedName) {
-        newErrors.name = "Please enter your full name.";
-      }
+      if (!trimmedName) newErrors.name = "Please enter your full name.";
 
-      // 2. Age Validation
       const ageNum = parseInt(age, 10);
       if (!age || isNaN(ageNum) || ageNum <= 0 || ageNum > 120) {
         newErrors.age = "Please enter a valid age (1-120).";
       }
 
-      // 3. Gender Validation
-      if (!gender) {
-        newErrors.gender = "Please select your gender.";
-      }
+      if (!gender) newErrors.gender = "Please select your gender.";
 
-      // 4. Mobile Number Validation (10 digits & numeric)
       const trimmedMobile = mobile.trim();
       if (!trimmedMobile || !/^\d{10}$/.test(trimmedMobile)) {
         newErrors.mobile = "Please enter a valid 10-digit mobile number.";
-      } else {
-        // Check duplicate mobile number
-        const users = getUsers();
-        const patients = getPatients();
-        const existsInUsers = users.some(
-          (u) => String(u.mobile || u.loginId || "").trim() === trimmedMobile
-        );
-        const existsInPatients = patients.some(
-          (p) => String(p.contact || p.mobile || "").trim() === trimmedMobile
-        );
-
-        if (existsInUsers || existsInPatients) {
-          newErrors.mobile = "This mobile number is already registered. Please sign in.";
-        }
       }
-
-      // 5. Password & Confirm Password Validation
-      if (!password) {
-        newErrors.password = "Password is required.";
-      }
-      if (!confirmPassword) {
-        newErrors.confirmPassword = "Confirm Password is required.";
-      } else if (password && password !== confirmPassword) {
-        newErrors.confirmPassword = "Passwords do not match.";
-      }
-
-      // 6. Terms & Privacy Checkbox Validation
-      if (!termsAccepted) {
-        newErrors.terms = "You must agree to the Terms of Service and Privacy Policy.";
-      }
-
-      if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
-        return;
-      }
-
-      setErrors({});
-      setLoading(true);
-
-      setTimeout(() => {
-        setLoading(false);
-        const trimmedMobile = mobile.trim();
-        const trimmedName = name.trim();
-
-        // Derive sequential unique Patient ID (e.g. P-101, P-102...)
-        const existingPatients = getPatients();
-        let maxNum = 100;
-        existingPatients.forEach((p) => {
-          if (p.id) {
-            const match = String(p.id).match(/\d+/);
-            if (match) {
-              const num = parseInt(match[0], 10);
-              if (num > maxNum) maxNum = num;
-            }
-          }
-        });
-        const patientId = `P-${maxNum + 1}`;
-
-        // Add Patient Profile Record
-        addPatient({
-          id: patientId,
-          name: trimmedName,
-          contact: trimmedMobile,
-          mobile: trimmedMobile,
-          gender: gender,
-          age: parseInt(age, 10),
-          status: "Active",
-          date: new Date().toISOString().split("T")[0],
-          appointments: 0
-        });
-
-        // Add User Credential Record
-        const newUser = {
-          id: `U_${patientId}`,
-          mobile: trimmedMobile,
-          loginId: trimmedMobile,
-          password: password,
-          role: "patient",
-          name: trimmedName,
-          refId: patientId,
-          status: "Active",
-          createdDate: new Date().toISOString().split("T")[0]
-        };
-        addUser(newUser);
-
-        // Auto-login and navigate immediately
-        setCurrentUser(newUser);
-        navigate("/patient-dashboard");
-      }, 600);
-      return;
-    }
-
-    // SIGN IN FLOW
-    const rawInput = mobile.trim();
-    const digitsOnly = rawInput.replace(/\D/g, "");
-
-    if (!rawInput) {
-      newErrors.mobile = "Mobile number or Login ID is required";
-    }
-    if (!password) {
-      newErrors.password = "Password is required";
+      if (!password) newErrors.password = "Password is required.";
+      if (!confirmPassword) newErrors.confirmPassword = "Confirm Password is required.";
+      else if (password && password !== confirmPassword) newErrors.confirmPassword = "Passwords do not match.";
+      
+      if (!termsAccepted) newErrors.terms = "You must agree to the Terms of Service and Privacy Policy.";
+    } else {
+      if (!mobile.trim()) newErrors.mobile = "ID / Email / Mobile is required.";
+      if (!password) newErrors.password = "Password is required.";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -201,156 +107,66 @@ function Login({ initialTab = "signin" }) {
     setErrors({});
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      let response;
+      if (activeTab === "signup") {
+        response = await api.post("/Auth/register", {
+          name: name.trim(),
+          mobile: mobile.trim(),
+          password,
+          gender,
+          age: parseInt(age, 10),
+        });
+      } else {
+        response = await api.post("/Auth/login", {
+          loginId: mobile.trim(),
+          password,
+        });
+      }
+
       setLoading(false);
 
-      const users = getUsers();
-      const patients = getPatients();
-      const doctors = getDoctors();
-
-      // Find user by flexible mobile/loginId & password matching
-      let user = users.find((u) => {
-        const uMobileDigits = String(u.mobile || "").replace(/\D/g, "");
-        const uLoginClean = String(u.loginId || "").trim().toLowerCase();
-        const inputClean = rawInput.toLowerCase();
-
-        const matchMobile =
-          digitsOnly.length >= 7 &&
-          uMobileDigits.length >= 7 &&
-          (uMobileDigits === digitsOnly || uMobileDigits.slice(-10) === digitsOnly.slice(-10));
-        const matchLogin = uLoginClean === inputClean || String(u.mobile || "").trim().toLowerCase() === inputClean;
-
-        const passMatch = String(u.password || "").trim() === password.trim();
-        return (matchMobile || matchLogin) && passMatch;
-      });
-
-      // If not matched by exact password, search by mobile/loginId only
-      if (!user) {
-        const userByMobile = users.find((u) => {
-          const uMobileDigits = String(u.mobile || "").replace(/\D/g, "");
-          const uLoginClean = String(u.loginId || "").trim().toLowerCase();
-          const inputClean = rawInput.toLowerCase();
-          return (
-            (digitsOnly.length >= 7 && uMobileDigits.slice(-10) === digitsOnly.slice(-10)) ||
-            uLoginClean === inputClean
-          );
-        });
-
-        if (userByMobile) {
-          // Found user account but wrong password entered
-          setErrors({ mobile: "Invalid mobile number or password" });
-          return;
-        }
-      }
-
-      // If patient record exists in storage but user record was missing, create it
-      if (!user && digitsOnly.length >= 7 && !isAdminMode) {
-        const matchedPatient = patients.find((p) => {
-          const pContactDigits = String(p.contact || p.mobile || "").replace(/\D/g, "");
-          return pContactDigits.slice(-10) === digitsOnly.slice(-10);
-        });
-
-        if (matchedPatient) {
-          user = {
-            id: `U_${matchedPatient.id}`,
-            mobile: digitsOnly.slice(-10),
-            loginId: digitsOnly.slice(-10),
-            password: password,
-            role: "patient",
-            name: matchedPatient.name || "Patient",
-            refId: matchedPatient.id,
-            status: "Active"
-          };
-          addUser(user);
-        }
-      }
-
-      // If no account exists for a 10-digit mobile number, auto-register as new Patient
-      if (!user && digitsOnly.length === 10 && !isAdminMode) {
-        let maxNum = 100;
-        patients.forEach((p) => {
-          if (p.id) {
-            const match = String(p.id).match(/\d+/);
-            if (match) {
-              const num = parseInt(match[0], 10);
-              if (num > maxNum) maxNum = num;
+      if (response.success) {
+        const user = response.data;
+        if (isAdminMode) {
+          if (user.role.toLowerCase() === "admin") {
+            setCurrentUser(user);
+            navigate("/admin/dashboard");
+          } else {
+            setErrors({ mobile: "Invalid Admin ID or password" });
+          }
+        } else if (isDoctorMode) {
+          if (user.role.toLowerCase() === "doctor") {
+            try {
+              const docRes = await api.get(`/Doctors/user/${user.id}`);
+              if (docRes.success && docRes.data) {
+                user.doctorId = docRes.data.id;
+                setCurrentUser(user);
+                navigate("/doctor/dashboard");
+              } else {
+                setErrors({ mobile: "Doctor profile not found for this user." });
+              }
+            } catch (err) {
+               setErrors({ mobile: "Failed to fetch doctor profile." });
             }
+          } else {
+            setErrors({ mobile: "Invalid Doctor email or password" });
           }
-        });
-        const newPatientId = `P-${maxNum + 1}`;
-        const patientName = "Patient";
-
-        addPatient({
-          id: newPatientId,
-          name: patientName,
-          contact: digitsOnly,
-          mobile: digitsOnly,
-          gender: "Not specified",
-          age: 25,
-          status: "Active",
-          date: new Date().toISOString().split("T")[0],
-          appointments: 0
-        });
-
-        user = {
-          id: `U_${newPatientId}`,
-          mobile: digitsOnly,
-          loginId: digitsOnly,
-          password: password,
-          role: "patient",
-          name: patientName,
-          refId: newPatientId,
-          status: "Active",
-          createdDate: new Date().toISOString().split("T")[0]
-        };
-        addUser(user);
-      }
-
-      if (isAdminMode) {
-        if (user && user.role === "admin") {
-          if (user.status && user.status !== "Active") {
-            setErrors({ mobile: "Your admin account is disabled. Contact administrator." });
-            return;
-          }
-          setCurrentUser(user);
-          navigate("/admin/dashboard");
         } else {
-          setErrors({ mobile: "Invalid Admin ID or password" });
+          setCurrentUser(user);
+          const role = user.role.toLowerCase();
+          if (role === "admin") navigate("/admin/dashboard");
+          else if (role === "hospital") navigate("/hospital/dashboard");
+          else if (role === "doctor") navigate("/doctor/dashboard");
+          else navigate("/patient-dashboard");
         }
-        return;
-      }
-
-      if (user) {
-        if (user.status && user.status !== "Active") {
-          setErrors({ mobile: "Your account is disabled. Please contact system administrator." });
-          return;
-        }
-        if (user.role === "doctor") {
-          const doctorRecord = doctors.find(
-            (d) => String(d.id).toLowerCase() === String(user.refId).toLowerCase() || d.loginId === user.loginId
-          );
-          if (doctorRecord && doctorRecord.status !== "Active") {
-            setErrors({ mobile: "Your doctor account is inactive. Contact administrator." });
-            return;
-          }
-          if (doctorRecord) {
-            user = {
-              ...user,
-              refId: doctorRecord.id,
-              name: doctorRecord.name.startsWith("Dr.") ? doctorRecord.name : `Dr. ${doctorRecord.name}`
-            };
-          }
-        }
-
-        setCurrentUser(user);
-        if (user.role === "admin") navigate("/admin/dashboard");
-        else if (user.role === "hospital") navigate("/hospital/dashboard");
-        else if (user.role === "doctor") navigate("/doctor/dashboard");
-        else navigate("/patient-dashboard");
       } else {
-        setErrors({ mobile: "Invalid mobile number or password" });
+        setErrors({ mobile: response.error || "Invalid credentials. Please check your login ID and password." });
       }
-    }, 600);
+    } catch (err) {
+      setLoading(false);
+      setErrors({ mobile: "An unexpected error occurred during login." });
+    }
   };
 
   const handleForgotPassword = (e) => {
@@ -397,11 +213,16 @@ function Login({ initialTab = "signin" }) {
           <div className="login-auth-header">
             <div
               className="login-auth-logo-mark"
-              onClick={() => setIsAdminMode(!isAdminMode)}
+              onClick={() => {
+                setLoginMode(prev => prev === "patient" ? "admin" : prev === "admin" ? "doctor" : "patient");
+                setErrors({});
+                setMobile("");
+                setPassword("");
+              }}
               style={{ cursor: "pointer" }}
-              title="Toggle Admin Login"
+              title="Toggle Login Mode"
             >
-              <HeartPulse size={16} />
+              {isDoctorMode ? <Stethoscope size={16} /> : <HeartPulse size={16} />}
             </div>
             <span className="login-auth-brand">MediBook</span>
           </div>
@@ -409,22 +230,14 @@ function Login({ initialTab = "signin" }) {
           <div className="login-auth-content">
             <div className="welcome-section">
               <h1 className="welcome-title">
-                {activeTab === "signup"
-                  ? "Create your MediBook account"
-                  : isAdminMode
-                  ? "Admin Login"
-                  : "Welcome to MediBook"}
+                {activeTab === "signup" ? "Create your MediBook account" : isDoctorMode ? "Doctor Login" : isAdminMode ? "Admin Login" : "Welcome to MediBook"}
               </h1>
               <p className="welcome-desc">
-                {activeTab === "signup"
-                  ? "Register as a patient to find doctors and book appointments."
-                  : isAdminMode
-                  ? "Sign in to access the system administration panel."
-                  : "Sign in to access your healthcare management dashboard."}
+                {activeTab === "signup" ? "Register as a patient to find doctors and book appointments." : isDoctorMode ? "Sign in with your doctor email and password." : isAdminMode ? "Sign in to access the system administration panel." : "Sign in to access your healthcare management dashboard."}
               </p>
             </div>
 
-            {!isAdminMode && (
+            {!isAdminMode && !isDoctorMode && (
               <div className="auth-toggle">
                 <button
                   type="button"
@@ -451,9 +264,8 @@ function Login({ initialTab = "signin" }) {
             )}
 
             <form onSubmit={handleSubmit} className="login-form" noValidate>
-              {activeTab === "signup" && !isAdminMode && (
+              {activeTab === "signup" && !isAdminMode && !isDoctorMode && (
                 <>
-                  {/* Full Name */}
                   <FormField
                     label="Full Name"
                     placeholder="Enter your full name"
@@ -463,7 +275,6 @@ function Login({ initialTab = "signin" }) {
                     required
                   />
 
-                  {/* Age & Gender Row */}
                   <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
                     <div style={{ flex: "1 1 130px" }}>
                       <FormField
@@ -498,17 +309,15 @@ function Login({ initialTab = "signin" }) {
                 </>
               )}
 
-              {/* Mobile Number */}
               <FormField
-                label={isAdminMode ? "Admin ID" : "Mobile Number"}
-                placeholder={isAdminMode ? "Enter admin ID" : "Enter 10-digit mobile number"}
+                label={isDoctorMode ? "Doctor Email" : isAdminMode ? "Admin ID" : "Mobile Number"}
+                placeholder={isDoctorMode ? "e.g. sarah@medibook.com" : isAdminMode ? "Enter admin ID" : "Enter 10-digit mobile number"}
                 value={mobile}
                 onChange={handleMobileChange}
                 error={errors.mobile}
                 required
               />
 
-              {/* Password */}
               <div className="form-field">
                 <div className="password-label-row">
                   <label htmlFor="password" className="form-label">
@@ -542,8 +351,7 @@ function Login({ initialTab = "signin" }) {
                 {errors.password && <span className="form-error">{errors.password}</span>}
               </div>
 
-              {/* Confirm Password (Sign Up Only) */}
-              {activeTab === "signup" && !isAdminMode && (
+              {activeTab === "signup" && !isAdminMode && !isDoctorMode && (
                 <div className="form-field">
                   <div className="password-label-row">
                     <label htmlFor="confirmPassword" className="form-label">
@@ -575,7 +383,6 @@ function Login({ initialTab = "signin" }) {
                 </div>
               )}
 
-              {/* Options / Terms */}
               {activeTab === "signin" ? (
                 <div className="form-options">
                   <Checkbox
@@ -628,9 +435,38 @@ function Login({ initialTab = "signin" }) {
                   {activeTab === "signup" ? "Create Patient Account" : "Sign In"}
                 </Button>
               </div>
+              
+              {isAdminMode && (
+                <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                  <p style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>
+                    Are you a doctor?{' '}
+                    <button 
+                      type="button" 
+                      onClick={() => { setLoginMode("doctor"); setErrors({}); setMobile(""); setPassword(""); }}
+                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', cursor: 'pointer', padding: 0 }}
+                    >
+                      Doctor Login
+                    </button>
+                  </p>
+                </div>
+              )}
+              {isDoctorMode && (
+                <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                  <p style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>
+                    Not a doctor?{' '}
+                    <button 
+                      type="button" 
+                      onClick={() => { setLoginMode("patient"); setErrors({}); setMobile(""); setPassword(""); }}
+                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', cursor: 'pointer', padding: 0 }}
+                    >
+                      Patient Login
+                    </button>
+                  </p>
+                </div>
+              )}
             </form>
 
-            {!isAdminMode && activeTab === "signin" && (
+            {!isAdminMode && !isDoctorMode && activeTab === "signin" && (
               <div className="social-login-section">
                 <div className="social-divider">
                   <span>Or continue with</span>

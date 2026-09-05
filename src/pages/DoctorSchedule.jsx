@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Clock, Plus, Trash2, CalendarClock, Save, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { getCurrentUser, getCurrentDoctor } from "../utils/storage";
+import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import EmptyState from "../components/EmptyState";
@@ -43,11 +43,16 @@ function DoctorSchedule() {
 
     const user = getCurrentUser();
     const doc = getCurrentDoctor();
-    const rawDocId = doc?.id ?? user?.refId ?? user?.id;
-    const docIdInt = parseInt(String(rawDocId || "").replace(/\D/g, ""), 10) || 1;
+    const rawDocId = user?.doctorId || doc?.id || user?.refId || user?.id;
+    const docIdInt = rawDocId || "";
+
+    if (!docIdInt) {
+      setLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch(`https://localhost:7050/api/DoctorSchedules/doctor/${docIdInt}`);
+      const response = await fetch(`http://localhost:5107/api/DoctorSchedules/doctor/${docIdInt}`);
       if (!response.ok) {
         throw new Error(`Server returned HTTP ${response.status}`);
       }

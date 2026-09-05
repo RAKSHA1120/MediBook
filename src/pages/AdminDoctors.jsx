@@ -6,7 +6,7 @@ import SearchBox from "../components/SearchBox";
 import Modal from "../components/Modal";
 import Input from "../components/Input";
 import StatusBadge from "../components/StatusBadge";
-import { getDoctors, addDoctor, updateDoctor, addUser, deleteDoctor } from "../utils/storage";
+import { api } from "../utils/api";
 import { generateLoginId, generatePassword } from "../utils/idGenerator";
 import "./AdminDoctors.css";
 import "./AdminShared.css";
@@ -28,8 +28,19 @@ function AdminDoctors() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
 
+  const fetchDoctors = async () => {
+    try {
+      const response = await api.get("/Doctors");
+      if (response.success) {
+        setDoctors(response.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching doctors", error);
+    }
+  };
+
   useEffect(() => {
-    setDoctors(getDoctors());
+    fetchDoctors();
   }, []);
 
   // Close options popover on click outside
@@ -80,69 +91,74 @@ function AdminDoctors() {
     }
   };
 
+  const getHospitalName = (d) => {
+    if (!d) return "MediCare Hospital";
+    if (typeof d.hospital === "object" && d.hospital !== null) return d.hospital.name || "MediCare Hospital";
+    return d.hospitalName || d.hospital || "MediCare Hospital";
+  };
+
   // Derive unique specializations & hospitals for dropdown filters
   const specializationOptions = useMemo(() => {
     const specs = doctors.map(d => d.specialization || d.specialty).filter(Boolean);
-    return Array.from(new Set(specs));
+    return [...new Set(specs)].sort();
   }, [doctors]);
 
   const hospitalOptions = useMemo(() => {
-    const hosps = doctors.map(d => d.hospital).filter(Boolean);
-    return Array.from(new Set(hosps));
+    const hosps = doctors.map(d => getHospitalName(d)).filter(Boolean);
+    return [...new Set(hosps)].sort();
   }, [doctors]);
 
   // Handle Add Doctor
-  const handleAddDoctor = (e) => {
+  const handleAddDoctor = async (e) => {
     e.preventDefault();
     const dobYear = addFormData.dob ? addFormData.dob.split("-")[0] : "1985";
     const loginId = generateLoginId(addFormData.name, dobYear, doctors);
     const password = generatePassword(addFormData.name, dobYear);
 
-    const newDoc = {
-      id: `D_${Date.now()}`,
+    // 1. Create User
+    const userRes = await api.post("/Users", {
       name: addFormData.name.trim(),
-      qualification: addFormData.qualification.trim() || "MBBS, MD",
-      specialization: addFormData.specialization.trim() || "General Medicine",
+      email: addFormData.email.trim(),
+      password: password,
+      role: "doctor"
+    });
+
+    if (!userRes.success) {
+      alert("Failed to create user account for doctor.");
+      return;
+    }
+
+    // 2. Create Doctor
+    const newDoc = {
+      userId: userRes.data.id,
+      name: addFormData.name.trim(),
       specialty: addFormData.specialization.trim() || "General Medicine",
-      hospital: addFormData.hospital.trim() || "City Hospital",
       experience: addFormData.experience.trim() || "5",
       email: addFormData.email.trim(),
-      contact: addFormData.phone.trim(),
       phone: addFormData.phone.trim(),
-      dob: addFormData.dob,
-      status: "Active",
-      loginId: loginId,
-      rating: 4.8,
-      consultationFee: 800
+      isActive: true,
+      hospitalId: 1 // Default or we need hospital selection
     };
 
-    addDoctor(newDoc);
-    addUser({
-      id: `U_DOC_${newDoc.id}`,
-      mobile: loginId,
-      loginId: loginId,
-      password,
-      role: "doctor",
-      name: addFormData.name.trim(),
-      refId: newDoc.id,
-      status: "Active",
-      createdDate: new Date().toISOString().split("T")[0]
-    });
-
-    setDoctors(getDoctors());
-    setNewCredentials({ name: addFormData.name, loginId, password });
-    setIsAddModalOpen(false);
-    setIsSuccessModalOpen(true);
-    setAddFormData({
-      name: "",
-      qualification: "MBBS, MD",
-      specialization: "Cardiology",
-      hospital: "",
-      experience: "",
-      email: "",
-      phone: "",
-      dob: ""
-    });
+    const docRes = await api.post("/Doctors", newDoc);
+    if (docRes.success) {
+      fetchDoctors();
+      setNewCredentials({ name: addFormData.name, loginId: addFormData.email.trim(), password });
+      setIsAddModalOpen(false);
+      setIsSuccessModalOpen(true);
+      setAddFormData({
+        name: "",
+        qualification: "MBBS, MD",
+        specialization: "Cardiology",
+        hospital: "",
+        experience: "",
+        email: "",
+        phone: "",
+        dob: ""
+      });
+    } else {
+      alert("Failed to create doctor profile.");
+    }
   };
 
   // Open Edit Modal with Pre-filled Doctor Details
@@ -152,7 +168,7 @@ function AdminDoctors() {
       name: doc.name || "",
       qualification: doc.qualification || "MBBS, MD",
       specialization: doc.specialization || doc.specialty || "General Medicine",
-      hospital: doc.hospital || "",
+      hospital: getHospitalName(doc),
       experience: doc.experience !== undefined ? String(doc.experience).replace(/[^0-9]/g, "") : "",
       email: doc.email || "",
       phone: doc.contact || doc.phone || "",
@@ -164,23 +180,26 @@ function AdminDoctors() {
   };
 
   // Handle Update Doctor
-  const handleSaveEditDoctor = (e) => {
+  const handleSaveEditDoctor = async (e) => {
     e.preventDefault();
     const updates = {
+      id: editFormData.id,
+      userId: selectedDoctor.userId,
+      hospitalId: selectedDoctor.hospitalId || 1,
       name: editFormData.name.trim(),
-      qualification: editFormData.qualification.trim(),
-      specialization: editFormData.specialization.trim(),
       specialty: editFormData.specialization.trim(),
-      hospital: editFormData.hospital.trim(),
       experience: editFormData.experience.trim(),
       email: editFormData.email.trim(),
-      contact: editFormData.phone.trim(),
       phone: editFormData.phone.trim(),
-      status: editFormData.status
+      isActive: editFormData.status === "Active"
     };
 
-    updateDoctor(editFormData.id, updates);
-    setDoctors(getDoctors());
+    const response = await api.put(`/Doctors/${editFormData.id}`, updates);
+    if (response.success || response.status === 204) {
+      fetchDoctors();
+    } else {
+      alert("Failed to update doctor.");
+    }
     setIsEditModalOpen(false);
     if (selectedDoctor && selectedDoctor.id === editFormData.id) {
       setSelectedDoctor({ ...selectedDoctor, ...updates });
@@ -188,21 +207,42 @@ function AdminDoctors() {
   };
 
   // Toggle Doctor Status (Active / Inactive)
-  const handleToggleStatus = (doc) => {
+  const handleToggleStatus = async (doc) => {
     const newStatus = doc.status === "Active" ? "Inactive" : "Active";
-    updateDoctor(doc.id, { status: newStatus });
-    setDoctors(getDoctors());
+    
+    const updates = {
+      id: doc.id,
+      userId: doc.userId,
+      hospitalId: doc.hospitalId || 1,
+      name: doc.name,
+      specialty: doc.specialization || doc.specialty,
+      experience: doc.experience,
+      email: doc.email,
+      phone: doc.mobile || doc.phone,
+      isActive: newStatus === "Active"
+    };
+
+    const response = await api.put(`/Doctors/${doc.id}`, updates);
+    if (response.success || response.status === 204) {
+      fetchDoctors();
+    } else {
+      alert("Failed to update status.");
+    }
     if (selectedDoctor && selectedDoctor.id === doc.id) {
       setSelectedDoctor({ ...selectedDoctor, status: newStatus });
     }
   };
 
   // Handle Delete Doctor
-  const handleDeleteDoctor = (doc) => {
+  const handleDeleteDoctor = async (doc) => {
     const cleanName = doc.name ? doc.name.replace(/^(dr\.|dr\s)/i, '').trim() : "Doctor";
     if (window.confirm(`Are you sure you want to remove Dr. ${cleanName} from the medical network?`)) {
-      deleteDoctor(doc.id);
-      setDoctors(getDoctors());
+      const response = await api.delete(`/Doctors/${doc.id}`);
+      if (response.success || response.status === 204 || response.status === 404) {
+        fetchDoctors();
+      } else {
+        alert("Failed to delete doctor.");
+      }
       if (selectedDoctor && selectedDoctor.id === doc.id) {
         setIsViewModalOpen(false);
         setSelectedDoctor(null);
@@ -215,12 +255,12 @@ function AdminDoctors() {
     const query = searchTerm.toLowerCase().trim();
     const docName = (doc.name || "").toLowerCase();
     const docSpec = (doc.specialization || doc.specialty || "").toLowerCase();
-    const docHosp = (doc.hospital || "").toLowerCase();
-    const docId = (doc.loginId || "").toLowerCase();
+    const docHosp = String(getHospitalName(doc)).toLowerCase();
+    const docId = String(doc.loginId || "").toLowerCase();
 
     const matchesSearch = !query || docName.includes(query) || docSpec.includes(query) || docHosp.includes(query) || docId.includes(query);
     const matchesSpec = specFilter === "All" || (doc.specialization || doc.specialty) === specFilter;
-    const matchesHosp = hospitalFilter === "All" || doc.hospital === hospitalFilter;
+    const matchesHosp = hospitalFilter === "All" || getHospitalName(doc) === hospitalFilter;
     const matchesStatus = statusFilter === "All" || (doc.status || "Active") === statusFilter;
 
     return matchesSearch && matchesSpec && matchesHosp && matchesStatus;
@@ -341,10 +381,10 @@ function AdminDoctors() {
 
                     {/* HOSPITAL */}
                     <td>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-heading)", fontWeight: "500", fontSize: "13.5px" }} title={doc.hospital || "MediCare Network"}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-heading)", fontWeight: "500", fontSize: "13.5px" }} title={getHospitalName(doc)}>
                         <Building2 size={15} style={{ color: "var(--primary)", flexShrink: 0 }} />
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "200px" }}>
-                          {doc.hospital || "MediCare Hospital"}
+                          {getHospitalName(doc)}
                         </span>
                       </div>
                     </td>
@@ -581,10 +621,11 @@ function AdminDoctors() {
                   {selectedDoctor.specialization || selectedDoctor.specialty || "General Medicine"}
                 </div>
               </div>
-              <div>
+              <div className="detail-item">
                 <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>HOSPITAL</label>
-                <div style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>
-                  {selectedDoctor.hospital || "MediCare Hospital"}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>
+                  <Building2 size={16} style={{ color: "var(--primary)" }} />
+                  {getHospitalName(selectedDoctor)}
                 </div>
               </div>
               <div>

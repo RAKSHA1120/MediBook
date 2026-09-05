@@ -4,13 +4,8 @@ import { CheckCheck, Bell, Calendar, Info, BellOff } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import NotificationCard from "../components/NotificationCard";
-import {
-  getCurrentUser,
-  getHospitals,
-  getNotifications,
-  markNotificationAsRead,
-  markAllNotificationsAsRead
-} from "../utils/storage";
+import { getCurrentUser } from "../utils/auth";
+
 import "./Notifications.css";
 
 function HospitalNotifications() {

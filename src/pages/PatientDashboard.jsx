@@ -26,14 +26,16 @@ import {
   ShieldCheck,
   Lock
 } from "lucide-react";
-import {
-  getDoctors,
-  getCurrentUser,
-  getCurrentPatient,
-  getPatientAppointments,
-  getPatientNotifications,
-  addNotification as storageAddNotif
-} from "../utils/storage";
+import { getCurrentUser, getCurrentPatient } from "../utils/auth";
+import { getPatientNotifications, addNotification as storageAddNotif } from "../data/notifications";
+import doctors from "../data/doctors";
+
+const getDoctors = () => doctors;
+const getPatientAppointments = (patientId, allAppointments) => {
+    if (!allAppointments) return [];
+    const targetIdStr = String(patientId);
+    return allAppointments.filter(appt => String(appt.patientId) === targetIdStr || String(appt.userId) === targetIdStr);
+};
 import Navbar from "../components/Navbar";
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -138,7 +140,7 @@ function PatientDashboard() {
 
   // Filtered patient appointments
   const patientAppts = useMemo(() => {
-    return getPatientAppointments(currentPatient?.id || currentUser?.refId || currentUser?.id, appointments);
+    return getPatientAppointments(currentUser?.refId || currentPatient?.id || currentUser?.id, appointments);
   }, [currentPatient, currentUser, appointments]);
 
   // Dynamic upcoming appointment for current patient
@@ -147,7 +149,7 @@ function PatientDashboard() {
     const upcoming = patientAppts.find((a) => {
       if (!a || !a.status) return true;
       const s = String(a.status).toLowerCase();
-      return s === "upcoming" || s === "confirmed" || s === "scheduled";
+      return s === "upcoming" || s === "confirmed" || s === "scheduled" || s === "pending";
     });
 
     if (!upcoming) return null;

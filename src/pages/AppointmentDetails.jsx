@@ -31,14 +31,15 @@ import EmptyState from "../components/EmptyState";
 import { addNotification } from "../data/notifications";
 import { useAppointments } from "../context/AppointmentContext";
 import { getStoredPatientProfile } from "../data/patientProfile";
-import { getCurrentUser, getCurrentPatient, getDoctors, getAppointments } from "../utils/storage";
-import { checkIsSlotBooked, normalizeStatus } from "../utils/appointmentStorage";
+import { getCurrentUser } from "../utils/auth";
+
+
 import "./AppointmentDetails.css";
 
 function AppointmentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { appointments, cancelAppointment, rescheduleAppointment } = useAppointments();
+  const { appointments, cancelAppointment, rescheduleAppointment, isSlotBooked } = useAppointments();
 
   // Find target appointment from context or global storage
   const currentAppt = useMemo(() => {
@@ -267,7 +268,7 @@ function AppointmentDetails() {
     ];
 
     allSlots.forEach((slot) => {
-      if (checkIsSlotBooked(appointments, doctorId, newSelectedDate, slot, currentId, doctorName)) {
+      if (isSlotBooked(doctorId, newSelectedDate, slot)) {
         booked.push(slot);
       }
     });

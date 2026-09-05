@@ -5,7 +5,8 @@ import Button from "../components/Button";
 import SearchBox from "../components/SearchBox";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
-import { getPatients, updatePatient, deletePatient } from "../utils/storage";
+import { api } from "../utils/api";
+
 import "./AdminDashboard.css";
 import "./AdminShared.css";
 
@@ -23,8 +24,29 @@ function AdminPatients() {
   const [openMenuId, setOpenMenuId] = useState(null);
 
   useEffect(() => {
-    setPatients(getPatients());
+    fetchPatients();
   }, []);
+
+  const fetchPatients = async () => {
+    try {
+      const response = await api.get("/Patients");
+      if (response.success) {
+        // Map backend fields to frontend expectations
+        const mappedPatients = response.data.map(p => ({
+          ...p,
+          contact: p.mobile,
+          date: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "N/A",
+          status: p.isActive === false ? "Inactive" : "Active"
+        }));
+        setPatients(mappedPatients);
+      } else {
+        // Fallback
+        setPatients(getPatients());
+      }
+    } catch (err) {
+      setPatients(getPatients());
+    }
+  };
 
   // Close popover options menu on outside click
   useEffect(() => {
@@ -75,9 +97,9 @@ function AdminPatients() {
   // Combined Filters Logic
   const filteredPatients = patients.filter(p => {
     const query = searchTerm.toLowerCase().trim();
-    const pName = (p.name || "").toLowerCase();
-    const pPhone = (p.contact || p.phone || "").toLowerCase();
-    const pId = (p.id || "").toLowerCase();
+    const pName = String(p.name || "").toLowerCase();
+    const pPhone = String(p.contact || p.phone || "").toLowerCase();
+    const pId = String(p.id || "").toLowerCase();
 
     const matchesSearch = !query || pName.includes(query) || pPhone.includes(query) || pId.includes(query);
     const matchesStatus = statusFilter === "All" || (p.status || "Active") === statusFilter;
@@ -101,7 +123,7 @@ function AdminPatients() {
   };
 
   // Save Edit Patient
-  const handleSaveEditPatient = (e) => {
+  const handleSaveEditPatient = async (e) => {
     e.preventDefault();
     const updates = {
       name: editFormData.name.trim(),
@@ -110,11 +132,17 @@ function AdminPatients() {
       contact: editFormData.contact.trim(),
       phone: editFormData.contact.trim(),
       email: editFormData.email.trim(),
-      status: editFormData.status
+      status: editFormData.status,
+      isActive: editFormData.status === "Active"
     };
 
-    updatePatient(editFormData.id, updates);
-    setPatients(getPatients());
+    const response = await api.put(`/Patients/${editFormData.id}`, updates);
+    if (response.success || response.status === 204) {
+        fetchPatients();
+    } else {
+        alert("Failed to update patient in database.");
+    }
+
     setIsEditModalOpen(false);
 
     if (selectedPatient && selectedPatient.id === editFormData.id) {
@@ -123,12 +151,19 @@ function AdminPatients() {
   };
 
   // Toggle Patient Status (Active / Inactive)
-  const handleToggleStatus = (patient) => {
+  const handleToggleStatus = async (patient) => {
     const newStatus = (patient.status || "Active") === "Active" ? "Inactive" : "Active";
-    updatePatient(patient.id, { status: newStatus });
-    setPatients(getPatients());
-    if (selectedPatient && selectedPatient.id === patient.id) {
-      setSelectedPatient({ ...selectedPatient, status: newStatus });
+    const isActive = newStatus === "Active";
+    
+    // API Call
+    const response = await api.put(`/Patients/${patient.id}`, { ...patient, isActive, status: newStatus });
+    if (response.success || response.status === 204) {
+        fetchPatients();
+        if (selectedPatient && selectedPatient.id === patient.id) {
+          setSelectedPatient({ ...selectedPatient, status: newStatus, isActive });
+        }
+    } else {
+        alert("Failed to update patient status in database.");
     }
   };
 
@@ -139,10 +174,17 @@ function AdminPatients() {
   };
 
   // Confirm Delete Patient
-  const confirmDeletePatient = () => {
+  const confirmDeletePatient = async () => {
     if (patientToDelete) {
-      deletePatient(patientToDelete.id);
-      setPatients(getPatients());
+      // API call (if delete supported, else fallback)
+      const response = await api.delete(`/Patients/${patientToDelete.id}`);
+      
+      if (response.success || response.status === 204 || response.status === 404) {
+          fetchPatients();
+      } else {
+          alert("Failed to delete patient from database.");
+      }
+      
       if (selectedPatient && selectedPatient.id === patientToDelete.id) {
         setIsViewModalOpen(false);
         setSelectedPatient(null);

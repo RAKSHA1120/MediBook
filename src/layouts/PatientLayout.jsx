@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useLocation, Navigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import PatientSidebar from "../components/PatientSidebar";
-import { getCurrentUser, getCurrentPatient, getCurrentDoctor } from "../utils/storage";
+import { getCurrentUser, getCurrentPatient, getCurrentDoctor } from "../utils/auth";
+
 import { getPatientInitials } from "../data/patientProfile";
 import "../pages/PatientDashboard.css";
 

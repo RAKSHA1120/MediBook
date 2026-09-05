@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Search, Eye, Calendar, CalendarCheck, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { getAppointmentsForDoctor, updateAppointmentStatus, getCurrentUser, getCurrentDoctor, getPatients } from "../utils/storage";
+import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
 import EmptyState from "../components/EmptyState";
@@ -73,37 +73,22 @@ function DoctorAppointments() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("https://localhost:7050/api/Appointments");
+      const user = getCurrentUser();
+      const doc = getCurrentDoctor();
+      const rawDocId = user?.doctorId || user?.refId || doc?.refId || user?.id;
+      const docIdInt = rawDocId || "";
+
+      if (!docIdInt) {
+         setAppointments([]);
+         return;
+      }
+      
+      const response = await fetch(`http://localhost:5107/api/Appointments/doctor/${docIdInt}`);
       if (!response.ok) {
         throw new Error(`Server returned HTTP ${response.status}`);
       }
       const data = await response.json();
-      const allApiAppts = Array.isArray(data) ? data.map(normalizeBackendAppointment) : [];
-
-      const user = getCurrentUser();
-      const doc = getCurrentDoctor();
-      const rawDocId = doc?.id ?? user?.refId ?? user?.id;
-      const rawDocName = doc?.name ?? user?.name;
-
-      const docIdInt = parseInt(String(rawDocId || "").replace(/\D/g, ""), 10);
-      const normDocName = String(rawDocName || "").trim().toLowerCase();
-
-      // Filter appointments belonging to current doctor
-      const myAppts = allApiAppts.filter((apt) => {
-        const aptDocIdInt = parseInt(String(apt.doctorId || "").replace(/\D/g, ""), 10);
-        const aptDocNameStr = String(apt.doctorName || "").trim().toLowerCase();
-
-        // 1. Doctor ID match
-        if (docIdInt && aptDocIdInt && docIdInt === aptDocIdInt) return true;
-
-        // 2. Doctor Name match
-        if (normDocName && aptDocNameStr && (normDocName === aptDocNameStr || normDocName.includes(aptDocNameStr) || aptDocNameStr.includes(normDocName))) return true;
-
-        // 3. Fallback for doctor ID 1 / default doctor if no specific doctor ID
-        if ((!docIdInt || docIdInt === 1) && (!aptDocIdInt || aptDocIdInt === 1)) return true;
-
-        return false;
-      });
+      const myAppts = Array.isArray(data) ? data.map(normalizeBackendAppointment) : [];
 
       setAppointments(myAppts);
     } catch (err) {
@@ -120,11 +105,21 @@ function DoctorAppointments() {
     return () => window.removeEventListener("medibook_appointments_updated", loadAppointments);
   }, [loadAppointments]);
 
-  const handleStatusChange = (id, newStatus) => {
-    setAppointments((prev) =>
-      prev.map((a) => (String(a.id) === String(id) ? { ...a, status: newStatus } : a))
-    );
-    updateAppointmentStatus(id, newStatus);
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      const response = await fetch(`http://localhost:5107/api/Appointments/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (response.ok) {
+        setAppointments((prev) =>
+          prev.map((a) => (String(a.id) === String(id) ? { ...a, status: newStatus } : a))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to update status", err);
+    }
   };
 
   // Stats calculations
@@ -170,40 +165,12 @@ function DoctorAppointments() {
   }, [appointments, searchTerm, statusFilter]);
 
   const openDetails = (apt) => {
-    const allPatients = getPatients();
-    const allUsers = JSON.parse(localStorage.getItem("medibook_users") || "[]");
-
-    const patientInfo = allPatients.find((p) => {
-      const pIdStr = String(p.id ?? "").trim();
-      const pNameStr = String(p.name ?? "").toLowerCase().trim();
-      const aptPIdStr = String(apt.patientId ?? "").trim();
-      const aptPNameStr = String(apt.patientName || apt.patient || "").toLowerCase().trim();
-
-      return (aptPIdStr !== "" && pIdStr === aptPIdStr) || (aptPNameStr !== "" && pNameStr === aptPNameStr);
-    });
-
-    const patientUser = allUsers.find(
-      (u) => u.refId === apt.patientId || (patientInfo && u.refId === patientInfo.id)
-    );
-
-    let extraProfile = {};
-    if (patientUser) {
-      try {
-        const extraStr = localStorage.getItem(`medibook_profile_${patientUser.id}`);
-        if (extraStr) extraProfile = JSON.parse(extraStr);
-      } catch (e) {}
-    }
-
-    const rawPId = String(apt.patientId ?? "").trim();
-    const validPId =
-      rawPId !== "" && rawPId.toLowerCase() !== "n/a" ? rawPId : patientInfo?.id ? String(patientInfo.id) : null;
-
     setSelectedAppointment({
       ...apt,
-      patientName: String(apt.patientName || apt.patient || patientInfo?.name || "Patient").trim(),
-      patientId: validPId,
-      contact: extraProfile.phone || patientInfo?.contact || patientInfo?.phone || "N/A",
-      email: extraProfile.email || patientInfo?.email || "N/A",
+      patientName: String(apt.patientName || apt.patient || "Patient").trim(),
+      patientId: apt.patientId || "N/A",
+      contact: "N/A", // API doesn't provide patient contact right now
+      email: "N/A",
       reason: String(apt.type || apt.reason || apt.specialty || "Consultation").trim(),
       notes: apt.notes || "No additional notes provided."
     });

@@ -1,15 +1,7 @@
 import { useState, useEffect } from "react";
 import { Stethoscope, Plus, Search, Eye, Edit, KeyRound, CheckCircle2, ShieldCheck } from "lucide-react";
-import {
-  getCurrentUser,
-  getHospitals,
-  getHospitalDoctors,
-  addDoctor,
-  addUser,
-  updateDoctor,
-  deleteDoctor,
-  getUsers
-} from "../utils/storage";
+import { getCurrentUser } from "../utils/auth";
+
 import { generateLoginId, generatePassword } from "../utils/idGenerator";
 import PageHeader from "../components/PageHeader";
 import Button from "../components/Button";

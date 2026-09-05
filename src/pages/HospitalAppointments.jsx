@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { CalendarDays, Search, Eye, Filter, Loader2, AlertCircle } from "lucide-react";
-import {
-  getCurrentUser,
-  getHospitals,
-  getHospitalAppointments
-} from "../utils/storage";
+import { getCurrentUser } from "../utils/auth";
+
 import PageHeader from "../components/PageHeader";
 import SearchBox from "../components/SearchBox";
 import StatusBadge from "../components/StatusBadge";
@@ -86,19 +83,19 @@ function HospitalAppointments() {
     setHospital(hosRecord);
 
     try {
-      const response = await fetch("https://localhost:7050/api/Appointments");
+      const response = await fetch("http://localhost:5107/api/Appointments");
       if (!response.ok) {
         throw new Error(`Server returned HTTP ${response.status}`);
       }
       const data = await response.json();
       const allApiAppts = Array.isArray(data) ? data.map(normalizeBackendAppointment) : [];
 
-      const hosIdInt = parseInt(String(hosRecord.id || user?.refId || user?.id || "").replace(/\D/g, ""), 10);
+      const hosIdInt = hosRecord.id || user?.refId || user?.id || "";
       const hosNameStr = String(hosRecord.name || user?.name || "").trim().toLowerCase();
 
       // Filter appointments for current hospital
       const myAppts = allApiAppts.filter((apt) => {
-        const aptHosIdInt = parseInt(String(apt.hospitalId || "").replace(/\D/g, ""), 10);
+        const aptHosIdInt = apt.hospitalId || "";
         const aptHosNameStr = String(apt.hospitalName || "").trim().toLowerCase();
 
         // 1. Direct hospital ID match

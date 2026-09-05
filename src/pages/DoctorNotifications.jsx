@@ -4,13 +4,7 @@ import { CheckCheck, Bell, Calendar, Info, BellOff } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import NotificationCard from "../components/NotificationCard";
-import {
-  getCurrentUser,
-  getCurrentDoctor,
-  getDoctorNotifications,
-  markNotificationAsRead,
-  markAllDoctorNotificationsAsRead
-} from "../utils/storage";
+import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
 import "./Notifications.css";
 
 function DoctorNotifications() {
@@ -27,10 +21,8 @@ function DoctorNotifications() {
   }, []);
 
   const loadDoctorNotifications = () => {
-    const user = getCurrentUser();
-    const doc = getCurrentDoctor();
-    const doctorNotifs = getDoctorNotifications(doc?.id, user?.id);
-    setNotifications(doctorNotifs);
+    // API not yet connected, return empty array safely
+    setNotifications([]);
   };
 
   const counts = useMemo(() => {
@@ -60,17 +52,11 @@ function DoctorNotifications() {
   }, [notifications, activeTab]);
 
   const handleMarkAll = () => {
-    const user = getCurrentUser();
-    const doc = getCurrentDoctor();
-    markAllDoctorNotificationsAsRead(doc?.id, user?.id);
+    // API not connected
     loadDoctorNotifications();
   };
 
   const handleCardClick = (notif) => {
-    if (!notif.read) {
-      markNotificationAsRead(notif.id);
-      loadDoctorNotifications();
-    }
     if (notif.appointmentId) {
       navigate(`/doctor/appointments`);
     }

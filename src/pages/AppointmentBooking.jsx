@@ -33,7 +33,9 @@ import TimeSlot, { TimeSlotGroup } from "../components/TimeSlot";
 import BookingSummary from "../components/BookingSummary";
 import Toast from "../components/Toast";
 import { addNotification } from "../data/notifications";
-import { getCurrentPatient, getCurrentUser } from "../utils/storage";
+import { getCurrentUser, getCurrentPatient } from "../utils/auth";
+
+import { api } from "../utils/api";
 import "./AppointmentBooking.css";
 
 import { useAppointments } from "../context/AppointmentContext";
@@ -245,17 +247,10 @@ function AppointmentBooking() {
       const currUser = getCurrentUser();
       const currPatient = getCurrentPatient();
 
-      // Dynamically resolve integer IDs from current authentication context
-      const rawPatientId = currPatient?.id || currPatient?.patientId || currUser?.refId || currUser?.id || 1;
-      const patientId = parseInt(String(rawPatientId).replace(/\D/g, ""), 10) || 1;
-
-      const doctorId = parseInt(String(doctor?.id || 1).replace(/\D/g, ""), 10) || 1;
-      
-      let rawHosId = doctor?.hospitalId;
-      if (!rawHosId && typeof doctor?.hospital === 'object') {
-        rawHosId = doctor.hospital.id;
-      }
-      const hospitalId = parseInt(String(rawHosId || 1).replace(/\D/g, ""), 10) || 1;
+      // Use the actual integer ID directly from the authentication context (or fallback to 1)
+      const rawPatientId = currUser?.refId || currPatient?.id; const patientId = Number(rawPatientId) ? Number(rawPatientId) : 1;
+      const doctorId = Number(doctor?.id) ? Number(doctor?.id) : 1;
+      const hospitalId = Number(doctor?.hospitalId) ? Number(doctor?.hospitalId) : 1;
 
       const formattedTime = formatTimeToHHmmss(selectedSlot);
       const feeVal = doctor?.consultationFee ?? doctor?.fee ?? 500;
@@ -272,41 +267,23 @@ function AppointmentBooking() {
         consultationFee: feeVal
       };
 
-      const response = await fetch("https://localhost:7050/api/Appointments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-
-      // Handle HTTP 409 Conflict (Slot already booked)
-      if (response.status === 409) {
+      const response = await api.post("/Appointments", payload);
+      
+      // Handle general API errors and 409 Conflict
+      if (!response.success) {
         showNotification(
-          "Slot Unavailable",
-          "The selected time slot is already booked. Please select another time.",
+          "Booking Error",
+          response.error || "Failed to create appointment. Please try again.",
           "error"
         );
         setIsSubmitting(false);
         return;
       }
+      
+      const createdAppt = response.data;
 
-      // Handle general API errors
-      if (!response.ok) {
-        let errMessage = "Failed to create appointment. Please try again.";
-        try {
-          const errData = await response.json();
-          if (errData?.message) errMessage = errData.message;
-        } catch (_) {}
-        showNotification("Booking Error", errMessage, "error");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // HTTP 201 Created
-      const createdAppt = await response.json();
-
-      const pId = currPatient?.id || currUser?.refId || currUser?.id || "P1";
+      // Update local context
+      const pId = currPatient?.id || currUser?.refId || currUser?.id;
       const pName = createdAppt.patientName || currPatient?.name || currUser?.name || "Patient";
       const pContact = currPatient?.contact || currPatient?.mobile || currUser?.mobile || "9876543210";
       const docHospitalName = createdAppt.hospitalName || doctor.hospital || "MediCare Hospital";
@@ -340,7 +317,7 @@ function AppointmentBooking() {
         message: `Your appointment with ${doctor.name} is confirmed for ${formatReadableDate(selectedDate)} at ${selectedSlot}.`,
         appointmentId: createdAppt.id,
         patientId: pId,
-        userId: currUser?.id || "U_P1"
+        userId: currUser?.id
       });
 
       addNotification({

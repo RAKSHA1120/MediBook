@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import HospitalSidebar from "../components/HospitalSidebar";
-import { getCurrentUser, getHospitals } from "../utils/storage";
+import { getCurrentUser } from "../utils/auth";
+
 import "../pages/PatientDashboard.css";
 
 function HospitalLayout({ children }) {

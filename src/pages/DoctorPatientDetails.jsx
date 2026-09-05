@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, CalendarDays } from "lucide-react";
-import { getPatients, getAppointments, getCurrentUser } from "../utils/storage";
+import { ArrowLeft, User, CalendarDays, Loader2, AlertCircle } from "lucide-react";
+import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
+
 import PageHeader from "../components/PageHeader";
 import Card from "../components/Card";
 import StatusBadge from "../components/StatusBadge";
@@ -12,29 +13,101 @@ function DoctorPatientDetails() {
     const navigate = useNavigate();
     const [patient, setPatient] = useState(null);
     const [history, setHistory] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        const allPatients = getPatients();
-        const foundPatient = allPatients.find(p => p.id === id);
-        setPatient(foundPatient);
+        const load = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const user = getCurrentUser();
+                const doc = getCurrentDoctor();
+                const doctorId = user?.doctorId || doc?.id || user?.id;
 
-        if (foundPatient) {
-            const user = getCurrentUser();
-            const allAppts = getAppointments();
-            
-            // Filter all appointments this patient had with this specific doctor
-            const patientAppts = allAppts.filter(a => 
-                (a.patientId === foundPatient.id || a.patientName === foundPatient.name || a.patient === foundPatient.name) &&
-                (a.doctorId === user.refId || a.doctorId === user.id || a.doctorName?.includes(user.name))
-            );
-            
-            // Sort by date (descending, simple sort)
-            patientAppts.sort((a, b) => new Date(b.date) - new Date(a.date));
-            setHistory(patientAppts);
-        }
+                // Load all appointments for this doctor then filter by patient
+                const res = await fetch(`http://localhost:5107/api/Appointments/doctor/${doctorId}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                const appts = Array.isArray(data) ? data : [];
+
+                // Find the patient by ID from their appointments
+                const patientAppts = appts.filter(a =>
+                    String(a.patientId) === String(id) ||
+                    a.patientName?.toLowerCase().replace(/\s+/g, "") === String(id).toLowerCase()
+                );
+
+                if (patientAppts.length > 0) {
+                    const first = patientAppts[0];
+                    setPatient({
+                        id: first.patientId || id,
+                        name: first.patientName || "Patient",
+                        age: "N/A",
+                        gender: "N/A",
+                        contact: "N/A",
+                        email: "N/A",
+                        bloodGroup: "N/A",
+                        status: "Active",
+                        notes: ""
+                    });
+
+                    const normalized = patientAppts.map(a => ({
+                        id: a.id,
+                        date: a.appointmentDate ? String(a.appointmentDate).split("T")[0] : "",
+                        time: a.appointmentTime || "",
+                        type: a.reason || a.appointmentType || "Consultation",
+                        status: a.status || "Pending"
+                    }));
+                    normalized.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    setHistory(normalized);
+                } else {
+                    // Patient ID not found in appointments
+                    setPatient(null);
+                }
+            } catch (err) {
+                console.error("Failed to load patient details:", err);
+                setError("Unable to load patient details. Please check the backend connection.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
     }, [id]);
 
-    if (!patient) return <div className="patient-dashboard-content">Loading...</div>;
+    if (loading) {
+        return (
+            <main className="patient-dashboard-content">
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "60px 20px" }}>
+                    <Loader2 size={36} style={{ color: "var(--primary)", animation: "spin 1s linear infinite" }} />
+                    <p style={{ fontSize: "15px", color: "var(--text-muted)" }}>Loading patient details...</p>
+                </div>
+            </main>
+        );
+    }
+
+    if (error) {
+        return (
+            <main className="patient-dashboard-content">
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "40px 20px", color: "var(--error)" }}>
+                    <AlertCircle size={24} />
+                    <p>{error}</p>
+                </div>
+            </main>
+        );
+    }
+
+    if (!patient) {
+        return (
+            <main className="patient-dashboard-content">
+                <div style={{ padding: "40px 20px" }}>
+                    <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+                        <ArrowLeft size={16} /> Back
+                    </Button>
+                    <p style={{ marginTop: "24px", color: "var(--text-muted)" }}>Patient not found.</p>
+                </div>
+            </main>
+        );
+    }
 
     return (
         <main className="patient-dashboard-content">
@@ -80,13 +153,6 @@ function DoctorPatientDetails() {
                             <span><StatusBadge status={patient.status || "Active"} /></span>
                         </div>
                     </Card>
-
-                    <Card style={{ marginTop: "24px" }}>
-                        <h4 style={{ margin: "0 0 16px 0", color: "#0f172a", fontSize: "1.1rem" }}>Medical Notes (Demo)</h4>
-                        <p style={{ color: "#64748b", lineHeight: "1.6" }}>
-                            {patient.notes || "No general medical notes available for this patient yet. This section can be used to store persistent medical history, allergies, and ongoing treatments."}
-                        </p>
-                    </Card>
                 </div>
 
                 {/* Right Column: Appointment History */}
@@ -96,7 +162,7 @@ function DoctorPatientDetails() {
                             <CalendarDays size={20} color="#0284c7" />
                             Consultation History
                         </h4>
-                        
+
                         {history.length === 0 ? (
                             <p className="text-gray">No previous appointments found with this patient.</p>
                         ) : (
@@ -110,14 +176,6 @@ function DoctorPatientDetails() {
                                             </div>
                                             <StatusBadge status={apt.status} />
                                         </div>
-                                        {apt.status === "Completed" && (
-                                            <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed #cbd5e1" }}>
-                                                <span style={{ display: "block", color: "#64748b", fontSize: "0.875rem", marginBottom: "4px" }}>Doctor's Notes (Demo):</span>
-                                                <p style={{ margin: 0, color: "#334155", fontSize: "0.9rem" }}>
-                                                    Patient presented with standard symptoms related to {apt.type}. Advised rest and prescribed standard medication. Follow up if symptoms persist.
-                                                </p>
-                                            </div>
-                                        )}
                                     </div>
                                 ))}
                             </div>

@@ -1,77 +1,58 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import {
-  getStoredAppointments,
-  saveStoredAppointments,
-  checkIsSlotBooked,
-  normalizeStatus
-} from "../utils/appointmentStorage";
+import { api } from "../utils/api";
 
 const AppointmentContext = createContext(null);
 
 export function AppointmentProvider({ children }) {
-  const [appointments, setAppointments] = useState(() => getStoredAppointments());
+  const [appointments, setAppointments] = useState([]);
 
-  // Reload appointments from localStorage
-  const reloadAppointments = useCallback(() => {
-    const fresh = getStoredAppointments();
-    setAppointments(fresh);
-  }, []);
-
-  // Fetch live appointments from ASP.NET Core API GET /api/Appointments
   const fetchBackendAppointments = useCallback(async () => {
     try {
-      const response = await fetch("https://localhost:7050/api/Appointments");
-      if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const formatBackendTime = (timeStr) => {
-            if (!timeStr) return "10:30 AM";
-            if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
-            const parts = timeStr.split(":");
-            if (parts.length >= 2) {
-              let hours = parseInt(parts[0], 10);
-              const minutes = parts[1];
-              const ampm = hours >= 12 ? "PM" : "AM";
-              hours = hours % 12;
-              hours = hours ? hours : 12;
-              const hh = String(hours).padStart(2, "0");
-              return `${hh}:${minutes} ${ampm}`;
-            }
-            return timeStr;
-          };
+      const response = await api.get("/Appointments");
+      if (response.success && Array.isArray(response.data)) {
+        const formatBackendTime = (timeStr) => {
+          if (!timeStr) return "10:30 AM";
+          if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+          const parts = timeStr.split(":");
+          if (parts.length >= 2) {
+            let hours = parseInt(parts[0], 10);
+            const minutes = parts[1];
+            const ampm = hours >= 12 ? "PM" : "AM";
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            const hh = String(hours).padStart(2, "0");
+            return `${hh}:${minutes} ${ampm}`;
+          }
+          return timeStr;
+        };
 
-          const normalizedBackend = data.map((apt) => ({
-            id: apt.id,
-            patientId: apt.patientId,
-            patientName: apt.patientName || "Patient",
-            doctorId: apt.doctorId,
-            doctorName: apt.doctorName || "Doctor",
-            hospitalId: apt.hospitalId,
-            hospitalName: apt.hospitalName || "MediCare Hospital",
-            hospital: apt.hospitalName || "MediCare Hospital",
-            appointmentDate: apt.appointmentDate,
-            date: apt.appointmentDate ? String(apt.appointmentDate).split("T")[0] : "",
-            time: formatBackendTime(apt.appointmentTime),
-            appointmentTime: apt.appointmentTime,
-            status: apt.status || "Pending",
-            appointmentType: apt.appointmentType || "Consultation",
-            specialty: apt.appointmentType || "Consultation",
-            reason: apt.reason || "Regular consultation",
-            consultationFee: apt.consultationFee ?? 500,
-            fee: apt.consultationFee ?? 500,
-            createdAt: apt.createdAt,
-            updatedAt: apt.updatedAt
-          }));
+        const normalizedBackend = response.data.map((apt) => ({
+          id: apt.id,
+          patientId: apt.patientId,
+          patientName: apt.patientName || "Patient",
+          doctorId: apt.doctorId,
+          doctorName: apt.doctorName || "Doctor",
+          hospitalId: apt.hospitalId,
+          hospitalName: apt.hospitalName || "MediCare Hospital",
+          hospital: apt.hospitalName || "MediCare Hospital",
+          appointmentDate: apt.appointmentDate,
+          date: apt.appointmentDate ? String(apt.appointmentDate).split("T")[0] : "",
+          time: formatBackendTime(apt.appointmentTime),
+          appointmentTime: apt.appointmentTime,
+          status: apt.status || "Pending",
+          appointmentType: apt.appointmentType || "Consultation",
+          specialty: apt.appointmentType || "Consultation",
+          reason: apt.reason || "Regular consultation",
+          consultationFee: apt.consultationFee ?? 500,
+          fee: apt.consultationFee ?? 500,
+          createdAt: apt.createdAt,
+          updatedAt: apt.updatedAt
+        }));
 
-          setAppointments((prev) => {
-            const existingIds = new Set(normalizedBackend.map((b) => String(b.id)));
-            const extraLocal = prev.filter((p) => !existingIds.has(String(p.id)));
-            return [...normalizedBackend, ...extraLocal];
-          });
-        }
+        setAppointments(normalizedBackend);
       }
     } catch (e) {
-      console.error("Failed to fetch backend appointments in AppointmentContext:", e);
+      console.error("Failed to fetch backend appointments:", e);
     }
   }, []);
 
@@ -79,89 +60,54 @@ export function AppointmentProvider({ children }) {
     fetchBackendAppointments();
   }, [fetchBackendAppointments]);
 
-  useEffect(() => {
-    const handleUpdate = () => {
-      reloadAppointments();
-    };
-    window.addEventListener("medibook_appointments_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("medibook_appointments_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
+  const reloadAppointments = useCallback(() => {
+    fetchBackendAppointments();
+  }, [fetchBackendAppointments]);
+
+  // Appointment operations using Backend
+  const addAppointment = useCallback(async (newAppt) => {
+    // The frontend should have already posted it or we can just trigger a reload
+    reloadAppointments();
+    return { success: true };
   }, [reloadAppointments]);
 
-  // Add a new appointment
-  const addAppointment = useCallback((newAppt) => {
-    const current = getStoredAppointments();
-    const isBooked = checkIsSlotBooked(current, newAppt.doctorId, newAppt.date, newAppt.time);
-    if (isBooked) {
-      return { success: false, message: "This time slot has already been booked. Please select another slot." };
-    }
-    const updated = [newAppt, ...current];
-    setAppointments(updated);
-    saveStoredAppointments(updated);
-    return { success: true };
-  }, []);
-
-  // Cancel an existing appointment
-  const cancelAppointment = useCallback((appointmentId) => {
-    const current = getStoredAppointments();
-    const updated = current.map((appt) => {
-      if (String(appt.id) === String(appointmentId)) {
-        return { ...appt, status: "cancelled" };
+  const cancelAppointment = useCallback(async (appointmentId) => {
+    try {
+      const response = await api.put(`/Appointments/${appointmentId}/status`, { status: "Cancelled" });
+      if (response.success || response.status === 204) {
+        reloadAppointments();
+        return { success: true };
       }
-      return appt;
-    });
-    setAppointments(updated);
-    saveStoredAppointments(updated);
-    return { success: true };
-  }, []);
-
-  // Reschedule an existing appointment
-  const rescheduleAppointment = useCallback((appointmentId, newDate, newTime, newFormattedDate) => {
-    const current = getStoredAppointments();
-    const targetIdStr = String(appointmentId ?? "").trim().toLowerCase();
-    const apptToReschedule = current.find((a) => String(a.id ?? "").trim().toLowerCase() === targetIdStr);
-    if (!apptToReschedule) {
-      return { success: false, message: "Appointment not found." };
+      return { success: false, message: "Failed to cancel appointment" };
+    } catch (error) {
+      return { success: false, message: error.message };
     }
+  }, [reloadAppointments]);
 
-    // Check if the target new slot is already booked by ANOTHER appointment for the same doctor
-    const isBooked = checkIsSlotBooked(
-      current,
-      apptToReschedule.doctorId,
-      newDate,
-      newTime,
-      appointmentId,
-      apptToReschedule.doctorName || apptToReschedule.doctor
-    );
-
-    if (isBooked) {
-      return { success: false, message: "The selected new time slot is already booked." };
-    }
-
-    const updated = current.map((a) => {
-      if (String(a.id ?? "").trim().toLowerCase() === targetIdStr) {
-        return {
-          ...a,
-          date: newDate,
-          time: newTime,
-          formattedDate: newFormattedDate || a.formattedDate,
-          status: "confirmed"
-        };
+  const rescheduleAppointment = useCallback(async (appointmentId, newDate, newTime) => {
+    try {
+      const response = await api.put(`/Appointments/${appointmentId}/reschedule`, {
+        appointmentDate: newDate,
+        appointmentTime: newTime,
+        status: "Confirmed"
+      });
+      if (response.success || response.status === 204) {
+        reloadAppointments();
+        return { success: true };
       }
-      return a;
-    });
+      return { success: false, message: "Failed to reschedule" };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }, [reloadAppointments]);
 
-    setAppointments(updated);
-    saveStoredAppointments(updated);
-    return { success: true };
-  }, []);
-
-  // Helper to check if a slot is booked
   const isSlotBooked = useCallback((doctorId, date, time) => {
-    return checkIsSlotBooked(appointments, doctorId, date, time);
+    return appointments.some(a => 
+      String(a.doctorId) === String(doctorId) && 
+      a.date === date && 
+      a.time === time && 
+      a.status.toLowerCase() !== "cancelled"
+    );
   }, [appointments]);
 
   const value = {
@@ -183,41 +129,7 @@ export function AppointmentProvider({ children }) {
 export function useAppointments() {
   const context = useContext(AppointmentContext);
   if (!context) {
-    // Graceful fallback if component is used outside provider
-    const fallbackAppointments = getStoredAppointments();
-    return {
-      appointments: fallbackAppointments,
-      addAppointment: (newAppt) => {
-        const current = getStoredAppointments();
-        const isBooked = checkIsSlotBooked(current, newAppt.doctorId, newAppt.date, newAppt.time);
-        if (isBooked) {
-          return { success: false, message: "This time slot has already been booked." };
-        }
-        const updated = [newAppt, ...current];
-        saveStoredAppointments(updated);
-        return { success: true };
-      },
-      cancelAppointment: (id) => {
-        const current = getStoredAppointments();
-        const updated = current.map((a) => (String(a.id) === String(id) ? { ...a, status: "cancelled" } : a));
-        saveStoredAppointments(updated);
-        return { success: true };
-      },
-      rescheduleAppointment: (id, newDate, newTime, newFormattedDate) => {
-        const current = getStoredAppointments();
-        const updated = current.map((a) =>
-          String(a.id) === String(id)
-            ? { ...a, date: newDate, time: newTime, formattedDate: newFormattedDate || a.formattedDate, status: "confirmed" }
-            : a
-        );
-        saveStoredAppointments(updated);
-        return { success: true };
-      },
-      isSlotBooked: (doctorId, date, time) => {
-        return checkIsSlotBooked(getStoredAppointments(), doctorId, date, time);
-      },
-      reloadAppointments: () => {}
-    };
+    throw new Error("useAppointments must be used within an AppointmentProvider");
   }
   return context;
 }

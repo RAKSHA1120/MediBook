@@ -13,7 +13,8 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
-import { clearCurrentUser } from "../utils/storage";
+import { clearCurrentUser } from "../utils/auth";
+
 import "./PatientSidebar.css";
 
 function HospitalSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) {

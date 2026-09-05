@@ -7,138 +7,7 @@ import Modal from "../components/Modal";
 import StatusBadge from "../components/StatusBadge";
 import "./AdminShared.css";
 
-const INITIAL_HOSPITALS = [
-  {
-    id: "HOS-001",
-    name: "City Heart Center",
-    type: "Specialty Hospital",
-    category: "Super Specialty",
-    location: "Bangalore",
-    contact: "+91 80 2345 6789",
-    email: "info@cityheart.com",
-    status: "Active",
-    address: "123 MG Road, Bangalore",
-    doctorsCount: 5,
-    specialty: "Cardiology",
-    bedCount: 150
-  },
-  {
-    id: "HOS-002",
-    name: "Kids Clinic",
-    type: "Clinic",
-    category: "Specialty Center",
-    location: "Delhi",
-    contact: "+91 11 4567 8901",
-    email: "contact@kidsclinic.org",
-    status: "Active",
-    address: "45 Connaught Place, Delhi",
-    doctorsCount: 3,
-    specialty: "Pediatrics",
-    bedCount: 80
-  },
-  {
-    id: "HOS-003",
-    name: "Apex General Hospital",
-    type: "Government",
-    category: "Multi Specialty",
-    location: "Mumbai",
-    contact: "+91 22 9876 5432",
-    email: "apex@hospitalmumbai.gov",
-    status: "Active",
-    address: "78 Marine Drive, Mumbai",
-    doctorsCount: 8,
-    specialty: "General Medicine",
-    bedCount: 300
-  },
-  {
-    id: "HOS-004",
-    name: "Skin & Aesthetic Care",
-    type: "Private",
-    category: "Specialty Center",
-    location: "Hyderabad",
-    contact: "+91 40 3344 5566",
-    email: "care@skinaesthetic.com",
-    status: "Active",
-    address: "12 Jubilee Hills, Hyderabad",
-    doctorsCount: 4,
-    specialty: "Dermatology",
-    bedCount: 50
-  },
-  {
-    id: "HOS-005",
-    name: "Neuro Care Hospital",
-    type: "Private",
-    category: "Super Specialty",
-    location: "Pune",
-    contact: "+91 20 6677 8899",
-    email: "support@neurocare.com",
-    status: "Active",
-    address: "89 FC Road, Pune",
-    doctorsCount: 4,
-    specialty: "Neurology",
-    bedCount: 120
-  },
-  {
-    id: "HOS-006",
-    name: "Women's Health Clinic",
-    type: "Clinic",
-    category: "Primary Care",
-    location: "Chennai",
-    contact: "+91 44 2233 4455",
-    email: "contact@womenshealth.in",
-    status: "Active",
-    address: "34 Anna Salai, Chennai",
-    doctorsCount: 3,
-    specialty: "Gynecology",
-    bedCount: 90
-  },
-  {
-    id: "HOS-007",
-    name: "Bone & Joint Institute",
-    type: "Teaching Hospital",
-    category: "Super Specialty",
-    location: "Bangalore",
-    contact: "+91 80 5566 7788",
-    email: "info@bonejointinst.edu",
-    status: "Active",
-    address: "56 Indiranagar, Bangalore",
-    doctorsCount: 6,
-    specialty: "Orthopedics",
-    bedCount: 180
-  },
-  {
-    id: "HOS-008",
-    name: "MediCare Hospital",
-    type: "Private",
-    category: "Multi Specialty",
-    location: "Chennai",
-    contact: "+91 44 9900 1122",
-    email: "admin@medicarehospitals.com",
-    status: "Active",
-    address: "90 T Nagar, Chennai",
-    doctorsCount: 10,
-    specialty: "Multi-Specialty",
-    bedCount: 250
-  }
-];
-
-export const getHospitalsStorage = () => {
-  const data = localStorage.getItem("medibook_hospitals");
-  if (!data) {
-    localStorage.setItem("medibook_hospitals", JSON.stringify(INITIAL_HOSPITALS));
-    return INITIAL_HOSPITALS;
-  }
-  try {
-    return JSON.parse(data);
-  } catch (e) {
-    return INITIAL_HOSPITALS;
-  }
-};
-
-export const saveHospitalsStorage = (hospitals) => {
-  localStorage.setItem("medibook_hospitals", JSON.stringify(hospitals));
-  window.dispatchEvent(new Event("medibook_hospitals_updated"));
-};
+import { api } from "../utils/api";
 
 function AdminHospitals() {
   const [hospitals, setHospitals] = useState([]);
@@ -161,8 +30,19 @@ function AdminHospitals() {
     address: ""
   });
 
+  const fetchHospitals = async () => {
+    try {
+      const response = await api.get("/Hospitals");
+      if (response.success) {
+        setHospitals(response.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch hospitals", error);
+    }
+  };
+
   useEffect(() => {
-    setHospitals(getHospitalsStorage());
+    fetchHospitals();
   }, []);
 
   // Listener to close options popover on document click outside
@@ -218,24 +98,12 @@ function AdminHospitals() {
     setIsFormModalOpen(true);
   };
 
-  const handleSubmitHospital = (e) => {
+  const handleSubmitHospital = async (e) => {
     e.preventDefault();
     setErrorMessage("");
 
     if (!formData.name.trim()) {
       setErrorMessage("Hospital Name is required.");
-      return;
-    }
-    if (!formData.type.trim()) {
-      setErrorMessage("Hospital Type is required.");
-      return;
-    }
-    if (!formData.category.trim()) {
-      setErrorMessage("Category is required.");
-      return;
-    }
-    if (!formData.location.trim()) {
-      setErrorMessage("Location is required.");
       return;
     }
     if (!formData.contact.trim()) {
@@ -247,77 +115,57 @@ function AdminHospitals() {
       return;
     }
 
-    if (editingHospital) {
-      const updatedList = hospitals.map(h => {
-        if (h.id === editingHospital.id) {
-          return {
-            ...h,
-            name: formData.name.trim(),
-            type: formData.type,
-            category: formData.category,
-            location: formData.location.trim(),
-            status: formData.status,
-            contact: formData.contact.trim(),
-            email: formData.email.trim(),
-            address: formData.address.trim()
-          };
-        }
-        return h;
-      });
-      setHospitals(updatedList);
-      saveHospitalsStorage(updatedList);
-    } else {
-      const loginId = formData.email.split("@")[0] || formData.name.toLowerCase().replace(/[^a-z0-9]/g, "");
-      const newHospital = {
-        id: `HOS-${String(hospitals.length + 1).padStart(3, "0")}`,
-        name: formData.name.trim(),
-        type: formData.type,
-        category: formData.category,
-        location: formData.location.trim(),
-        status: formData.status || "Active",
-        contact: formData.contact.trim(),
-        email: formData.email.trim(),
-        address: formData.address.trim(),
-        doctorsCount: 1,
-        specialty: formData.category,
-        bedCount: 100,
-        loginId,
-        password: "hospital123"
-      };
-      const updatedList = [newHospital, ...hospitals];
-      setHospitals(updatedList);
-      saveHospitalsStorage(updatedList);
+    const payload = {
+      name: formData.name.trim(),
+      address: formData.address.trim() || formData.location.trim() || "Address not provided",
+      phone: formData.contact.trim(),
+      email: formData.email.trim(),
+      isActive: formData.status === "Active"
+    };
 
-      const users = JSON.parse(localStorage.getItem("medibook_users") || "[]");
-      users.push({
-        id: `U_${newHospital.id}`,
-        loginId,
-        mobile: loginId,
-        password: "hospital123",
-        role: "hospital",
-        name: newHospital.name,
-        refId: newHospital.id,
-        status: "Active"
-      });
-      localStorage.setItem("medibook_users", JSON.stringify(users));
+    if (editingHospital) {
+      payload.id = editingHospital.id;
+      const response = await api.put(`/Hospitals/${editingHospital.id}`, payload);
+      if (response.success || response.status === 204) {
+        fetchHospitals();
+      } else {
+        alert("Failed to update hospital.");
+      }
+    } else {
+      const response = await api.post("/Hospitals", payload);
+      if (response.success) {
+        fetchHospitals();
+      } else {
+        alert("Failed to create hospital.");
+      }
     }
 
     setIsFormModalOpen(false);
   };
 
-  const handleToggleStatus = (hospital) => {
-    const newStatus = hospital.status === "Active" ? "Inactive" : "Active";
-    const updated = hospitals.map(h => h.id === hospital.id ? { ...h, status: newStatus } : h);
-    setHospitals(updated);
-    saveHospitalsStorage(updated);
+  const handleToggleStatus = async (hospital) => {
+    const newStatus = hospital.isActive ? "Inactive" : "Active";
+    const payload = {
+      ...hospital,
+      isActive: !hospital.isActive
+    };
+    const response = await api.put(`/Hospitals/${hospital.id}`, payload);
+    if (response.success || response.status === 204) {
+      fetchHospitals();
+    } else {
+      alert("Failed to update status.");
+    }
   };
 
-  const handleDeleteHospital = (id) => {
+  const handleDeleteHospital = async (id) => {
     if (window.confirm("Are you sure you want to remove this hospital from the network?")) {
-      const updated = hospitals.filter(h => h.id !== id);
-      setHospitals(updated);
-      saveHospitalsStorage(updated);
-      setIsViewModalOpen(false);
+      const response = await api.delete(`/Hospitals/${id}`);
+      if (response.success || response.status === 204 || response.status === 404) {
+        fetchHospitals();
+        setIsViewModalOpen(false);
+      } else {
+        alert("Failed to delete hospital.");
+      }
     }
   };
 
@@ -326,11 +174,8 @@ function AdminHospitals() {
     if (!query) return true;
     return (
       (h.name && h.name.toLowerCase().includes(query)) ||
-      (h.type && h.type.toLowerCase().includes(query)) ||
-      (h.category && h.category.toLowerCase().includes(query)) ||
-      (h.location && h.location.toLowerCase().includes(query)) ||
-      (h.specialty && h.specialty.toLowerCase().includes(query)) ||
-      (h.id && h.id.toLowerCase().includes(query))
+      (h.email && h.email.toLowerCase().includes(query)) ||
+      (h.id && String(h.id).toLowerCase().includes(query))
     );
   });
 

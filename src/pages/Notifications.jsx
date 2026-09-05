@@ -4,13 +4,9 @@ import { CheckCheck, Bell, Calendar, Info, BellOff } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import NotificationCard from "../components/NotificationCard";
-import {
-  getCurrentUser,
-  getCurrentPatient,
-  getPatientNotifications,
-  markNotificationAsRead,
-  markAllNotificationsAsRead
-} from "../utils/storage";
+import { getCurrentUser } from "../utils/auth";
+
+import { api } from "../utils/api";
 import "./Notifications.css";
 
 function Notifications() {
@@ -23,14 +19,26 @@ function Notifications() {
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
 
-  useEffect(() => {
-    const handleUpdate = () => {
-      const u = getCurrentUser();
+  const fetchApiNotifications = async () => {
+    const res = await api.get("/Notifications");
+    if (res.success && Array.isArray(res.data)) {
+      // Map API fields if needed, but assuming they match for now
+      // Or just combine with local notifications
+      setNotifications(res.data);
+    } else {
       const p = getCurrentPatient();
-      setCurrentUser(u);
+      const u = getCurrentUser();
       setNotifications(getPatientNotifications(p?.id, u?.id));
+    }
+  };
+
+  useEffect(() => {
+    fetchApiNotifications();
+    
+    const handleUpdate = () => {
+      fetchApiNotifications();
     };
-    handleUpdate();
+    
     window.addEventListener("medibook_notifications_updated", handleUpdate);
     return () => {
       window.removeEventListener("medibook_notifications_updated", handleUpdate);
@@ -43,7 +51,7 @@ function Notifications() {
     const appointments = notifications.filter((n) => n.type === "appointment").length;
     const reminders = notifications.filter((n) => n.type === "reminder").length;
     const system = notifications.filter((n) => n.type === "system").length;
-    const unread = notifications.filter((n) => !n.read).length;
+    const unread = notifications.filter((n) => !n.read && !n.isRead).length;
     return { all, appointments, reminders, system, unread };
   }, [notifications]);
 
@@ -62,20 +70,21 @@ function Notifications() {
   }, [notifications, activeTab]);
 
   // Handle Mark All As Read
-  const handleMarkAll = () => {
+  const handleMarkAll = async () => {
+    // Ideally we should call a backend endpoint for mark-all-read.
+    // For now we'll just update local state if there's no bulk API.
     const p = getCurrentPatient();
     const u = getCurrentUser();
     markAllNotificationsAsRead(p?.id, u?.id);
-    setNotifications(getPatientNotifications(p?.id, u?.id));
+    await fetchApiNotifications();
   };
 
   // Handle Notification Click
-  const handleCardClick = (notif) => {
-    if (!notif.read) {
+  const handleCardClick = async (notif) => {
+    if (!notif.read && !notif.isRead) {
+      await api.put(`/Notifications/${notif.id}/read`);
       markNotificationAsRead(notif.id);
-      const p = getCurrentPatient();
-      const u = getCurrentUser();
-      setNotifications(getPatientNotifications(p?.id, u?.id));
+      await fetchApiNotifications();
     }
     if (notif.appointmentId) {
       navigate(`/appointments/${notif.appointmentId}`);

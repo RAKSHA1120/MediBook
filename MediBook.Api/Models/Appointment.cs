@@ -1,4 +1,4 @@
-﻿namespace MediBook.Api.Models
+namespace MediBook.Api.Models
 {
     public class Appointment
     {
@@ -16,15 +16,11 @@
 
         public string Status { get; set; } = "Pending";
 
-        public string? AppointmentType { get; set; }
-
         public string? Reason { get; set; }
 
-        public decimal? ConsultationFee { get; set; }
+        public string? Notes { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        public DateTime? UpdatedAt { get; set; }
 
         // Relationships
         public Patient Patient { get; set; } = null!;

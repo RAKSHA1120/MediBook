@@ -1,22 +1,28 @@
 import { useState } from "react";
-
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     Menu,
     LayoutDashboard,
-    Users,
     CalendarDays,
-    Stethoscope,
-    FlaskConical,
-    Pill,
-    CreditCard,
-    BarChart3,
+    Users,
+    CalendarClock,
     Settings,
     User,
     LogOut,
 } from "lucide-react";
+import { clearCurrentUser } from "../utils/auth";
 
 function Sidebar() {
     const [expanded, setExpanded] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const isActive = (path) => location.pathname === path;
+
+    const handleLogout = () => {
+        clearCurrentUser();
+        navigate("/login");
+    };
 
     return (
         <aside
@@ -38,14 +44,36 @@ function Sidebar() {
             {/* Navigation */}
             <nav className="sidebar-nav">
 
-                <button className="sidebar-item active">
+                <button
+                    className={`sidebar-item ${isActive("/doctor/dashboard") ? "active" : ""}`}
+                    onClick={() => navigate("/doctor/dashboard")}
+                >
                     <LayoutDashboard className="sidebar-icon" />
                     <span className="sidebar-label">Dashboard</span>
                 </button>
 
-                <button className="sidebar-item">
+                <button
+                    className={`sidebar-item ${isActive("/doctor/appointments") ? "active" : ""}`}
+                    onClick={() => navigate("/doctor/appointments")}
+                >
                     <CalendarDays className="sidebar-icon" />
                     <span className="sidebar-label">Appointments</span>
+                </button>
+
+                <button
+                    className={`sidebar-item ${isActive("/doctor/patients") ? "active" : ""}`}
+                    onClick={() => navigate("/doctor/patients")}
+                >
+                    <Users className="sidebar-icon" />
+                    <span className="sidebar-label">Patients</span>
+                </button>
+
+                <button
+                    className={`sidebar-item ${isActive("/doctor/schedule") ? "active" : ""}`}
+                    onClick={() => navigate("/doctor/schedule")}
+                >
+                    <CalendarClock className="sidebar-icon" />
+                    <span className="sidebar-label">Schedule</span>
                 </button>
 
             </nav>
@@ -53,17 +81,23 @@ function Sidebar() {
             {/* Bottom */}
             <div className="sidebar-bottom">
 
-                <button className="sidebar-item">
+                <button
+                    className={`sidebar-item ${isActive("/doctor/settings") ? "active" : ""}`}
+                    onClick={() => navigate("/doctor/settings")}
+                >
                     <Settings className="sidebar-icon" />
                     <span className="sidebar-label">Settings</span>
                 </button>
 
-                <button className="sidebar-item">
+                <button
+                    className={`sidebar-item ${isActive("/doctor/profile") ? "active" : ""}`}
+                    onClick={() => navigate("/doctor/profile")}
+                >
                     <User className="sidebar-icon" />
                     <span className="sidebar-label">Profile</span>
                 </button>
 
-                <button className="sidebar-item logout">
+                <button className="sidebar-item logout" onClick={handleLogout}>
                     <LogOut className="sidebar-icon" />
                     <span className="sidebar-label">Logout</span>
                 </button>

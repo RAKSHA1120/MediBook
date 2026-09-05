@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import Button from "./Button";
 import { getStoredNotifications } from "../data/notifications";
-import { getCurrentUser, getCurrentPatient, getCurrentDoctor, getPatientNotifications, getDoctorNotifications, clearCurrentUser } from "../utils/storage";
+import { getCurrentUser, clearCurrentUser } from "../utils/auth";
+
 import "./PatientSidebar.css";
 
 function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) {

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Lock, LogOut, ShieldCheck, Bell, CheckCircle2, AlertCircle, KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, getUsers, clearCurrentUser } from "../utils/storage";
+import { getCurrentUser, clearCurrentUser } from "../utils/auth";
+
 import PageHeader from "../components/PageHeader";
 import Card from "../components/Card";
 import Input from "../components/Input";

@@ -4,12 +4,7 @@ import { CheckCheck, Bell, Calendar, Info, BellOff, Trash2 } from "lucide-react"
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import NotificationCard from "../components/NotificationCard";
-import {
-  getNotifications,
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
-  clearAllNotifications
-} from "../utils/storage";
+
 import "./Notifications.css";
 
 function AdminNotifications() {

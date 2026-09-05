@@ -1,4 +1,4 @@
-﻿namespace MediBook.Api.Models
+namespace MediBook.Api.Models
 {
     public class Patient
     {
@@ -8,11 +8,11 @@
 
         public string Name { get; set; } = string.Empty;
 
-        public string Email { get; set; } = string.Empty;
-
         public string? Mobile { get; set; }
 
-        public DateTime? DateOfBirth { get; set; }
+        public string? Email { get; set; }
+
+        public DateTime? DOB { get; set; }
 
         public string? Gender { get; set; }
 
@@ -26,7 +26,7 @@
 
         public string? Pincode { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public bool IsActive { get; set; } = true;
 
         // Relationship with User
         public User User { get; set; } = null!;

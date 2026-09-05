@@ -18,13 +18,9 @@ import PageHeader from "../components/PageHeader";
 import PrimaryButton from "../components/PrimaryButton";
 import SecondaryButton from "../components/SecondaryButton";
 import Toast from "../components/Toast";
-import {
-  getCurrentDoctor,
-  getCurrentUser,
-  updateDoctor,
-  updateUser
-} from "../utils/storage";
+import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
 import "./DoctorProfile.css";
+
 
 function DoctorProfile() {
   const [profile, setProfile] = useState(() => loadInitialDoctorProfile());
@@ -179,7 +175,7 @@ function DoctorProfile() {
     setIsEditing(false);
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!validateForm()) {
       showNotification("Validation Error", "Please fill in all required fields correctly.", "error");
       return;
@@ -204,16 +200,35 @@ function DoctorProfile() {
       email: formData.email.trim()
     };
 
-    // Save to localStorage storage.js mutators
-    const doc = getCurrentDoctor();
-    const user = getCurrentUser();
-    if (doc?.id) {
-      updateDoctor(doc.id, updatedProfile);
-    }
-    if (user?.id) {
-      updateUser(user.id, { name: formattedName, mobile: formData.phone.trim() });
-      const updatedUser = { ...user, name: formattedName, mobile: formData.phone.trim() };
-      localStorage.setItem("medibook_current_user", JSON.stringify(updatedUser));
+    // Persist to SQL Server via API
+    try {
+      const user = getCurrentUser();
+      const doc = getCurrentDoctor();
+      const doctorId = user?.doctorId || doc?.id || profile?.id;
+      if (doctorId) {
+        const getRes = await fetch(`http://localhost:5107/api/Doctors/${doctorId}`);
+        if (getRes.ok) {
+          const existing = await getRes.json();
+          const putBody = {
+            ...existing,
+            name: formattedName,
+            phone: formData.phone.trim(),
+            email: formData.email.trim(),
+            specialty: formData.specialty.trim(),
+            experience: Number(formData.experience),
+            qualification: formData.qualification.trim(),
+            consultationFee: Number(formData.consultationFee),
+            registrationNumber: formData.registrationNumber?.trim() || ""
+          };
+          await fetch(`http://localhost:5107/api/Doctors/${doctorId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(putBody)
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update doctor profile via API:", err);
     }
 
     setProfile(updatedProfile);

@@ -9,10 +9,8 @@ import {
   Loader2,
   AlertCircle
 } from "lucide-react";
-import {
-  getCurrentUser,
-  getHospitals
-} from "../utils/storage";
+import { getCurrentUser } from "../utils/auth";
+
 import Card from "../components/Card";
 import StatusBadge from "../components/StatusBadge";
 import Button from "../components/Button";
@@ -91,13 +89,13 @@ function HospitalDashboard() {
 
     setHospital(hosRecord);
 
-    const hosIdInt = parseInt(String(hosRecord.id || user?.refId || user?.id || "").replace(/\D/g, ""), 10);
+    const hosIdInt = hosRecord.id || user?.refId || user?.id || "";
     const hosNameStr = String(hosRecord.name || user?.name || "").trim().toLowerCase();
 
     try {
       const [doctorsRes, apptsRes] = await Promise.all([
-        fetch("https://localhost:7050/api/Doctors"),
-        fetch("https://localhost:7050/api/Appointments")
+        fetch("http://localhost:5107/api/Doctors"),
+        fetch("http://localhost:5107/api/Appointments")
       ]);
 
       if (!doctorsRes.ok || !apptsRes.ok) {
@@ -109,7 +107,7 @@ function HospitalDashboard() {
 
       // Filter Doctors for current hospital
       const filteredDocs = (Array.isArray(doctorsData) ? doctorsData : []).filter((doc) => {
-        const docHosIdInt = parseInt(String(doc.hospitalId || doc.hospital?.id || "").replace(/\D/g, ""), 10);
+        const docHosIdInt = doc.hospitalId || doc.hospital?.id || "";
         const docHosNameStr = String(doc.hospital?.name || doc.hospitalName || "").trim().toLowerCase();
 
         if (hosIdInt && docHosIdInt && hosIdInt === docHosIdInt) return true;
@@ -121,7 +119,7 @@ function HospitalDashboard() {
       // Filter Appointments for current hospital
       const normalizedAppts = (Array.isArray(apptsData) ? apptsData : []).map(normalizeBackendAppointment);
       const filteredAppts = normalizedAppts.filter((apt) => {
-        const aptHosIdInt = parseInt(String(apt.hospitalId || "").replace(/\D/g, ""), 10);
+        const aptHosIdInt = apt.hospitalId || "";
         const aptHosNameStr = String(apt.hospitalName || "").trim().toLowerCase();
 
         if (hosIdInt && aptHosIdInt && hosIdInt === aptHosIdInt) return true;

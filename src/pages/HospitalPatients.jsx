@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 import { Users, Search, Eye, Phone, Calendar } from "lucide-react";
-import {
-  getCurrentUser,
-  getHospitals,
-  getHospitalPatients,
-  getHospitalAppointments
-} from "../utils/storage";
+import { getCurrentUser } from "../utils/auth";
+
 import PageHeader from "../components/PageHeader";
 import SearchBox from "../components/SearchBox";
 import StatusBadge from "../components/StatusBadge";

@@ -7,7 +7,7 @@ import SearchBox from "../components/SearchBox";
 import StatusBadge from "../components/StatusBadge";
 import Tabs from "../components/Tabs";
 import Modal from "../components/Modal";
-import { getAppointments, updateAppointmentStatus } from "../utils/storage";
+import { api } from "../utils/api";
 import "./AdminDashboard.css";
 import "./AdminShared.css";
 
@@ -27,11 +27,34 @@ function AdminAppointments() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [modalStatus, setModalStatus] = useState("");
 
+  const [debugLog, setDebugLog] = useState("");
+
+  const fetchAppointments = async () => {
+    try {
+      const response = await fetch("http://localhost:5107/api/Appointments", {
+        headers: { "Accept": "application/json" }
+      });
+      if (!response.ok) {
+        setDebugLog("Error status: " + response.status);
+        return;
+      }
+      const data = await response.json();
+      setDebugLog("Success: fetched " + (data ? data.length : 0) + " items");
+      const mapped = (data || []).map(a => ({
+        ...a,
+        date: a.appointmentDate ? String(a.appointmentDate).split('T')[0] : a.date,
+        time: a.appointmentTime || a.time,
+        type: a.appointmentType || a.type
+      }));
+      setAppointments(mapped);
+    } catch (error) {
+      setDebugLog("Exception: " + error.message);
+      console.error("Failed to fetch appointments", error);
+    }
+  };
+
   useEffect(() => {
-    const loadAppointments = () => setAppointments(getAppointments());
-    loadAppointments();
-    window.addEventListener("medibook_appointments_updated", loadAppointments);
-    return () => window.removeEventListener("medibook_appointments_updated", loadAppointments);
+    fetchAppointments();
   }, []);
 
   const tabs = [
@@ -74,12 +97,21 @@ function AdminAppointments() {
   };
 
   // Save Status Change from Modal
-  const handleSaveStatusChange = () => {
+  const handleSaveStatusChange = async () => {
     if (selectedAppointment && modalStatus) {
-      updateAppointmentStatus(selectedAppointment.id, modalStatus);
-      setAppointments(getAppointments());
-      setSelectedAppointment({ ...selectedAppointment, status: modalStatus });
-      setIsViewModalOpen(false);
+      try {
+        const payload = { status: modalStatus };
+        const response = await api.put(`/Appointments/${selectedAppointment.id}/status`, payload);
+        if (response.success || response.status === 204) {
+          fetchAppointments();
+          setSelectedAppointment({ ...selectedAppointment, status: modalStatus });
+          setIsViewModalOpen(false);
+        } else {
+          alert("Failed to update status");
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
