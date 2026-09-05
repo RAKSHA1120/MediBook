@@ -133,7 +133,7 @@ function AdminDoctors() {
       userId: userRes.data.id,
       name: addFormData.name.trim(),
       specialty: addFormData.specialization.trim() || "General Medicine",
-      experience: addFormData.experience.trim() || "5",
+      experience: parseInt(addFormData.experience.trim()) || 5,
       email: addFormData.email.trim(),
       phone: addFormData.phone.trim(),
       isActive: true,
@@ -188,7 +188,7 @@ function AdminDoctors() {
       hospitalId: selectedDoctor.hospitalId || 1,
       name: editFormData.name.trim(),
       specialty: editFormData.specialization.trim(),
-      experience: editFormData.experience.trim(),
+      experience: parseInt(editFormData.experience.trim()) || 0,
       email: editFormData.email.trim(),
       phone: editFormData.phone.trim(),
       isActive: editFormData.status === "Active"

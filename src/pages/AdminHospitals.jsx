@@ -34,7 +34,13 @@ function AdminHospitals() {
     try {
       const response = await api.get("/Hospitals");
       if (response.success) {
-        setHospitals(response.data || []);
+        const mappedHospitals = (response.data || []).map(h => ({
+          ...h,
+          location: h.city || h.address || "Unknown",
+          contact: h.phone || "Unknown",
+          status: h.isActive === false ? "Inactive" : "Active"
+        }));
+        setHospitals(mappedHospitals);
       }
     } catch (error) {
       console.error("Failed to fetch hospitals", error);
@@ -117,6 +123,9 @@ function AdminHospitals() {
 
     const payload = {
       name: formData.name.trim(),
+      type: formData.type,
+      category: formData.category,
+      city: formData.location.trim(),
       address: formData.address.trim() || formData.location.trim() || "Address not provided",
       phone: formData.contact.trim(),
       email: formData.email.trim(),

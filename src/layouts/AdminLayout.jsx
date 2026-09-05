@@ -17,7 +17,7 @@ function AdminLayout({ children }) {
 
   const [adminUser, setAdminUser] = useState(() => {
     try {
-      const userStr = localStorage.getItem("medibook_current_user");
+      const userStr = sessionStorage.getItem("medibook_current_user");
       if (userStr) return JSON.parse(userStr);
       return null;
     } catch (e) { return null; }

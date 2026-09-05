@@ -30,7 +30,7 @@ namespace MediBook.Api.Models
         public User? User { get; set; }
 
         // Relationship with Hospital
-        public Hospital Hospital { get; set; } = null!;
+        public Hospital? Hospital { get; set; }
 
         // Relationship with DoctorSchedules
         public ICollection<DoctorSchedule> Schedules { get; set; } = new List<DoctorSchedule>();
