@@ -126,9 +126,12 @@ function AdminPatients() {
   const handleSaveEditPatient = async (e) => {
     e.preventDefault();
     const updates = {
+      id: editFormData.id,
+      userId: selectedPatient.userId,
       name: editFormData.name.trim(),
       age: editFormData.age,
       gender: editFormData.gender,
+      mobile: editFormData.contact.trim(),
       contact: editFormData.contact.trim(),
       phone: editFormData.contact.trim(),
       email: editFormData.email.trim(),

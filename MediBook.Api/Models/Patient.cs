@@ -29,6 +29,6 @@ namespace MediBook.Api.Models
         public bool IsActive { get; set; } = true;
 
         // Relationship with User
-        public User User { get; set; } = null!;
+        public User? User { get; set; }
     }
 }
