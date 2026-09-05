@@ -74,9 +74,8 @@ function HospitalAppointments() {
     setError(null);
 
     const user = getCurrentUser();
-    const hospitals = getHospitals();
-    const hosRecord = hospitals.find((h) => h.id === user?.refId || h.name === user?.name) || {
-      id: user?.refId || 1,
+    const hosRecord = {
+      id: user?.refId || user?.id || 1,
       name: user?.name || "MediCare Hospital"
     };
 

@@ -22,19 +22,38 @@ function HospitalNotifications() {
     return () => window.removeEventListener("medibook_notifications_updated", handleUpdate);
   }, []);
 
-  const loadHospitalNotifications = () => {
+  const loadHospitalNotifications = async () => {
     const user = getCurrentUser();
     if (!user) return;
 
-    const hospitals = getHospitals();
-    const hosRecord = hospitals.find((h) => h.id === user.refId || h.name === user.name) || {
-      id: user.refId || "HOS-008",
+    const hosRecord = {
+      id: user.refId || user.id || "HOS-008",
       name: user.name || "MediCare Hospital"
     };
     setHospital(hosRecord);
 
-    const allNotifs = getNotifications();
-    setNotifications(allNotifs);
+    try {
+      const res = await fetch(`http://localhost:5107/api/Notifications/user/${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        const mapped = data.map((n) => ({
+          id: n.id,
+          title: n.title,
+          message: n.message,
+          type: n.type || "system",
+          subType: n.subType,
+          appointmentId: n.appointmentId,
+          read: n.isRead,
+          timestamp: n.createdAt
+        }));
+        setNotifications(mapped);
+      } else {
+        setNotifications([]);
+      }
+    } catch (e) {
+      console.error("Failed to load notifications", e);
+      setNotifications([]);
+    }
   };
 
   const counts = useMemo(() => {
@@ -63,15 +82,26 @@ function HospitalNotifications() {
     return notifications;
   }, [notifications, activeTab]);
 
-  const handleMarkAll = () => {
-    const updated = markAllNotificationsAsRead();
-    setNotifications(updated);
+  const handleMarkAll = async () => {
+    const unread = notifications.filter((n) => !n.read);
+    for (const notif of unread) {
+      try {
+        await fetch(`http://localhost:5107/api/Notifications/${notif.id}/read`, { method: "PUT" });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadHospitalNotifications();
   };
 
-  const handleCardClick = (notif) => {
+  const handleCardClick = async (notif) => {
     if (!notif.read) {
-      markNotificationAsRead(notif.id);
-      loadHospitalNotifications();
+      try {
+        await fetch(`http://localhost:5107/api/Notifications/${notif.id}/read`, { method: "PUT" });
+        loadHospitalNotifications();
+      } catch (e) {
+        console.error(e);
+      }
     }
     if (notif.appointmentId) {
       navigate("/hospital/appointments");

@@ -36,20 +36,45 @@ function HospitalDoctors() {
     loadHospitalDoctors();
   }, []);
 
-  const loadHospitalDoctors = () => {
+  const loadHospitalDoctors = async () => {
     const user = getCurrentUser();
     if (!user) return;
 
-    const hospitals = getHospitals();
-    const hosRecord = hospitals.find((h) => h.id === user.refId || h.name === user.name) || {
-      id: user.refId || "HOS-008",
+    const hosRecord = {
+      id: user.refId || user.id || 4,
       name: user.name || "MediCare Hospital"
     };
-
     setHospital(hosRecord);
-    const identifier = hosRecord.id || hosRecord.name;
-    const hosDocs = getHospitalDoctors(identifier);
-    setDoctors(hosDocs);
+
+    try {
+      const res = await fetch("http://localhost:5107/api/Doctors");
+      if (res.ok) {
+        const allDocs = await res.json();
+        const hosDocs = allDocs.filter(d => 
+          d.hospitalId === hosRecord.id || 
+          (d.hospital && d.hospital.name === hosRecord.name) ||
+          d.hospitalName === hosRecord.name
+        );
+        
+        const mapped = hosDocs.map(d => ({
+          id: d.id,
+          name: d.name,
+          specialization: d.specialization || d.specialty,
+          qualification: d.qualification,
+          experience: d.experience ? `${d.experience} years` : "5 years",
+          fee: d.consultationFee || d.fee || 800,
+          loginId: d.email || d.mobile || d.loginId || `login: ${d.name.toLowerCase().replace(/\s+/g, "")}`,
+          status: d.status || "Active"
+        }));
+        
+        setDoctors(mapped);
+      } else {
+        setDoctors([]);
+      }
+    } catch (e) {
+      console.error("Failed to load hospital doctors", e);
+      setDoctors([]);
+    }
   };
 
   const handleSearchChange = (val) => {
@@ -73,7 +98,7 @@ function HospitalDoctors() {
     setIsAddModalOpen(true);
   };
 
-  const handleCreateDoctor = (e) => {
+  const handleCreateDoctor = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -86,54 +111,62 @@ function HospitalDoctors() {
       return;
     }
 
-    const currentUsers = getUsers();
-    const loginId = generateLoginId(formData.name, "1985", currentUsers);
-    const password = generatePassword(formData.name, "1985");
-    const doctorId = `DOC-${Date.now().toString().slice(-4)}`;
+    const docName = formData.name.startsWith("Dr.") ? formData.name.trim() : `Dr. ${formData.name.trim()}`;
+    const loginId = formData.name.toLowerCase().replace(/[^a-z0-9]/g, "") + "@medibook.com";
+    const password = "Doctor@123";
 
-    const newDoctor = {
-      id: doctorId,
-      name: formData.name.startsWith("Dr.") ? formData.name.trim() : `Dr. ${formData.name.trim()}`,
-      specialization: formData.specialization.trim(),
-      specialty: formData.specialization.trim(),
-      qualification: formData.qualification.trim() || "MD",
-      experience: formData.experience.trim() || "5 years",
-      fee: parseInt(formData.fee, 10) || 800,
-      consultationFee: parseInt(formData.fee, 10) || 800,
-      hospital: hospital.name,
-      hospitalId: hospital.id,
-      contact: formData.contact.trim() || `${loginId}@medibook.com`,
-      status: formData.status || "Active",
-      loginId,
-      password,
-      availableDays: ["Mon", "Wed", "Fri"],
-      rating: 4.8,
-      reviewCount: 12
-    };
+    try {
+      const userRes = await fetch("http://localhost:5107/api/Users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: docName,
+          email: loginId,
+          password: password,
+          role: "Doctor"
+        })
+      });
 
-    // Add to storage
-    addDoctor(newDoctor);
+      if (!userRes.ok) {
+        setError("Failed to create doctor user account.");
+        return;
+      }
+      const createdUser = await userRes.json();
 
-    // Create user login credential
-    addUser({
-      id: `U_DOC_${doctorId}`,
-      loginId,
-      mobile: loginId,
-      password,
-      role: "doctor",
-      name: newDoctor.name,
-      refId: doctorId,
-      status: "Active"
-    });
+      const docRes = await fetch("http://localhost:5107/api/Doctors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: createdUser.id,
+          hospitalId: hospital.id || 4,
+          name: createdUser.name,
+          specialty: formData.specialization.trim(),
+          qualification: formData.qualification.trim() || "MD",
+          experience: parseInt(formData.experience) || 5,
+          consultationFee: parseFloat(formData.fee) || 800,
+          email: loginId,
+          phone: formData.contact.trim() || loginId,
+          isActive: formData.status === "Active"
+        })
+      });
 
-    setCreatedCredentials({
-      doctorName: newDoctor.name,
-      hospitalName: hospital.name,
-      loginId,
-      password
-    });
+      if (!docRes.ok) {
+        setError("Failed to create doctor profile.");
+        return;
+      }
 
-    loadHospitalDoctors();
+      setCreatedCredentials({
+        doctorName: createdUser.name,
+        hospitalName: hospital.name,
+        loginId,
+        password
+      });
+
+      loadHospitalDoctors();
+    } catch (e) {
+      console.error("Failed to create doctor", e);
+      setError("An error occurred while creating the doctor.");
+    }
   };
 
   const filteredDoctors = doctors.filter((doc) => {

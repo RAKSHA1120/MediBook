@@ -36,11 +36,12 @@ function Login({ initialTab = "signin" }) {
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState("");
   const [activeTab, setActiveTab] = useState(initialTab);
-  
-  // Login Modes: "patient", "admin", "doctor"
+
+  // Login Modes: "patient", "admin", "doctor", "hospital"
   const [loginMode, setLoginMode] = useState("patient");
   const isAdminMode = loginMode === "admin";
   const isDoctorMode = loginMode === "doctor";
+  const isHospitalMode = loginMode === "hospital";
 
   const handleMobileChange = (e) => {
     const val = e.target.value;
@@ -74,7 +75,7 @@ function Login({ initialTab = "signin" }) {
     setSuccessMessage("");
     const newErrors = {};
 
-    if (activeTab === "signup") {
+    if (activeTab === "signup" && !isHospitalMode) {
       const trimmedName = name.trim();
       if (!trimmedName) newErrors.name = "Please enter your full name.";
 
@@ -92,7 +93,7 @@ function Login({ initialTab = "signin" }) {
       if (!password) newErrors.password = "Password is required.";
       if (!confirmPassword) newErrors.confirmPassword = "Confirm Password is required.";
       else if (password && password !== confirmPassword) newErrors.confirmPassword = "Passwords do not match.";
-      
+
       if (!termsAccepted) newErrors.terms = "You must agree to the Terms of Service and Privacy Policy.";
     } else {
       if (!mobile.trim()) newErrors.mobile = "ID / Email / Mobile is required.";
@@ -135,6 +136,13 @@ function Login({ initialTab = "signin" }) {
           } else {
             setErrors({ mobile: "Invalid Admin ID or password" });
           }
+        } else if (isHospitalMode) {
+          if (user.role.toLowerCase() === "hospital") {
+            setCurrentUser(user);
+            navigate("/hospital/dashboard");
+          } else {
+            setErrors({ mobile: "Invalid Hospital email or password" });
+          }
         } else if (isDoctorMode) {
           if (user.role.toLowerCase() === "doctor") {
             try {
@@ -147,7 +155,7 @@ function Login({ initialTab = "signin" }) {
                 setErrors({ mobile: "Doctor profile not found for this user." });
               }
             } catch (err) {
-               setErrors({ mobile: "Failed to fetch doctor profile." });
+              setErrors({ mobile: "Failed to fetch doctor profile." });
             }
           } else {
             setErrors({ mobile: "Invalid Doctor email or password" });
@@ -214,7 +222,15 @@ function Login({ initialTab = "signin" }) {
             <div
               className="login-auth-logo-mark"
               onClick={() => {
-                setLoginMode(prev => prev === "patient" ? "admin" : prev === "admin" ? "doctor" : "patient");
+                setLoginMode(prev =>
+                  prev === "patient"
+                    ? "admin"
+                    : prev === "admin"
+                      ? "doctor"
+                      : prev === "doctor"
+                        ? "hospital"
+                        : "patient"
+                );
                 setErrors({});
                 setMobile("");
                 setPassword("");
@@ -230,14 +246,30 @@ function Login({ initialTab = "signin" }) {
           <div className="login-auth-content">
             <div className="welcome-section">
               <h1 className="welcome-title">
-                {activeTab === "signup" ? "Create your MediBook account" : isDoctorMode ? "Doctor Login" : isAdminMode ? "Admin Login" : "Welcome to MediBook"}
+                {activeTab === "signup"
+                  ? "Create your MediBook account"
+                  : isHospitalMode
+                    ? "Hospital Login"
+                    : isDoctorMode
+                      ? "Doctor Login"
+                      : isAdminMode
+                        ? "Admin Login"
+                        : "Welcome to MediBook"}
               </h1>
               <p className="welcome-desc">
-                {activeTab === "signup" ? "Register as a patient to find doctors and book appointments." : isDoctorMode ? "Sign in with your doctor email and password." : isAdminMode ? "Sign in to access the system administration panel." : "Sign in to access your healthcare management dashboard."}
+                {activeTab === "signup"
+                  ? "Register as a patient to find doctors and book appointments."
+                  : isHospitalMode
+                    ? "Sign in to manage your hospital dashboard."
+                    : isDoctorMode
+                      ? "Sign in with your doctor email and password."
+                      : isAdminMode
+                        ? "Sign in to access the system administration panel."
+                        : "Sign in to access your healthcare management dashboard."}
               </p>
             </div>
 
-            {!isAdminMode && !isDoctorMode && (
+            {!isAdminMode && !isDoctorMode && !isHospitalMode && (
               <div className="auth-toggle">
                 <button
                   type="button"
@@ -264,7 +296,7 @@ function Login({ initialTab = "signin" }) {
             )}
 
             <form onSubmit={handleSubmit} className="login-form" noValidate>
-              {activeTab === "signup" && !isAdminMode && !isDoctorMode && (
+              {activeTab === "signup" && !isAdminMode && !isDoctorMode && !isHospitalMode && (
                 <>
                   <FormField
                     label="Full Name"
@@ -310,8 +342,24 @@ function Login({ initialTab = "signin" }) {
               )}
 
               <FormField
-                label={isDoctorMode ? "Doctor Email" : isAdminMode ? "Admin ID" : "Mobile Number"}
-                placeholder={isDoctorMode ? "e.g. sarah@medibook.com" : isAdminMode ? "Enter admin ID" : "Enter 10-digit mobile number"}
+                label={
+                  isHospitalMode
+                    ? "Hospital Email"
+                    : isDoctorMode
+                      ? "Doctor Email"
+                      : isAdminMode
+                        ? "Admin ID"
+                        : "Mobile Number"
+                }
+                placeholder={
+                  isHospitalMode
+                    ? "Enter hospital email"
+                    : isDoctorMode
+                      ? "e.g. sarah@medibook.com"
+                      : isAdminMode
+                        ? "Enter admin ID"
+                        : "Enter 10-digit mobile number"
+                }
                 value={mobile}
                 onChange={handleMobileChange}
                 error={errors.mobile}
@@ -435,13 +483,13 @@ function Login({ initialTab = "signin" }) {
                   {activeTab === "signup" ? "Create Patient Account" : "Sign In"}
                 </Button>
               </div>
-              
+
               {isAdminMode && (
                 <div style={{ marginTop: '20px', textAlign: 'center' }}>
                   <p style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>
                     Are you a doctor?{' '}
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => { setLoginMode("doctor"); setErrors({}); setMobile(""); setPassword(""); }}
                       style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', cursor: 'pointer', padding: 0 }}
                     >
@@ -454,8 +502,22 @@ function Login({ initialTab = "signin" }) {
                 <div style={{ marginTop: '20px', textAlign: 'center' }}>
                   <p style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>
                     Not a doctor?{' '}
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
+                      onClick={() => { setLoginMode("patient"); setErrors({}); setMobile(""); setPassword(""); }}
+                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', cursor: 'pointer', padding: 0 }}
+                    >
+                      Patient Login
+                    </button>
+                  </p>
+                </div>
+              )}
+              {isHospitalMode && (
+                <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                  <p style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>
+                    Not a hospital?{' '}
+                    <button
+                      type="button"
                       onClick={() => { setLoginMode("patient"); setErrors({}); setMobile(""); setPassword(""); }}
                       style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', cursor: 'pointer', padding: 0 }}
                     >
@@ -466,7 +528,7 @@ function Login({ initialTab = "signin" }) {
               )}
             </form>
 
-            {!isAdminMode && !isDoctorMode && activeTab === "signin" && (
+            {!isAdminMode && !isDoctorMode && !isHospitalMode && activeTab === "signin" && (
               <div className="social-login-section">
                 <div className="social-divider">
                   <span>Or continue with</span>

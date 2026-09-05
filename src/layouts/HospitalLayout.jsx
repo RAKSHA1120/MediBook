@@ -20,18 +20,16 @@ function HospitalLayout({ children }) {
 
   useEffect(() => {
     const user = getCurrentUser();
-    if (!user || user.role !== "hospital") {
+    if (!user || user.role?.toLowerCase() !== "hospital") {
       // Guard route
-      if (user?.role === "admin") navigate("/admin/dashboard");
-      else if (user?.role === "doctor") navigate("/doctor/dashboard");
-      else if (user?.role === "patient") navigate("/patient-dashboard");
+      if (user?.role?.toLowerCase() === "admin") navigate("/admin/dashboard");
+      else if (user?.role?.toLowerCase() === "doctor") navigate("/doctor/dashboard");
+      else if (user?.role?.toLowerCase() === "patient") navigate("/patient-dashboard");
       else navigate("/login");
       return;
     }
 
-    const hospitals = getHospitals();
-    const match = hospitals.find((h) => h.id === user.refId || h.name === user.name);
-    const hosName = match ? match.name : user.name || "MediCare Hospital";
+    const hosName = user.name || "MediCare Hospital";
     const letter = hosName.charAt(0).toUpperCase() || "H";
 
     setHospitalInfo({ name: hosName, avatarLetter: letter });

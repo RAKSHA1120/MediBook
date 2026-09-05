@@ -21,23 +21,61 @@ function HospitalPatients() {
     loadHospitalPatients();
   }, []);
 
-  const loadHospitalPatients = () => {
+  const loadHospitalPatients = async () => {
     const user = getCurrentUser();
     if (!user) return;
 
-    const hospitals = getHospitals();
-    const hosRecord = hospitals.find((h) => h.id === user.refId || h.name === user.name) || {
-      id: user.refId || "HOS-008",
+    const hosRecord = {
+      id: user.refId || user.id || "HOS-008",
       name: user.name || "MediCare Hospital"
     };
-
     setHospital(hosRecord);
-    const identifier = hosRecord.id || hosRecord.name;
-    const hosPatients = getHospitalPatients(identifier);
-    const hosAppts = getHospitalAppointments(identifier);
 
-    setPatients(hosPatients);
-    setAppointments(hosAppts);
+    try {
+      const [apptsRes, patientsRes] = await Promise.all([
+        fetch("http://localhost:5107/api/Appointments"),
+        fetch("http://localhost:5107/api/Patients")
+      ]);
+
+      let allAppts = [];
+      if (apptsRes.ok) allAppts = await apptsRes.json();
+
+      let allPatients = [];
+      if (patientsRes.ok) allPatients = await patientsRes.json();
+
+      const hosAppts = allAppts.filter(
+        a => a.hospitalId === hosRecord.id || a.hospitalName === hosRecord.name
+      );
+
+      const patientIds = [...new Set(hosAppts.map(a => a.patientId))].filter(Boolean);
+      const hosPatients = allPatients.filter(p => patientIds.includes(p.id));
+
+      const mappedAppts = hosAppts.map(a => ({
+        id: a.id,
+        patientId: a.patientId,
+        patientName: a.patientName,
+        doctorName: a.doctorName,
+        date: a.appointmentDate ? new Date(a.appointmentDate).toISOString().split('T')[0] : "",
+        time: a.appointmentDate ? new Date(a.appointmentDate).toTimeString().substring(0, 5) : "",
+        status: a.status || "Confirmed"
+      }));
+
+      const mappedPatients = hosPatients.map(p => ({
+        id: p.id,
+        name: p.name,
+        contact: p.phone || p.mobile || "N/A",
+        age: p.age,
+        gender: p.gender,
+        status: p.isActive !== false ? "Active" : "Inactive"
+      }));
+
+      setAppointments(mappedAppts);
+      setPatients(mappedPatients);
+    } catch (e) {
+      console.error("Failed to load hospital patients", e);
+      setAppointments([]);
+      setPatients([]);
+    }
   };
 
   const handleSearchChange = (val) => {
