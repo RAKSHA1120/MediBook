@@ -110,13 +110,13 @@ function PatientDashboard() {
   const [currentPatient, setCurrentPatientState] = useState(null);
   const [notifications, setNotifications] = useState([]);
 
-  const syncPatientData = () => {
+  const syncPatientData = async () => {
     const user = getCurrentUser();
     const patient = getCurrentPatient();
     setCurrentUser(user);
     setCurrentPatientState(patient);
     if (patient || user) {
-      setNotifications(getPatientNotifications(patient?.id, user?.id));
+      setNotifications(await getPatientNotifications(patient?.id, user?.id));
     } else {
       setNotifications([]);
     }
@@ -126,11 +126,11 @@ function PatientDashboard() {
     setDoctorsList(getDoctors());
     syncPatientData();
 
-    const handleNotifUpdate = () => {
+    const handleNotifUpdate = async () => {
       const u = getCurrentUser();
       const p = getCurrentPatient();
       if (p || u) {
-        setNotifications(getPatientNotifications(p?.id, u?.id));
+        setNotifications(await getPatientNotifications(p?.id, u?.id));
       }
     };
 

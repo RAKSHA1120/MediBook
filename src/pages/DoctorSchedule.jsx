@@ -117,12 +117,64 @@ function DoctorSchedule() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const user = getCurrentUser();
     const doc = getCurrentDoctor();
-    const userKey = doc?.id ?? user?.refId ?? user?.id ?? 1;
-    localStorage.setItem(`medibook_schedule_${userKey}`, JSON.stringify(schedule));
-    showToast("Schedule saved locally! (Backend PUT/POST endpoint missing for persistence)", true);
+    const docIdInt = doc?.id ?? user?.refId ?? user?.id;
+    
+    if (!docIdInt) {
+      showToast("Could not determine doctor ID.", false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // 1. Fetch existing schedules
+      const getRes = await fetch(`http://localhost:5107/api/DoctorSchedules/doctor/${docIdInt}`);
+      if (getRes.ok) {
+        const existingSchedules = await getRes.json();
+        // 2. Delete all existing
+        for (const es of existingSchedules) {
+          await fetch(`http://localhost:5107/api/DoctorSchedules/${es.id}`, { method: "DELETE" });
+        }
+      }
+
+      // 3. Post new schedules
+      const parseTime = (timeStr) => {
+        // e.g., "09:00 AM" -> "09:00:00"
+        const [time, modifier] = timeStr.trim().split(" ");
+        let [hours, minutes] = time.split(":");
+        if (hours === "12") hours = "00";
+        if (modifier === "PM") hours = parseInt(hours, 10) + 12;
+        return `${String(hours).padStart(2, "0")}:${minutes}:00`;
+      };
+
+      for (const day of Object.keys(schedule)) {
+        for (const slot of schedule[day]) {
+          const [startStr, endStr] = slot.split(" - ");
+          const startTime = parseTime(startStr);
+          const endTime = parseTime(endStr);
+          await fetch(`http://localhost:5107/api/DoctorSchedules`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              doctorId: docIdInt,
+              dayOfWeek: day,
+              startTime: startTime,
+              endTime: endTime,
+              isAvailable: true
+            })
+          });
+        }
+      }
+
+      showToast("Schedule saved successfully!", true);
+    } catch (err) {
+      console.error("Failed to save schedule:", err);
+      showToast("Failed to save schedule.", false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const addSlot = (e) => {

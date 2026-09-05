@@ -11,11 +11,7 @@ import "./Notifications.css";
 
 function Notifications() {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState(() => {
-    const p = getCurrentPatient();
-    const u = getCurrentUser();
-    return getPatientNotifications(p?.id, u?.id);
-  });
+  const [notifications, setNotifications] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
 
@@ -28,7 +24,7 @@ function Notifications() {
     } else {
       const p = getCurrentPatient();
       const u = getCurrentUser();
-      setNotifications(getPatientNotifications(p?.id, u?.id));
+      setNotifications(await getPatientNotifications(p?.id, u?.id));
     }
   };
 

@@ -21,26 +21,13 @@ function HospitalSettings() {
     weeklyReports: false
   });
 
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
     const user = getCurrentUser();
     if (!user) return;
-
-    const users = getUsers();
-    const userIndex = users.findIndex((u) => u.id === user.id || u.refId === user.refId);
-
-    if (userIndex === -1) {
-      setError("Hospital user record not found.");
-      return;
-    }
-
-    if (users[userIndex].password !== passwordData.current) {
-      setError("Current password is incorrect.");
-      return;
-    }
 
     if (passwordData.new !== passwordData.confirm) {
       setError("New passwords do not match.");
@@ -52,12 +39,48 @@ function HospitalSettings() {
       return;
     }
 
-    users[userIndex].password = passwordData.new;
-    localStorage.setItem("medibook_users", JSON.stringify(users));
-
-    setSuccess("Password updated successfully!");
-    setPasswordData({ current: "", new: "", confirm: "" });
-    setTimeout(() => setSuccess(""), 4000);
+    try {
+      const getRes = await fetch(`http://localhost:5107/api/Users/${user.id}`);
+      if (!getRes.ok) {
+        setError("Failed to verify user credentials.");
+        return;
+      }
+      
+      const userData = await getRes.json();
+      
+      if (userData.password !== passwordData.current) {
+        setError("Current password is incorrect.");
+        return;
+      }
+      
+      // Update password
+      const updatePayload = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.loginId,
+        password: passwordData.new,
+        role: userData.role,
+        createdAt: userData.createdDate
+      };
+      
+      const putRes = await fetch(`http://localhost:5107/api/Users/${user.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatePayload)
+      });
+      
+      if (!putRes.ok && putRes.status !== 204) {
+        setError("Failed to update password.");
+        return;
+      }
+      
+      setSuccess("Password updated successfully!");
+      setPasswordData({ current: "", new: "", confirm: "" });
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while updating the password.");
+    }
   };
 
   const handleLogout = () => {

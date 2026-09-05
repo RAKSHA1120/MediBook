@@ -26,7 +26,7 @@ function Navbar({
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    const handleNotifUpdate = () => {
+    const handleNotifUpdate = async () => {
       try {
         const user = getCurrentUser();
         let unread = 0;
@@ -34,12 +34,12 @@ function Navbar({
         if (user && user.role === "doctor") {
           const doc = getCurrentDoctor();
           const docId = doc?.id ?? user?.refId ?? user?.id;
-          const notifs = getDoctorNotifications(docId, user?.id);
+          const notifs = await getDoctorNotifications(docId, user?.id);
           unread = notifs.filter((n) => !n.read).length;
         } else if (user && user.role === "patient") {
           const patient = getCurrentPatient();
           const pId = patient?.id ?? user?.refId ?? user?.id;
-          const notifs = getPatientNotifications(pId, user?.id);
+          const notifs = await getPatientNotifications(pId, user?.id);
           unread = notifs.filter((n) => !n.read).length;
         } else {
           const allNotifications = getNotifications();

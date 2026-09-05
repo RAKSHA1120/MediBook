@@ -140,294 +140,138 @@ export const INITIAL_NOTIFICATIONS = [
   }
 ];
 
-export const NOTIFICATIONS_STORAGE_KEY = "medibook_notifications";
+export const NOTIFICATIONS_STORAGE_KEY = "medibook_notifications_deprecated";
 
+import { api } from "../utils/api";
+import { getCurrentUser } from "../utils/auth";
+
+// Temporary backward compatibility wrapper if sync calls are made
 export const getStoredNotifications = () => {
-  try {
-    const data = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-    if (!data) {
-      localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(INITIAL_NOTIFICATIONS));
-      return INITIAL_NOTIFICATIONS;
-    }
-    const parsed = JSON.parse(data);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      // Ensure seed doctor notifications exist if user has older localStorage state
-      const hasDocNotif = parsed.some((n) => n.id && String(n.id).startsWith("doc-notif-"));
-      if (!hasDocNotif) {
-        const merged = [...parsed, ...INITIAL_NOTIFICATIONS.filter((n) => String(n.id).startsWith("doc-notif-"))];
-        localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(merged));
-        return merged;
-      }
-      return parsed;
-    }
-  } catch (e) {
-    console.error("Error reading medibook_notifications from localStorage:", e);
-  }
-
-  try {
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(INITIAL_NOTIFICATIONS));
-  } catch (e) {}
-  return INITIAL_NOTIFICATIONS;
+  return [];
 };
 
-// Helper: Resolve Doctor ID from explicit field, appointment mapping, or doctor name in message text
-export const resolveDoctorIdForNotification = (n) => {
-  if (!n) return null;
+export const resolveDoctorIdForNotification = (n) => null;
 
-  if (n.doctorId) return String(n.doctorId);
-
-  // Check appointmentId if present
-  if (n.appointmentId) {
-    try {
-      const aptsStr = localStorage.getItem("medibook_appointments");
-      if (aptsStr) {
-        const apts = JSON.parse(aptsStr);
-        const apt = apts.find((a) => String(a.id || "").toLowerCase() === String(n.appointmentId).toLowerCase());
-        if (apt && apt.doctorId) {
-          return String(apt.doctorId);
-        }
-      }
-    } catch (e) {}
-  }
-
-  // Check doctor name in title / message
-  const text = `${n.title || ""} ${n.message || ""}`.toLowerCase();
-  for (const doc of doctors) {
-    if (!doc || !doc.name) continue;
-    const cleanName = doc.name.replace(/^dr\.\s+/i, "").toLowerCase().trim();
-    if (cleanName.length > 2 && text.includes(cleanName)) {
-      return String(doc.id);
-    }
-  }
-
-  return null;
-};
-
-export const addNotification = (notif) => {
+export const addNotification = async (notif) => {
   try {
-    const current = getStoredNotifications();
-
-    let fallbackPId = "P1";
-    let fallbackUId = "U_P1";
-    try {
-      const userStr = localStorage.getItem("medibook_current_user");
-      if (userStr) {
-        const u = JSON.parse(userStr);
-        if (u && u.role === "patient") {
-          fallbackPId = u.refId || u.id || "P1";
-          fallbackUId = u.id || "U_P1";
-        }
-      }
-    } catch (e) {}
+    const user = getCurrentUser();
+    let fallbackPId = 0;
+    let fallbackUId = user?.id || 0;
 
     const newNotif = {
-      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      createdAt: new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }),
-      timestamp: Date.now(),
-      read: false,
-      ...(notif.targetRole !== "doctor" && !notif.doctorId ? { patientId: notif.patientId || fallbackPId, userId: notif.userId || fallbackUId } : {}),
-      ...notif
+      UserId: notif.userId || fallbackUId,
+      Type: notif.type || "system",
+      Title: notif.title || "Notification",
+      Message: notif.message || "",
+      IsRead: false
     };
 
-    const updated = [newNotif, ...current];
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+    const res = await api.post("/Notifications", newNotif);
     window.dispatchEvent(new Event("medibook_notifications_updated"));
-    return updated;
+    return [res.data];
   } catch (e) {
-    console.error("Error adding notification:", e);
+    console.error("Error adding notification via API:", e);
     return [];
   }
 };
 
-export const markNotificationAsRead = (id) => {
+export const markNotificationAsRead = async (id) => {
   try {
-    const current = getStoredNotifications();
-    const targetIdStr = String(id ?? "").trim().toLowerCase();
-    const updated = current.map((n) => (String(n.id ?? "").trim().toLowerCase() === targetIdStr ? { ...n, read: true } : n));
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+    await api.put(`/Notifications/${id}/read`);
     window.dispatchEvent(new Event("medibook_notifications_updated"));
-    return updated;
+    return [];
   } catch (e) {
+    console.error("Error marking read via API:", e);
     return [];
   }
 };
 
-export const markAllNotificationsAsRead = (patientId, userId) => {
+// Map backend notification to frontend contract
+const mapApiNotification = (n) => ({
+  id: n.id,
+  userId: n.userId,
+  type: n.type,
+  title: n.title,
+  message: n.message,
+  read: n.isRead,
+  isRead: n.isRead,
+  createdAt: new Date(n.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }),
+  timestamp: new Date(n.createdAt).getTime()
+});
+
+export const markAllNotificationsAsRead = async (patientId, userId) => {
   try {
-    const current = getStoredNotifications();
-    let normPId = String(patientId || "").trim().toLowerCase();
-    let normUId = String(userId || "").trim().toLowerCase();
-
-    if (!normPId && !normUId) {
-      normPId = "p1";
-      normUId = "u_p1";
-    }
-
-    const updated = current.map((n) => {
-      const nPId = String(n.patientId || "").trim().toLowerCase();
-      const nUId = String(n.userId || "").trim().toLowerCase();
-
-      const matchesPatient = (nPId && normPId && (nPId === normPId || (normPId === "p1" && nPId === "p_1") || (normPId === "p_1" && nPId === "p1"))) ||
-                             (nUId && normUId && nUId === normUId) ||
-                             (!nPId && !nUId && (normPId === "p1" || normPId === "p_1"));
-
-      if (matchesPatient && !n.doctorId && n.targetRole !== "doctor") {
-        return { ...n, read: true };
+    const notifs = await getPatientNotifications(patientId, userId);
+    for (const n of notifs) {
+      if (!n.read) {
+         await api.put(`/Notifications/${n.id}/read`);
       }
-      return n;
-    });
-
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
+    }
     window.dispatchEvent(new Event("medibook_notifications_updated"));
-    return updated;
+    return [];
   } catch (e) {
     return [];
   }
 };
 
-export const markAllDoctorNotificationsAsRead = (doctorId, userId) => {
+export const markAllDoctorNotificationsAsRead = async (doctorId, userId) => {
   try {
-    const notifications = getStoredNotifications();
-    const userStr = localStorage.getItem("medibook_current_user");
-    let currentUser = null;
-    if (userStr) {
-      try {
-        currentUser = JSON.parse(userStr);
-      } catch (e) {}
+    const notifs = await getDoctorNotifications(doctorId, userId);
+    for (const n of notifs) {
+      if (!n.read) {
+         await api.put(`/Notifications/${n.id}/read`);
+      }
     }
-
-    const targetDocId = String(doctorId || currentUser?.refId || currentUser?.id || "D1").trim().toLowerCase();
-
-    const updated = notifications.map((n) => {
-      if (!n) return n;
-
-      const resolvedDocId = resolveDoctorIdForNotification(n);
-
-      let matchesTargetDoc = false;
-      if (resolvedDocId) {
-        const normResolved = String(resolvedDocId).trim().toLowerCase();
-        matchesTargetDoc =
-          normResolved === targetDocId ||
-          `doc-${normResolved}` === targetDocId ||
-          `d${normResolved}` === targetDocId ||
-          normResolved === `doc-${targetDocId}` ||
-          normResolved === `d${targetDocId}` ||
-          (targetDocId === "d1" && (normResolved === "d1" || normResolved === "1" || normResolved === "doc-001")) ||
-          (targetDocId === "1" && (normResolved === "d1" || normResolved === "1" || normResolved === "doc-001"));
-      } else if (n.type === "system" && !n.patientId) {
-        matchesTargetDoc = true;
-      }
-
-      if (matchesTargetDoc) {
-        return { ...n, read: true };
-      }
-      return n;
-    });
-
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new Event("medibook_notifications_updated"));
-    return updated;
+    return [];
   } catch (e) {
     return [];
   }
 };
 
-export const getPatientNotifications = (patientId, userId) => {
-  const notifications = getStoredNotifications();
-  let normPId = String(patientId || "").trim().toLowerCase();
-  let normUId = String(userId || "").trim().toLowerCase();
-
-  if (!normPId && !normUId) {
-    normPId = "p1";
-    normUId = "u_p1";
-  }
-
-  return notifications.filter((n) => {
-    if (!n) return false;
-
-    // Exclude doctor-targeted notifications from patient view
-    if (n.doctorId || n.targetRole === "doctor") {
-      return false;
-    }
-
-    const nPId = String(n.patientId || "").trim().toLowerCase();
-    const nUId = String(n.userId || "").trim().toLowerCase();
-
-    if (!nPId && !nUId) {
-      if (normPId === "p1" || normPId === "p_1") return true;
-      return false;
-    }
-
-    if (nPId && normPId && (nPId === normPId || (normPId === "p1" && nPId === "p_1") || (normPId === "p_1" && nPId === "p1"))) return true;
-    if (nUId && normUId && nUId === normUId) return true;
-
-    if (normPId === "p1" || normPId === "p_1") {
-      if (nPId === "p1" || nPId === "p_1" || nUId === "u_p1") return true;
-    }
-
-    return false;
-  });
-};
-
-export const getDoctorNotifications = (doctorId, userId) => {
-  const notifications = getStoredNotifications();
-  const userStr = localStorage.getItem("medibook_current_user");
-  let currentUser = null;
-  if (userStr) {
-    try {
-      currentUser = JSON.parse(userStr);
-    } catch (e) {}
-  }
-
-  const targetDocId = String(doctorId || currentUser?.refId || currentUser?.id || "D1").trim().toLowerCase();
-
-  return notifications.filter((n) => {
-    if (!n) return false;
-
-    const resolvedDocId = resolveDoctorIdForNotification(n);
-
-    if (resolvedDocId) {
-      const normResolved = String(resolvedDocId).trim().toLowerCase();
-      if (
-        normResolved === targetDocId ||
-        `doc-${normResolved}` === targetDocId ||
-        `d${normResolved}` === targetDocId ||
-        normResolved === `doc-${targetDocId}` ||
-        normResolved === `d${targetDocId}` ||
-        (targetDocId === "d1" && (normResolved === "d1" || normResolved === "1" || normResolved === "doc-001")) ||
-        (targetDocId === "1" && (normResolved === "d1" || normResolved === "1" || normResolved === "doc-001"))
-      ) {
-        return true;
-      }
-      return false; // Belongs to another doctor
-    }
-
-    // Exclude patient-specific notifications from doctor view
-    if (n.patientId) {
-      return false;
-    }
-
-    // Include system-wide notifications that are not patient-specific
-    if (n.type === "system" || !n.patientId) {
-      return true;
-    }
-
-    return false;
-  });
-};
-
-export const getUnreadCount = (patientId, userId) => {
+export const getPatientNotifications = async (patientId, userId) => {
   try {
-    const list = getPatientNotifications(patientId, userId);
+    const uId = userId || getCurrentUser()?.id;
+    if (!uId) return [];
+    const res = await api.get(`/Notifications/user/${uId}`);
+    if (res.success && Array.isArray(res.data)) {
+      return res.data.map(mapApiNotification);
+    }
+    return [];
+  } catch(e) {
+    return [];
+  }
+};
+
+export const getDoctorNotifications = async (doctorId, userId) => {
+  try {
+    const uId = userId || getCurrentUser()?.id;
+    if (!uId) return [];
+    const res = await api.get(`/Notifications/user/${uId}`);
+    if (res.success && Array.isArray(res.data)) {
+      return res.data.map(mapApiNotification);
+    }
+    return [];
+  } catch(e) {
+    return [];
+  }
+};
+
+export const getUnreadCount = async (patientId, userId) => {
+  try {
+    const list = await getPatientNotifications(patientId, userId);
     return list.filter((n) => !n.read).length;
   } catch (e) {
     return 0;
   }
 };
 
-export const clearAllNotifications = () => {
+export const clearAllNotifications = async (patientId, userId) => {
   try {
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify([]));
+    const notifs = await getPatientNotifications(patientId, userId);
+    for (const n of notifs) {
+      await api.delete(`/Notifications/${n.id}`);
+    }
     window.dispatchEvent(new Event("medibook_notifications_updated"));
     return [];
   } catch (e) {

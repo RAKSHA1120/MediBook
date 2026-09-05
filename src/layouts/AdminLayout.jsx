@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import AdminSidebar from "../components/AdminSidebar";
 import "../pages/PatientDashboard.css"; // Shared layout system
@@ -23,7 +23,7 @@ function AdminLayout({ children }) {
     } catch (e) { return null; }
   });
 
-  if (!adminUser || adminUser.role !== "admin") {
+  if (!adminUser || adminUser.role?.toLowerCase() !== "admin") {
     return <Navigate to="/login" replace />;
   }
 

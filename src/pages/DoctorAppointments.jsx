@@ -562,22 +562,52 @@ function DoctorAppointments() {
               <Button
                 variant="primary"
                 onClick={() => {
-                  const prescriptions = JSON.parse(localStorage.getItem("medibook_prescriptions") || "[]");
-                  prescriptions.push({
-                    id: Date.now(),
-                    appointmentId: selectedAppointment.id,
-                    patientId: selectedAppointment.patientId,
-                    doctorId: selectedAppointment.doctorId,
-                    date: selectedAppointment.date,
-                    notes: consultationNotes,
-                    medicines: prescribedMedicines
-                  });
-                  localStorage.setItem("medibook_prescriptions", JSON.stringify(prescriptions));
+                  const completeConsultation = async () => {
+                    try {
+                        // We must fetch the full backend model structure to do a successful PUT
+                        const getResponse = await fetch(`http://localhost:5107/api/Appointments/${selectedAppointment.id}`);
+                        if (getResponse.ok) {
+                            const backendAppt = await getResponse.json();
+                            const finalNotes = `Diagnosis:\n${consultationNotes}\n\nPrescribed Medicines:\n${prescribedMedicines}`;
+                            
+                            // Reconstruct the exact backend model expected by the API (not the DTO)
+                            const putPayload = {
+                                id: backendAppt.id,
+                                patientId: backendAppt.patientId,
+                                doctorId: backendAppt.doctorId,
+                                hospitalId: backendAppt.hospitalId,
+                                appointmentDate: backendAppt.appointmentDate,
+                                appointmentTime: backendAppt.appointmentTime,
+                                status: "Completed",
+                                reason: backendAppt.reason,
+                                notes: finalNotes,
+                                createdAt: backendAppt.createdAt || new Date().toISOString()
+                            };
+                            
+                            const putResponse = await fetch(`http://localhost:5107/api/Appointments/${selectedAppointment.id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(putPayload)
+                            });
 
-                  handleStatusChange(selectedAppointment.id, "Completed");
-                  setIsPrescriptionModalOpen(false);
-                  setConsultationNotes("");
-                  setPrescribedMedicines("");
+                            if (putResponse.ok || putResponse.status === 204) {
+                                setAppointments((prev) =>
+                                  prev.map((a) => (String(a.id) === String(selectedAppointment.id) ? { ...a, status: "Completed", notes: finalNotes } : a))
+                                );
+                            } else {
+                                console.error("Failed to update appointment:", await putResponse.text());
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Error completing consultation:", e);
+                    }
+                    
+                    setIsPrescriptionModalOpen(false);
+                    setConsultationNotes("");
+                    setPrescribedMedicines("");
+                  };
+                  
+                  completeConsultation();
                 }}
               >
                 Save & Complete
