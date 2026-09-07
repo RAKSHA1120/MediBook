@@ -26,28 +26,34 @@ export function AppointmentProvider({ children }) {
           return timeStr;
         };
 
-        const normalizedBackend = response.data.map((apt) => ({
-          id: apt.id,
-          patientId: apt.patientId,
-          patientName: apt.patientName || "Patient",
-          doctorId: apt.doctorId,
-          doctorName: apt.doctorName || "Doctor",
-          hospitalId: apt.hospitalId,
-          hospitalName: apt.hospitalName || "MediCare Hospital",
-          hospital: apt.hospitalName || "MediCare Hospital",
-          appointmentDate: apt.appointmentDate,
-          date: apt.appointmentDate ? String(apt.appointmentDate).split("T")[0] : "",
-          time: formatBackendTime(apt.appointmentTime),
-          appointmentTime: apt.appointmentTime,
-          status: apt.status || "Pending",
-          appointmentType: apt.appointmentType || "Consultation",
-          specialty: apt.appointmentType || "Consultation",
-          reason: apt.reason || "Regular consultation",
-          consultationFee: apt.consultationFee ?? 500,
-          fee: apt.consultationFee ?? 500,
-          createdAt: apt.createdAt,
-          updatedAt: apt.updatedAt
-        }));
+        const normalizedBackend = response.data.map((apt) => {
+          const hospName = apt.hospitalName || apt.hospital || "Hospital";
+          return {
+            id: apt.id,
+            patientId: apt.patientId,
+            patientName: apt.patientName || "Patient",
+            doctorId: apt.doctorId,
+            doctorName: apt.doctorName || "Doctor",
+            hospitalId: apt.hospitalId,
+            hospitalName: hospName,
+            hospital: hospName,
+            visitorCardNumber: apt.visitorCardNumber || null,
+            visitorCardIssuedDate: apt.visitorCardIssuedDate || null,
+            appointmentDate: apt.appointmentDate,
+            date: apt.appointmentDate ? String(apt.appointmentDate).split("T")[0] : "",
+            time: formatBackendTime(apt.appointmentTime),
+            appointmentTime: apt.appointmentTime,
+            status: apt.status || "Pending",
+            appointmentType: apt.appointmentType || "Consultation",
+            specialty: apt.appointmentType || "Consultation",
+            reason: apt.reason || "Regular consultation",
+            consultationFee: apt.consultationFee ?? 500,
+            fee: apt.consultationFee ?? 500,
+            notes: apt.notes || "",
+            createdAt: apt.createdAt,
+            updatedAt: apt.updatedAt
+          };
+        });
 
         setAppointments(normalizedBackend);
       }

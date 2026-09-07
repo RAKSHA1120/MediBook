@@ -111,6 +111,7 @@ function MyAppointments() {
       reason: apt.reason || "Regular consultation",
       consultationFee: apt.consultationFee ?? 500,
       fee: apt.consultationFee ?? 500,
+      visitorCardNumber: apt.visitorCardNumber,
       createdAt: apt.createdAt,
       updatedAt: apt.updatedAt
     };

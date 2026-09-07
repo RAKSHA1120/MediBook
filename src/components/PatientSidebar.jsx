@@ -13,7 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
-  CalendarClock
+  CalendarClock,
+  CreditCard
 } from "lucide-react";
 import Button from "./Button";
 import { getStoredNotifications } from "../data/notifications";
@@ -71,6 +72,7 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
     { path: "/patient-dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/find-doctor", label: "Find Doctor", icon: Search },
     { path: "/my-appointments", label: "My Appointments", icon: Calendar, altPath: "/appointments" },
+    { path: "/visitor-cards", label: "Visitor Cards", icon: CreditCard, altPath: "/hospital-visitor-cards" },
     { path: "/notifications", label: "Notifications", icon: Bell, showBadge: true },
     { path: "/profile", label: "Profile", icon: User },
     { path: "/settings", label: "Settings", icon: Settings },

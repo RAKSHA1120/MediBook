@@ -15,10 +15,20 @@ const handleResponse = async (response) => {
 export const api = {
   get: async (endpoint) => {
     try {
-      const response = await fetch(`${BASE_URL}${endpoint}`, {
+      let response = await fetch(`${BASE_URL}${endpoint}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" }
       });
+      if (response.status === 404 && endpoint.includes("patient-hospitals")) {
+        const altEndpoint = endpoint.replace("patient-hospitals", "PatientHospitals");
+        const altResponse = await fetch(`${BASE_URL}${altEndpoint}`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" }
+        });
+        if (altResponse.ok) {
+          response = altResponse;
+        }
+      }
       return await handleResponse(response);
     } catch (error) {
       console.error(`API GET ${endpoint} error:`, error);
@@ -28,11 +38,22 @@ export const api = {
 
   post: async (endpoint, body) => {
     try {
-      const response = await fetch(`${BASE_URL}${endpoint}`, {
+      let response = await fetch(`${BASE_URL}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
+      if (response.status === 404 && endpoint.includes("patient-hospitals")) {
+        const altEndpoint = endpoint.replace("patient-hospitals", "PatientHospitals");
+        const altResponse = await fetch(`${BASE_URL}${altEndpoint}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        if (altResponse.ok) {
+          response = altResponse;
+        }
+      }
       return await handleResponse(response);
     } catch (error) {
       console.error(`API POST ${endpoint} error:`, error);

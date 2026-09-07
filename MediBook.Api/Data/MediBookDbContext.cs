@@ -17,6 +17,7 @@ namespace MediBook.Api.Data
         public DbSet<DoctorSchedule> DoctorSchedules { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<PatientHospital> PatientHospitals { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -82,6 +83,30 @@ namespace MediBook.Api.Data
                 .WithMany()
                 .HasForeignKey(n => n.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // PatientHospital (Hospital-Specific Patient Visitor Card)
+            modelBuilder.Entity<PatientHospital>(entity =>
+            {
+                entity.HasKey(ph => ph.Id);
+
+                entity.HasOne(ph => ph.Patient)
+                    .WithMany(p => p.PatientHospitals)
+                    .HasForeignKey(ph => ph.PatientId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(ph => ph.Hospital)
+                    .WithMany(h => h.PatientHospitals)
+                    .HasForeignKey(ph => ph.HospitalId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Unique constraint: PatientId + HospitalId (one visitor card per patient per hospital)
+                entity.HasIndex(ph => new { ph.PatientId, ph.HospitalId })
+                    .IsUnique();
+
+                // Unique constraint: VisitorCardNumber must be unique
+                entity.HasIndex(ph => ph.VisitorCardNumber)
+                    .IsUnique();
+            });
         }
     }
 }

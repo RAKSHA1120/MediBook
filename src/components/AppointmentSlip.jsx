@@ -46,6 +46,8 @@ function AppointmentSlip({ appointment, patient, showPrintBtn = true, onPrint })
     }
   };
 
+  const visitorCardNumber = appointment?.visitorCardNumber || appointment?.visitorCard?.visitorCardNumber || null;
+
   return (
     <div className="appointment-slip-card">
       {/* Top Slip Header / Branding */}
@@ -75,6 +77,15 @@ function AppointmentSlip({ appointment, patient, showPrintBtn = true, onPrint })
           <span className="slip-label">Appointment ID</span>
           <span className="slip-value slip-apt-id">{appointmentId}</span>
         </div>
+
+        {visitorCardNumber && (
+          <div className="slip-detail-row highlight-id" style={{ background: 'rgba(2, 132, 199, 0.08)' }}>
+            <span className="slip-label" style={{ color: '#0369a1' }}>Hospital Visitor Card</span>
+            <span className="slip-value slip-apt-id" style={{ color: '#0369a1', background: '#e0f2fe' }}>
+              {visitorCardNumber}
+            </span>
+          </div>
+        )}
 
         <div className="slip-detail-row">
           <span className="slip-label">Patient Name</span>

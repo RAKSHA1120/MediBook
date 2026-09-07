@@ -29,5 +29,8 @@ namespace MediBook.Api.Models
 
         // Relationship with Appointments
         public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+
+        // Relationship with PatientHospitals (Hospital-specific Visitor Cards)
+        public ICollection<PatientHospital> PatientHospitals { get; set; } = new List<PatientHospital>();
     }
 }
