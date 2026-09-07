@@ -52,7 +52,7 @@ function DoctorSchedule() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5107/api/DoctorSchedules/doctor/${docIdInt}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/DoctorSchedules/doctor/${docIdInt}`);
       if (!response.ok) {
         throw new Error(`Server returned HTTP ${response.status}`);
       }
@@ -130,12 +130,12 @@ function DoctorSchedule() {
     try {
       setLoading(true);
       // 1. Fetch existing schedules
-      const getRes = await fetch(`http://localhost:5107/api/DoctorSchedules/doctor/${docIdInt}`);
+      const getRes = await fetch(`${import.meta.env.VITE_API_URL}/DoctorSchedules/doctor/${docIdInt}`);
       if (getRes.ok) {
         const existingSchedules = await getRes.json();
         // 2. Delete all existing
         for (const es of existingSchedules) {
-          await fetch(`http://localhost:5107/api/DoctorSchedules/${es.id}`, { method: "DELETE" });
+          await fetch(`${import.meta.env.VITE_API_URL}/DoctorSchedules/${es.id}`, { method: "DELETE" });
         }
       }
 
@@ -154,7 +154,7 @@ function DoctorSchedule() {
           const [startStr, endStr] = slot.split(" - ");
           const startTime = parseTime(startStr);
           const endTime = parseTime(endStr);
-          await fetch(`http://localhost:5107/api/DoctorSchedules`, {
+          await fetch(`${import.meta.env.VITE_API_URL}/DoctorSchedules`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

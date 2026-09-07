@@ -57,7 +57,7 @@ function HospitalProfile() {
         email: formData.email
       };
 
-      const res = await fetch(`http://localhost:5107/api/Hospitals/${hospital.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/Hospitals/${hospital.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(putBody)

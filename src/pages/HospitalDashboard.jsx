@@ -210,8 +210,8 @@ function HospitalDashboard() {
       // Get Doctors and Appointments from ASP.NET API
       const [doctorsRes, appointmentsRes] =
         await Promise.all([
-          fetch("http://localhost:5107/api/Doctors"),
-          fetch("http://localhost:5107/api/Appointments")
+          fetch(`${import.meta.env.VITE_API_URL}/Doctors`),
+          fetch(`${import.meta.env.VITE_API_URL}/Appointments`)
         ]);
 
       if (!doctorsRes.ok || !appointmentsRes.ok) {

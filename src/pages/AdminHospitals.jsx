@@ -13,6 +13,8 @@ function AdminHospitals() {
   const [hospitals, setHospitals] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [newCredentials, setNewCredentials] = useState(null);
   const [editingHospital, setEditingHospital] = useState(null);
   const [selectedHospital, setSelectedHospital] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -144,8 +146,10 @@ function AdminHospitals() {
       const response = await api.post("/Hospitals", payload);
       if (response.success) {
         fetchHospitals();
+        setNewCredentials(response.data);
+        setIsSuccessModalOpen(true);
       } else {
-        alert("Failed to create hospital.");
+        alert("Failed to create hospital: " + (response.error || "Unknown error"));
       }
     }
 
@@ -514,6 +518,44 @@ function AdminHospitals() {
             )}
             <div className="form-actions" style={{ marginTop: "8px" }}>
               <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>Close</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+      {/* Credentials Success Modal */}
+      <Modal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        title="Hospital Created Successfully"
+      >
+        {newCredentials && (
+          <div className="credentials-container" style={{ padding: "10px 0" }}>
+            <p className="success-message" style={{ marginBottom: "16px", color: "var(--text-heading)" }}>
+              The account for <strong>{newCredentials.hospitalName}</strong> has been created.
+            </p>
+            
+            <div className="credential-box" style={{ background: "var(--background)", padding: "16px", borderRadius: "8px", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div className="credential-row" style={{ display: "flex", justifyContent: "space-between" }}>
+                <span className="credential-label" style={{ color: "var(--text-muted)", fontSize: "14px" }}>Login ID:</span>
+                <span className="credential-value" style={{ fontWeight: "600", fontSize: "14px" }}>{newCredentials.loginId}</span>
+              </div>
+              <div className="credential-row" style={{ display: "flex", justifyContent: "space-between" }}>
+                <span className="credential-label" style={{ color: "var(--text-muted)", fontSize: "14px" }}>Temporary Password:</span>
+                <span className="credential-value" style={{ fontWeight: "600", fontSize: "14px", color: "var(--primary)" }}>{newCredentials.temporaryPassword}</span>
+              </div>
+            </div>
+
+            <div className="form-actions" style={{ marginTop: "24px" }}>
+              <Button 
+                variant="primary" 
+                style={{ width: "100%" }}
+                onClick={() => {
+                  navigator.clipboard.writeText(`Hospital: ${newCredentials.hospitalName}\nLogin ID: ${newCredentials.loginId}\nPassword: ${newCredentials.temporaryPassword}`);
+                  alert("Credentials copied to clipboard!");
+                }}
+              >
+                Copy Credentials
+              </Button>
             </div>
           </div>
         )}

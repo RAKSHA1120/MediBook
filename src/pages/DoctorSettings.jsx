@@ -59,7 +59,7 @@ function DoctorSettings() {
       }
 
       const response = await fetch(
-        `http://localhost:5107/api/Users/${currentUser.id}`,
+        `${import.meta.env.VITE_API_URL}/Users/${currentUser.id}`,
         {
           method: "PUT",
           headers: {

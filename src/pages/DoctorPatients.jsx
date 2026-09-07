@@ -77,7 +77,7 @@ function DoctorPatients() {
         setDoctorPatients([]);
         return;
       }
-      const response = await fetch(`http://localhost:5107/api/Appointments/doctor/${docIdInt}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/doctor/${docIdInt}`);
       if (!response.ok) {
         throw new Error(`Server returned HTTP ${response.status}`);
       }

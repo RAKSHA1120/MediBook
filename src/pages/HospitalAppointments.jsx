@@ -82,7 +82,7 @@ function HospitalAppointments() {
     setHospital(hosRecord);
 
     try {
-      const response = await fetch("http://localhost:5107/api/Appointments");
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments`);
       if (!response.ok) {
         throw new Error(`Server returned HTTP ${response.status}`);
       }

@@ -89,7 +89,7 @@ function Dashboard() {
          setAppointments([]);
          return;
       }
-      const response = await fetch(`http://localhost:5107/api/Appointments/doctor/${docIdInt}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/doctor/${docIdInt}`);
       if (!response.ok) {
         throw new Error(`Server returned HTTP ${response.status}`);
       }
@@ -173,7 +173,7 @@ function Dashboard() {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const response = await fetch(`http://localhost:5107/api/Appointments/${id}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/${id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })

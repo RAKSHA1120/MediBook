@@ -33,8 +33,8 @@ function HospitalPatients() {
 
     try {
       const [apptsRes, patientsRes] = await Promise.all([
-        fetch("http://localhost:5107/api/Appointments"),
-        fetch("http://localhost:5107/api/Patients")
+        fetch(`${import.meta.env.VITE_API_URL}/Appointments`),
+        fetch(`${import.meta.env.VITE_API_URL}/Patients`)
       ]);
 
       let allAppts = [];

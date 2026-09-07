@@ -34,9 +34,55 @@ namespace MediBook.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateHospital(Hospital hospital)
         {
-            _context.Hospitals.Add(hospital);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetHospital), new { id = hospital.Id }, hospital);
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Validate email unique
+                if (!string.IsNullOrEmpty(hospital.Email) && await _context.Hospitals.AnyAsync(h => h.Email == hospital.Email))
+                {
+                    return BadRequest(new { message = "Hospital email is already registered." });
+                }
+
+                string loginId = !string.IsNullOrEmpty(hospital.Email) 
+                    ? hospital.Email 
+                    : $"{hospital.Name.ToLower().Replace(" ", "")}@medibook.com";
+
+                if (await _context.Users.AnyAsync(u => u.Email == loginId))
+                {
+                    return BadRequest(new { message = "Login ID is already in use by another user." });
+                }
+
+                string tempPassword = $"Hospital@{new Random().Next(1000, 9999)}";
+
+                var user = new User
+                {
+                    Name = hospital.Name,
+                    Email = loginId,
+                    Password = tempPassword,
+                    Role = "Hospital"
+                };
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+
+                hospital.Email = loginId; // Ensure hospital email matches user email
+                _context.Hospitals.Add(hospital);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return Ok(new {
+                    hospitalId = hospital.Id,
+                    hospitalName = hospital.Name,
+                    loginId = loginId,
+                    temporaryPassword = tempPassword
+                });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, new { message = "An error occurred while creating the hospital." });
+            }
         }
 
         [HttpPut("{id}")]

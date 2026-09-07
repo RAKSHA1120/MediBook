@@ -47,7 +47,7 @@ function HospitalDoctors() {
     setHospital(hosRecord);
 
     try {
-      const res = await fetch("http://localhost:5107/api/Doctors");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/Doctors`);
       if (res.ok) {
         const allDocs = await res.json();
         const hosDocs = allDocs.filter(d => 
@@ -116,7 +116,7 @@ function HospitalDoctors() {
     const password = "Doctor@123";
 
     try {
-      const userRes = await fetch("http://localhost:5107/api/Users", {
+      const userRes = await fetch(`${import.meta.env.VITE_API_URL}/Users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -133,7 +133,7 @@ function HospitalDoctors() {
       }
       const createdUser = await userRes.json();
 
-      const docRes = await fetch("http://localhost:5107/api/Doctors", {
+      const docRes = await fetch(`${import.meta.env.VITE_API_URL}/Doctors`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

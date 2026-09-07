@@ -13,6 +13,7 @@ import "./AdminShared.css";
 
 function AdminDoctors() {
   const [doctors, setDoctors] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [specFilter, setSpecFilter] = useState("All");
   const [hospitalFilter, setHospitalFilter] = useState("All");
@@ -39,8 +40,20 @@ function AdminDoctors() {
     }
   };
 
+  const fetchHospitals = async () => {
+    try {
+      const response = await api.get("/Hospitals");
+      if (response.success) {
+        setHospitals(response.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching hospitals", error);
+    }
+  };
+
   useEffect(() => {
     fetchDoctors();
+    fetchHospitals();
   }, []);
 
   // Close options popover on click outside
@@ -59,7 +72,7 @@ function AdminDoctors() {
     name: "",
     qualification: "MBBS, MD",
     specialization: "Cardiology",
-    hospital: "",
+    hospitalId: "",
     experience: "",
     email: "",
     phone: "",
@@ -72,7 +85,7 @@ function AdminDoctors() {
     name: "",
     qualification: "",
     specialization: "",
-    hospital: "",
+    hospitalId: "",
     experience: "",
     email: "",
     phone: "",
@@ -137,7 +150,7 @@ function AdminDoctors() {
       email: addFormData.email.trim(),
       phone: addFormData.phone.trim(),
       isActive: true,
-      hospitalId: 1 // Default or we need hospital selection
+      hospitalId: parseInt(addFormData.hospitalId) || (hospitals.length > 0 ? hospitals[0].id : 1)
     };
 
     const docRes = await api.post("/Doctors", newDoc);
@@ -150,7 +163,7 @@ function AdminDoctors() {
         name: "",
         qualification: "MBBS, MD",
         specialization: "Cardiology",
-        hospital: "",
+        hospitalId: "",
         experience: "",
         email: "",
         phone: "",
@@ -163,13 +176,14 @@ function AdminDoctors() {
 
   // Open Edit Modal with Pre-filled Doctor Details
   const handleOpenEdit = (doc) => {
+    setSelectedDoctor(doc);
     setEditFormData({
       id: doc.id,
       name: doc.name || "",
       qualification: doc.qualification || "MBBS, MD",
       specialization: doc.specialization || doc.specialty || "General Medicine",
-      hospital: getHospitalName(doc),
-      experience: doc.experience !== undefined ? String(doc.experience).replace(/[^0-9]/g, "") : "",
+      hospitalId: doc.hospitalId || "",
+      experience: doc.experience !== undefined && doc.experience !== null ? String(doc.experience).replace(/[^0-9]/g, "") : "",
       email: doc.email || "",
       phone: doc.contact || doc.phone || "",
       contact: doc.contact || doc.phone || "",
@@ -185,7 +199,7 @@ function AdminDoctors() {
     const updates = {
       id: editFormData.id,
       userId: selectedDoctor.userId,
-      hospitalId: selectedDoctor.hospitalId || 1,
+      hospitalId: parseInt(editFormData.hospitalId) || selectedDoctor.hospitalId || 1,
       name: editFormData.name.trim(),
       specialty: editFormData.specialization.trim(),
       experience: parseInt(editFormData.experience.trim()) || 0,
@@ -523,14 +537,17 @@ function AdminDoctors() {
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Hospital / Clinic *</label>
-              <input
-                type="text"
-                className="form-input"
-                value={addFormData.hospital}
-                onChange={(e) => setAddFormData({ ...addFormData, hospital: e.target.value })}
-                placeholder="e.g. MediCare Hospital"
+              <select
+                className="form-select"
+                value={addFormData.hospitalId}
+                onChange={(e) => setAddFormData({ ...addFormData, hospitalId: e.target.value })}
                 required
-              />
+              >
+                <option value="" disabled>Select a hospital</option>
+                {hospitals.map(h => (
+                  <option key={h.id} value={h.id}>{h.name}</option>
+                ))}
+              </select>
             </div>
             <div className="form-group">
               <label className="form-label">Experience (Years) *</label>
@@ -708,13 +725,17 @@ function AdminDoctors() {
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Hospital / Clinic *</label>
-              <input
-                type="text"
-                className="form-input"
-                value={editFormData.hospital}
-                onChange={(e) => setEditFormData({ ...editFormData, hospital: e.target.value })}
+              <select
+                className="form-select"
+                value={editFormData.hospitalId}
+                onChange={(e) => setEditFormData({ ...editFormData, hospitalId: e.target.value })}
                 required
-              />
+              >
+                <option value="" disabled>Select a hospital</option>
+                {hospitals.map(h => (
+                  <option key={h.id} value={h.id}>{h.name}</option>
+                ))}
+              </select>
             </div>
             <div className="form-group">
               <label className="form-label">Experience (Years) *</label>

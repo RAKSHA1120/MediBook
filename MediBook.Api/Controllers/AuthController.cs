@@ -63,6 +63,15 @@ namespace MediBook.Api.Controllers
                     var d = await _context.Doctors.FirstOrDefaultAsync(x => x.UserId == user.Id);
                     if (d != null) refId = d.Id;
                 }
+                else if (user.Role.ToLower() == "hospital")
+                {
+                    var h = await _context.Hospitals.FirstOrDefaultAsync(x => x.Email == user.Email);
+                    if (h == null)
+                    {
+                        h = await _context.Hospitals.FirstOrDefaultAsync(x => x.Name == user.Name);
+                    }
+                    if (h != null) refId = h.Id;
+                }
 
                 return Ok(new
                 {

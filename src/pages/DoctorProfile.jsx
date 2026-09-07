@@ -206,7 +206,7 @@ function DoctorProfile() {
       const doc = getCurrentDoctor();
       const doctorId = user?.doctorId || doc?.id || profile?.id;
       if (doctorId) {
-        const getRes = await fetch(`http://localhost:5107/api/Doctors/${doctorId}`);
+        const getRes = await fetch(`${import.meta.env.VITE_API_URL}/Doctors/${doctorId}`);
         if (getRes.ok) {
           const existing = await getRes.json();
           const putBody = {
@@ -220,7 +220,7 @@ function DoctorProfile() {
             consultationFee: Number(formData.consultationFee),
             registrationNumber: formData.registrationNumber?.trim() || ""
           };
-          await fetch(`http://localhost:5107/api/Doctors/${doctorId}`, {
+          await fetch(`${import.meta.env.VITE_API_URL}/Doctors/${doctorId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(putBody)

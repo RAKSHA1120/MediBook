@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:5107/api";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 const handleResponse = async (response) => {
   const isJson = response.headers.get("content-type")?.includes("application/json");

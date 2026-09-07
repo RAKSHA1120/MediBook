@@ -40,7 +40,7 @@ function HospitalSettings() {
     }
 
     try {
-      const getRes = await fetch(`http://localhost:5107/api/Users/${user.id}`);
+      const getRes = await fetch(`${import.meta.env.VITE_API_URL}/Users/${user.id}`);
       if (!getRes.ok) {
         setError("Failed to verify user credentials.");
         return;
@@ -63,7 +63,7 @@ function HospitalSettings() {
         createdAt: userData.createdDate
       };
       
-      const putRes = await fetch(`http://localhost:5107/api/Users/${user.id}`, {
+      const putRes = await fetch(`${import.meta.env.VITE_API_URL}/Users/${user.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatePayload)

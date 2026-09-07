@@ -33,7 +33,7 @@ function HospitalNotifications() {
     setHospital(hosRecord);
 
     try {
-      const res = await fetch(`http://localhost:5107/api/Notifications/user/${user.id}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/Notifications/user/${user.id}`);
       if (res.ok) {
         const data = await res.json();
         const mapped = data.map((n) => ({
@@ -86,7 +86,7 @@ function HospitalNotifications() {
     const unread = notifications.filter((n) => !n.read);
     for (const notif of unread) {
       try {
-        await fetch(`http://localhost:5107/api/Notifications/${notif.id}/read`, { method: "PUT" });
+        await fetch(`${import.meta.env.VITE_API_URL}/Notifications/${notif.id}/read`, { method: "PUT" });
       } catch (e) {
         console.error(e);
       }
@@ -97,7 +97,7 @@ function HospitalNotifications() {
   const handleCardClick = async (notif) => {
     if (!notif.read) {
       try {
-        await fetch(`http://localhost:5107/api/Notifications/${notif.id}/read`, { method: "PUT" });
+        await fetch(`${import.meta.env.VITE_API_URL}/Notifications/${notif.id}/read`, { method: "PUT" });
         loadHospitalNotifications();
       } catch (e) {
         console.error(e);

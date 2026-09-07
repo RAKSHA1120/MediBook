@@ -26,7 +26,7 @@ function DoctorPatientDetails() {
                 const doctorId = user?.doctorId || doc?.id || user?.id;
 
                 // Load all appointments for this doctor then filter by patient
-                const res = await fetch(`http://localhost:5107/api/Appointments/doctor/${doctorId}`);
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/doctor/${doctorId}`);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 const appts = Array.isArray(data) ? data : [];

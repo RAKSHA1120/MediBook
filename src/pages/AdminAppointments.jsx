@@ -31,7 +31,7 @@ function AdminAppointments() {
 
   const fetchAppointments = async () => {
     try {
-      const response = await fetch("http://localhost:5107/api/Appointments", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments`, {
         headers: { "Accept": "application/json" }
       });
       if (!response.ok) {

@@ -37,7 +37,8 @@ namespace MediBook.Api.Controllers
                     {
                         id = d.Hospital.Id,
                         name = d.Hospital.Name,
-                        address = d.Hospital.Address
+                        address = d.Hospital.Address,
+                        type = d.Hospital.Type
                     }
                 })
                 .ToListAsync();
@@ -67,7 +68,8 @@ namespace MediBook.Api.Controllers
                     {
                         id = d.Hospital.Id,
                         name = d.Hospital.Name,
-                        address = d.Hospital.Address
+                        address = d.Hospital.Address,
+                        type = d.Hospital.Type
                     }
                 })
                 .FirstOrDefaultAsync();
@@ -97,7 +99,25 @@ namespace MediBook.Api.Controllers
         public async Task<IActionResult> UpdateDoctor(int id, Doctor doctor)
         {
             if (id != doctor.Id) return BadRequest();
-            _context.Entry(doctor).State = EntityState.Modified;
+            
+            var existingDoctor = await _context.Doctors.FindAsync(id);
+            if (existingDoctor == null) return NotFound();
+
+            existingDoctor.Name = doctor.Name;
+            existingDoctor.Specialty = doctor.Specialty;
+            existingDoctor.Experience = doctor.Experience;
+            existingDoctor.Email = doctor.Email;
+            existingDoctor.Phone = doctor.Phone;
+            existingDoctor.HospitalId = doctor.HospitalId;
+            existingDoctor.IsActive = doctor.IsActive;
+            
+            if (!string.IsNullOrEmpty(doctor.Qualification))
+                existingDoctor.Qualification = doctor.Qualification;
+            if (doctor.ConsultationFee.HasValue)
+                existingDoctor.ConsultationFee = doctor.ConsultationFee;
+            if (!string.IsNullOrEmpty(doctor.RegistrationNumber))
+                existingDoctor.RegistrationNumber = doctor.RegistrationNumber;
+
             try
             {
                 await _context.SaveChangesAsync();

@@ -83,7 +83,7 @@ function DoctorAppointments() {
          return;
       }
       
-      const response = await fetch(`http://localhost:5107/api/Appointments/doctor/${docIdInt}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/doctor/${docIdInt}`);
       if (!response.ok) {
         throw new Error(`Server returned HTTP ${response.status}`);
       }
@@ -107,7 +107,7 @@ function DoctorAppointments() {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const response = await fetch(`http://localhost:5107/api/Appointments/${id}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/${id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -565,7 +565,7 @@ function DoctorAppointments() {
                   const completeConsultation = async () => {
                     try {
                         // We must fetch the full backend model structure to do a successful PUT
-                        const getResponse = await fetch(`http://localhost:5107/api/Appointments/${selectedAppointment.id}`);
+                        const getResponse = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/${selectedAppointment.id}`);
                         if (getResponse.ok) {
                             const backendAppt = await getResponse.json();
                             const finalNotes = `Diagnosis:\n${consultationNotes}\n\nPrescribed Medicines:\n${prescribedMedicines}`;
@@ -584,7 +584,7 @@ function DoctorAppointments() {
                                 createdAt: backendAppt.createdAt || new Date().toISOString()
                             };
                             
-                            const putResponse = await fetch(`http://localhost:5107/api/Appointments/${selectedAppointment.id}`, {
+                            const putResponse = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/${selectedAppointment.id}`, {
                                 method: 'PUT',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify(putPayload)
