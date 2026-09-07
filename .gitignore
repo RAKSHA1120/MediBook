@@ -29,3 +29,8 @@ MediBook.Api/bin/
 MediBook.Api/obj/
 MediBook.Api/*.csproj.user
 .vs/
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
