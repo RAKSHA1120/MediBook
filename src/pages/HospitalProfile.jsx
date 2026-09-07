@@ -23,8 +23,8 @@ function HospitalProfile() {
     if (!user) return;
 
     try {
-      const hospitalId = user.refId || 1; 
-      const response = await fetch(`http://localhost:5107/api/Hospitals/${hospitalId}`);
+      const hospitalId = user.refId || 1;
+      const response = await fetch(`${process.env.API_BASE_URL}/api/Hospitals/${hospitalId}`);
       if (response.ok) {
         const data = await response.json();
         const mappedData = {
@@ -56,13 +56,13 @@ function HospitalProfile() {
         phone: formData.contact,
         email: formData.email
       };
-      
+
       const res = await fetch(`http://localhost:5107/api/Hospitals/${hospital.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(putBody)
       });
-      
+
       if (res.ok) {
         setHospital(formData);
         setIsEditing(false);
