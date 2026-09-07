@@ -194,9 +194,11 @@
     visibility: hidden !important;
   }
 
-  /* Expose only the appointment slip container and its contents */
+  /* Expose printable card or appointment slip */
   .appointment-slip-card,
-  .appointment-slip-card * {
+  .appointment-slip-card *,
+  .printable-visitor-card,
+  .printable-visitor-card * {
     visibility: visible !important;
   }
 

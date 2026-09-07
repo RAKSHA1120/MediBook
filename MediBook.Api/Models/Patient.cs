@@ -30,5 +30,8 @@ namespace MediBook.Api.Models
 
         // Relationship with User
         public User? User { get; set; }
+
+        // Relationship with PatientHospitals (Hospital-specific Visitor Cards)
+        public ICollection<PatientHospital> PatientHospitals { get; set; } = new List<PatientHospital>();
     }
 }

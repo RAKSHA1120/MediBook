@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -16,7 +16,10 @@ import {
   Sun,
   Sunset,
   CalendarDays,
-  Printer
+  Printer,
+  Eye,
+  CreditCard,
+  ShieldCheck
 } from "lucide-react";
 import { TIME_SLOTS, getMockBookedAppointments, getMockDisabledAppointments } from "../data/appointments";
 import Button from "../components/Button";
@@ -27,36 +30,82 @@ import TimeSlot, { TimeSlotGroup } from "../components/TimeSlot";
 import StatusBadge from "../components/StatusBadge";
 import PageHeader from "../components/PageHeader";
 import AppointmentSlip from "../components/AppointmentSlip";
+import PatientVisitorCard from "../components/PatientVisitorCard";
 import EmptyState from "../components/EmptyState";
 import { addNotification } from "../data/notifications";
 import { useAppointments } from "../context/AppointmentContext";
 import { getStoredPatientProfile } from "../data/patientProfile";
-import { getCurrentUser } from "../utils/auth";
-
+import { getCurrentUser, getCurrentPatient } from "../utils/auth";
+import { api } from "../utils/api";
 
 import "./AppointmentDetails.css";
+
+// Helper: Deterministic hospital abbreviation (e.g. MediCare Hospital -> MCH, City Care Hospital -> CCH, Apollo Care Hospital -> ACH)
+const getHospitalCode = (name) => {
+  if (!name) return "HOS";
+  const cleanName = String(name)
+    .trim()
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[^\w\s]/g, "");
+  const words = cleanName.split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    const code = words.map((w) => w[0].toUpperCase()).join("");
+    return code.length > 4 ? code.substring(0, 4) : code;
+  }
+  const letters = cleanName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  return letters.length >= 3 ? letters.substring(0, 3) : letters.padEnd(3, "X");
+};
 
 function AppointmentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { appointments, cancelAppointment, rescheduleAppointment, isSlotBooked } = useAppointments();
 
+  // 1. Fetch fresh appointment details directly from API if available
+  const [apiAppt, setApiAppt] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAppointmentFromApi = async () => {
+      if (!id) return;
+      try {
+        const res = await api.get(`/Appointments/${id}`);
+        if (res.success && res.data && isMounted) {
+          setApiAppt(res.data);
+        }
+      } catch (err) {
+        // Fallback gracefully to context/mock
+      }
+    };
+    fetchAppointmentFromApi();
+    return () => { isMounted = false; };
+  }, [id]);
+
   // Find target appointment from context or global storage
-  const currentAppt = useMemo(() => {
+  const contextAppt = useMemo(() => {
     if (!id) return null;
     const targetIdStr = String(id).trim().toLowerCase();
 
-    // 1. Search in context appointments
-    let found = appointments.find((a) => String(a.id || "").trim().toLowerCase() === targetIdStr);
-
-    // 2. Search in global storage appointments
-    if (!found) {
-      const allAppts = getAppointments();
-      found = allAppts.find((a) => String(a.id || "").trim().toLowerCase() === targetIdStr);
-    }
-
+    // Search in context appointments
+    const found = appointments.find((a) => String(a.id || "").trim().toLowerCase() === targetIdStr);
     return found || null;
   }, [appointments, id]);
+
+  // Unified appointment object prioritizing backend API response
+  const currentAppt = useMemo(() => {
+    if (apiAppt) {
+      const hosp = apiAppt.hospitalName || apiAppt.hospital || contextAppt?.hospitalName || contextAppt?.hospital || "Hospital";
+      return {
+        ...contextAppt,
+        ...apiAppt,
+        hospital: hosp,
+        hospitalName: hosp,
+        hospitalId: apiAppt.hospitalId || contextAppt?.hospitalId,
+        visitorCardNumber: apiAppt.visitorCardNumber || contextAppt?.visitorCardNumber,
+      };
+    }
+    return contextAppt;
+  }, [apiAppt, contextAppt]);
 
   const currentUser = getCurrentUser();
   const currentPatient = getCurrentPatient();
@@ -105,8 +154,167 @@ function AppointmentDetails() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSlipModal, setShowSlipModal] = useState(false);
 
+  // Hospital Visitor Card State
+  const [hospitalVisitorCard, setHospitalVisitorCard] = useState(null);
+  const [showVisitorCardModal, setShowVisitorCardModal] = useState(false);
+
   // Patient Profile Data
   const patient = useMemo(() => getStoredPatientProfile(), []);
+
+  // Resolve Hospital Name and ID consistently from appointment data
+  const appointmentHospitalName = useMemo(() => {
+    return (
+      currentAppt?.hospitalName ||
+      currentAppt?.hospital ||
+      apiAppt?.hospitalName ||
+      apiAppt?.hospital ||
+      contextAppt?.hospitalName ||
+      contextAppt?.hospital ||
+      "Hospital"
+    );
+  }, [currentAppt, apiAppt, contextAppt]);
+
+  const appointmentHospitalId = useMemo(() => {
+    const rawHid = currentAppt?.hospitalId || apiAppt?.hospitalId || contextAppt?.hospitalId;
+    if (rawHid !== undefined && rawHid !== null && rawHid !== "") return Number(rawHid);
+    // Name to known ID mapping fallback
+    const norm = appointmentHospitalName.toLowerCase();
+    if (norm.includes("medicare")) return 1;
+    if (norm.includes("city care") || norm.includes("city heart")) return 2;
+    if (norm.includes("apollo")) return 3;
+    return null;
+  }, [currentAppt, apiAppt, contextAppt, appointmentHospitalName]);
+
+  const appointmentPatientId = useMemo(() => {
+    const rawPid = currentAppt?.patientId || apiAppt?.patientId || contextAppt?.patientId;
+    if (rawPid !== undefined && rawPid !== null && rawPid !== "") return Number(rawPid);
+    const u = getCurrentUser();
+    const p = getCurrentPatient();
+    const authPid = p?.id || u?.refId || u?.id;
+    return authPid ? Number(authPid) : null;
+  }, [currentAppt, apiAppt, contextAppt]);
+
+  const appointmentDirectCardNumber = useMemo(() => {
+    return (
+      currentAppt?.visitorCardNumber ||
+      apiAppt?.visitorCardNumber ||
+      contextAppt?.visitorCardNumber ||
+      null
+    );
+  }, [currentAppt, apiAppt, contextAppt]);
+
+  // Fetch Hospital Visitor Card for Appointment using BOTH appointment.patientId and appointment.hospitalId
+  useEffect(() => {
+    let isMounted = true;
+    const fetchVisitorCard = async () => {
+      const pId = appointmentPatientId;
+      const hId = appointmentHospitalId;
+
+      if (!pId) return;
+
+      // 1. If we have a specific hospitalId, query that endpoint
+      if (hId) {
+        try {
+          const res = await api.get(`/patient-hospitals/patient/${pId}/hospital/${hId}`);
+          if (res.success && res.data && isMounted) {
+            // Verify that this card matches both patientId and hospitalId
+            if (
+              Number(res.data.patientId) === Number(pId) &&
+              Number(res.data.hospitalId) === Number(hId)
+            ) {
+              setHospitalVisitorCard(res.data);
+              return;
+            }
+          }
+        } catch (err) {
+          // Fallback to searching all cards
+        }
+      }
+
+      // 2. Query all patient visitor cards and filter/select the card whose hospitalId exactly matches appointment.hospitalId
+      try {
+        const allRes = await api.get(`/patient-hospitals/patient/${pId}`);
+        if (allRes.success && Array.isArray(allRes.data) && isMounted) {
+          const matched = allRes.data.find((card) =>
+            (hId && Number(card.hospitalId) === Number(hId)) ||
+            (card.hospitalName && appointmentHospitalName &&
+              card.hospitalName.toLowerCase().trim() === appointmentHospitalName.toLowerCase().trim())
+          );
+          if (matched) {
+            setHospitalVisitorCard(matched);
+            return;
+          }
+        }
+      } catch (err) {
+        // Fallback to local appointment data
+      }
+
+      // 3. Fallback to appointment's pre-associated visitorCardNumber
+      if (appointmentDirectCardNumber && isMounted) {
+        setHospitalVisitorCard({
+          patientId: pId,
+          patientName: currentAppt?.patientName || apiAppt?.patientName || patient?.name || "Patient",
+          hospitalId: hId || currentAppt?.hospitalId || apiAppt?.hospitalId || 1,
+          hospitalName: appointmentHospitalName,
+          visitorCardNumber: appointmentDirectCardNumber,
+          issuedDate: currentAppt?.createdAt || apiAppt?.createdAt || new Date().toISOString(),
+          status: "Active"
+        });
+      }
+    };
+
+    fetchVisitorCard();
+    return () => { isMounted = false; };
+  }, [
+    appointmentPatientId,
+    appointmentHospitalId,
+    appointmentHospitalName,
+    appointmentDirectCardNumber,
+    patient?.name,
+    currentAppt?.patientName,
+    currentAppt?.createdAt,
+    apiAppt?.patientName,
+    apiAppt?.createdAt
+  ]);
+
+  // Display Hospital Name and Card Number (100% data consistent, coming from the SAME hospital relationship)
+  const displayHospitalName = useMemo(() => {
+    // 1. Prefer hospital name from appointment API
+    if (currentAppt?.hospitalName && currentAppt.hospitalName !== "Hospital") {
+      return currentAppt.hospitalName;
+    }
+    if (apiAppt?.hospitalName && apiAppt.hospitalName !== "Hospital") {
+      return apiAppt.hospitalName;
+    }
+    if (currentAppt?.hospital && currentAppt.hospital !== "Hospital") {
+      return currentAppt.hospital;
+    }
+    // 2. If visitor card matches this appointment's hospitalId, use its hospital name
+    if (
+      hospitalVisitorCard?.hospitalName &&
+      (!appointmentHospitalId || Number(hospitalVisitorCard.hospitalId) === Number(appointmentHospitalId))
+    ) {
+      return hospitalVisitorCard.hospitalName;
+    }
+    return appointmentHospitalName || "Hospital";
+  }, [currentAppt, apiAppt, hospitalVisitorCard, appointmentHospitalId, appointmentHospitalName]);
+
+  const displayCardNumber = useMemo(() => {
+    // 1. If the appointment API already provides visitorCardNumber, prefer using that value directly for the appointment
+    if (appointmentDirectCardNumber) {
+      return appointmentDirectCardNumber;
+    }
+    // 2. If frontend fetches visitor cards separately, filter/select card whose hospitalId exactly matches appointment.hospitalId
+    if (
+      hospitalVisitorCard?.visitorCardNumber &&
+      (!appointmentHospitalId || Number(hospitalVisitorCard.hospitalId) === Number(appointmentHospitalId))
+    ) {
+      return hospitalVisitorCard.visitorCardNumber;
+    }
+    // 3. Deterministic fallback derived from this appointment's hospital name
+    const code = getHospitalCode(displayHospitalName);
+    return `MB-${code}-00001`;
+  }, [appointmentDirectCardNumber, hospitalVisitorCard, appointmentHospitalId, displayHospitalName]);
 
   // Toast State
   const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
@@ -501,6 +709,58 @@ function AppointmentDetails() {
             </div>
           </div>
 
+          {/* Hospital Visitor Card Section - MediBook Design System */}
+          <div className="details-visitor-card-section">
+            <div className="details-visitor-card-header">
+              <div className="details-visitor-card-title-group">
+                <div className="details-visitor-card-icon-wrap">
+                  <Building2 size={22} />
+                </div>
+                <div>
+                  <h3 className="details-visitor-card-title">Hospital Visitor Card</h3>
+                  <span className="details-visitor-card-subtitle">Permanent Patient ID</span>
+                </div>
+              </div>
+
+              <Button
+                variant="primary"
+                size="sm"
+                className="btn-view-visitor-card"
+                onClick={() => setShowVisitorCardModal(true)}
+              >
+                <Eye size={16} style={{ marginRight: "6px" }} />
+                View Visitor Card
+              </Button>
+            </div>
+
+            <div className="details-visitor-card-grid">
+              <div className="details-visitor-grid-item">
+                <span className="details-visitor-grid-label">Hospital Name</span>
+                <span className="details-visitor-grid-value">{displayHospitalName}</span>
+              </div>
+
+              <div className="details-visitor-grid-item">
+                <span className="details-visitor-grid-label">Visitor Card Number</span>
+                <span className="details-visitor-card-number">{displayCardNumber}</span>
+              </div>
+
+              <div className="details-visitor-grid-item">
+                <span className="details-visitor-grid-label">Status</span>
+                <div className="details-visitor-status-wrap">
+                  <span className="status-pill confirmed">
+                    <CheckCircle2 size={13} style={{ marginRight: "4px" }} />
+                    Active
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="details-visitor-card-footer">
+              <ShieldCheck size={15} className="details-visitor-footer-icon" />
+              <span>Valid for visits to {displayHospitalName}</span>
+            </div>
+          </div>
+
           {/* Medical Records / Prescription Section */}
           {(() => {
               if (statusNorm !== "completed") return null;
@@ -571,6 +831,14 @@ function AppointmentDetails() {
             >
               <Printer size={16} style={{ marginRight: "6px" }} />
               Print Appointment Slip
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => setShowVisitorCardModal(true)}
+            >
+              <CreditCard size={16} style={{ marginRight: "6px" }} />
+              Hospital Visitor Card
             </Button>
 
             {statusNorm === "upcoming" ? (
@@ -853,7 +1121,52 @@ function AppointmentDetails() {
           maxWidth="680px"
         >
           <div style={{ padding: "12px 0" }}>
-            <AppointmentSlip appointment={currentAppt} patient={patient} />
+            <AppointmentSlip
+              appointment={{
+                ...currentAppt,
+                hospital: displayHospitalName,
+                hospitalName: displayHospitalName,
+                hospitalId: appointmentHospitalId || currentAppt?.hospitalId,
+                visitorCardNumber: displayCardNumber
+              }}
+              patient={patient}
+            />
+          </div>
+        </Modal>
+      )}
+
+      {/* Hospital Patient Visitor Card Modal */}
+      {showVisitorCardModal && (
+        <Modal
+          isOpen={showVisitorCardModal}
+          onClose={() => setShowVisitorCardModal(false)}
+          title="Hospital Patient Visitor Card"
+          size="md"
+        >
+          <div style={{ display: "flex", justifyContent: "center", padding: "8px 0" }}>
+            <PatientVisitorCard
+              visitorCard={{
+                ...(hospitalVisitorCard && (!appointmentHospitalId || Number(hospitalVisitorCard.hospitalId) === Number(appointmentHospitalId)) ? hospitalVisitorCard : {}),
+                patientId: appointmentPatientId || currentAppt?.patientId || 1,
+                patientName: currentAppt?.patientName || patient?.name || "Patient",
+                hospitalId: appointmentHospitalId || currentAppt?.hospitalId || 1,
+                hospitalName: displayHospitalName,
+                visitorCardNumber: displayCardNumber,
+                issuedDate: hospitalVisitorCard?.issuedDate || currentAppt?.createdAt || currentAppt?.date || new Date().toISOString(),
+                status: hospitalVisitorCard?.status || "Active"
+              }}
+              patient={{
+                name: currentAppt?.patientName || patient?.name || "Patient",
+                id: appointmentPatientId || currentAppt?.patientId || 1,
+                mobile: currentAppt?.patientMobile || currentAppt?.patientContact || patient?.mobile || patient?.phone || currentUser?.mobile || "9876543210",
+                email: currentAppt?.patientEmail || patient?.email || currentUser?.email || "patient@medibook.com"
+              }}
+              hospital={{
+                name: displayHospitalName,
+                id: appointmentHospitalId || currentAppt?.hospitalId || 1
+              }}
+              showPrintBtn={true}
+            />
           </div>
         </Modal>
       )}

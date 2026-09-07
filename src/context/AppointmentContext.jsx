@@ -26,29 +26,34 @@ export function AppointmentProvider({ children }) {
           return timeStr;
         };
 
-        const normalizedBackend = response.data.map((apt) => ({
-          id: apt.id,
-          patientId: apt.patientId,
-          patientName: apt.patientName || "Patient",
-          doctorId: apt.doctorId,
-          doctorName: apt.doctorName || "Doctor",
-          hospitalId: apt.hospitalId,
-          hospitalName: apt.hospitalName || "MediCare Hospital",
-          hospital: apt.hospitalName || "MediCare Hospital",
-          appointmentDate: apt.appointmentDate,
-          date: apt.appointmentDate ? String(apt.appointmentDate).split("T")[0] : "",
-          time: formatBackendTime(apt.appointmentTime),
-          appointmentTime: apt.appointmentTime,
-          status: apt.status || "Pending",
-          appointmentType: apt.appointmentType || "Consultation",
-          specialty: apt.appointmentType || "Consultation",
-          reason: apt.reason || "Regular consultation",
-          consultationFee: apt.consultationFee ?? 500,
-          fee: apt.consultationFee ?? 500,
-          notes: apt.notes || null,
-          createdAt: apt.createdAt,
-          updatedAt: apt.updatedAt
-        }));
+        const normalizedBackend = response.data.map((apt) => {
+          const hospName = apt.hospitalName || apt.hospital || "Hospital";
+          return {
+            id: apt.id,
+            patientId: apt.patientId,
+            patientName: apt.patientName || "Patient",
+            doctorId: apt.doctorId,
+            doctorName: apt.doctorName || "Doctor",
+            hospitalId: apt.hospitalId,
+            hospitalName: hospName,
+            hospital: hospName,
+            visitorCardNumber: apt.visitorCardNumber || null,
+            visitorCardIssuedDate: apt.visitorCardIssuedDate || null,
+            appointmentDate: apt.appointmentDate,
+            date: apt.appointmentDate ? String(apt.appointmentDate).split("T")[0] : "",
+            time: formatBackendTime(apt.appointmentTime),
+            appointmentTime: apt.appointmentTime,
+            status: apt.status || "Pending",
+            appointmentType: apt.appointmentType || "Consultation",
+            specialty: apt.appointmentType || "Consultation",
+            reason: apt.reason || "Regular consultation",
+            consultationFee: apt.consultationFee ?? 500,
+            fee: apt.consultationFee ?? 500,
+            notes: apt.notes || "",
+            createdAt: apt.createdAt,
+            updatedAt: apt.updatedAt
+          };
+        });
 
         setAppointments(normalizedBackend);
       }
@@ -103,10 +108,10 @@ export function AppointmentProvider({ children }) {
   }, [reloadAppointments]);
 
   const isSlotBooked = useCallback((doctorId, date, time) => {
-    return appointments.some(a => 
-      String(a.doctorId) === String(doctorId) && 
-      a.date === date && 
-      a.time === time && 
+    return appointments.some(a =>
+      String(a.doctorId) === String(doctorId) &&
+      a.date === date &&
+      a.time === time &&
       a.status.toLowerCase() !== "cancelled"
     );
   }, [appointments]);

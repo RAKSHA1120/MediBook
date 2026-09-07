@@ -111,7 +111,7 @@ function MyAppointments() {
       reason: apt.reason || "Regular consultation",
       consultationFee: apt.consultationFee ?? 500,
       fee: apt.consultationFee ?? 500,
-      notes: apt.notes || null,
+      visitorCardNumber: apt.visitorCardNumber,
       createdAt: apt.createdAt,
       updatedAt: apt.updatedAt
     };
@@ -183,12 +183,12 @@ function MyAppointments() {
     // Doctor Initials
     const initials = name !== "N/A"
       ? name
-          .split(" ")
-          .filter((n) => String(n ?? "").toLowerCase() !== "dr.")
-          .map((n) => (n && n[0] ? n[0] : ""))
-          .join("")
-          .substring(0, 2)
-          .toUpperCase() || "DR"
+        .split(" ")
+        .filter((n) => String(n ?? "").toLowerCase() !== "dr.")
+        .map((n) => (n && n[0] ? n[0] : ""))
+        .join("")
+        .substring(0, 2)
+        .toUpperCase() || "DR"
       : "DR";
 
     return { name, specialty, hospital, location, fee, initials };
@@ -241,7 +241,7 @@ function MyAppointments() {
 
     // Call backend to cancel
     const res = await api.put(`/Appointments/${appointmentToCancel.id}/status`, { status: "Cancelled" });
-    
+
     if (res.success || res.error === "Network error or API offline") {
       setApiAppointments((prev) =>
         prev.map((a) => (String(a.id) === String(appointmentToCancel.id) ? { ...a, status: "Cancelled" } : a))
@@ -251,26 +251,26 @@ function MyAppointments() {
       setShowCancelModal(false);
 
       const docName = appointmentToCancel.doctorName || appointmentToCancel.doctor || "the doctor";
-    const pId = appointmentToCancel.patientId || getCurrentPatient()?.id || getCurrentUser()?.refId || getCurrentUser()?.id || "P1";
-    const uId = getCurrentUser()?.id || "U_P1";
+      const pId = appointmentToCancel.patientId || getCurrentPatient()?.id || getCurrentUser()?.refId || getCurrentUser()?.id || "P1";
+      const uId = getCurrentUser()?.id || "U_P1";
 
-    addNotification({
-      type: "appointment",
-      subType: "cancelled",
-      title: "Appointment Cancelled",
-      message: `Your appointment with ${docName} has been cancelled.`,
-      appointmentId: appointmentToCancel.id,
-      patientId: pId,
-      userId: uId
-    });
+      addNotification({
+        type: "appointment",
+        subType: "cancelled",
+        title: "Appointment Cancelled",
+        message: `Your appointment with ${docName} has been cancelled.`,
+        appointmentId: appointmentToCancel.id,
+        patientId: pId,
+        userId: uId
+      });
 
-    setAppointmentToCancel(null);
+      setAppointmentToCancel(null);
 
-    showNotification(
-      "Appointment Cancelled",
-      "Your appointment has been successfully cancelled.",
-      "error"
-    );
+      showNotification(
+        "Appointment Cancelled",
+        "Your appointment has been successfully cancelled.",
+        "error"
+      );
     } else {
       showNotification(
         "Cancellation Failed",
@@ -294,7 +294,7 @@ function MyAppointments() {
           year: "numeric"
         });
       }
-    } catch (e) {}
+    } catch (e) { }
     return dateStr;
   };
 
@@ -370,22 +370,22 @@ function MyAppointments() {
               activeTab === "Upcoming"
                 ? "No upcoming appointments"
                 : activeTab === "Completed"
-                ? "No completed appointments"
-                : "No cancelled appointments"
+                  ? "No completed appointments"
+                  : "No cancelled appointments"
             }
             description={
               activeTab === "Upcoming"
                 ? "You don't have any upcoming appointments yet."
                 : activeTab === "Completed"
-                ? "Your completed appointments will appear here."
-                : "You don't have any cancelled appointments."
+                  ? "Your completed appointments will appear here."
+                  : "You don't have any cancelled appointments."
             }
             icon={
               activeTab === "Upcoming"
                 ? Clock3
                 : activeTab === "Completed"
-                ? CheckCircle2
-                : XCircle
+                  ? CheckCircle2
+                  : XCircle
             }
             actionLabel={activeTab === "Upcoming" ? "Find a Doctor" : undefined}
             onAction={activeTab === "Upcoming" ? () => navigate("/find-doctor") : undefined}

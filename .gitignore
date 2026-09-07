@@ -30,7 +30,7 @@ MediBook.Api/obj/
 MediBook.Api/*.csproj.user
 .vs/
 
-# Environment Variables
-.env
-.env.*
-!.env.example
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal

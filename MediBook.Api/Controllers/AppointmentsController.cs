@@ -55,6 +55,10 @@ namespace MediBook.Api.Controllers
                     DoctorSpecialty = a.Doctor.Specialty,
                     a.HospitalId,
                     HospitalName = a.Hospital.Name,
+                    VisitorCardNumber = _context.PatientHospitals
+                        .Where(ph => ph.PatientId == a.PatientId && ph.HospitalId == a.HospitalId)
+                        .Select(ph => ph.VisitorCardNumber)
+                        .FirstOrDefault(),
                     a.AppointmentDate,
                     a.AppointmentTime,
                     a.Status,
@@ -82,6 +86,10 @@ namespace MediBook.Api.Controllers
                     DoctorSpecialty = a.Doctor.Specialty,
                     a.HospitalId,
                     HospitalName = a.Hospital.Name,
+                    VisitorCardNumber = _context.PatientHospitals
+                        .Where(ph => ph.PatientId == a.PatientId && ph.HospitalId == a.HospitalId)
+                        .Select(ph => ph.VisitorCardNumber)
+                        .FirstOrDefault(),
                     a.AppointmentDate,
                     a.AppointmentTime,
                     a.Status,
@@ -111,6 +119,10 @@ namespace MediBook.Api.Controllers
                     DoctorSpecialty = a.Doctor.Specialty,
                     a.HospitalId,
                     HospitalName = a.Hospital.Name,
+                    VisitorCardNumber = _context.PatientHospitals
+                        .Where(ph => ph.PatientId == a.PatientId && ph.HospitalId == a.HospitalId)
+                        .Select(ph => ph.VisitorCardNumber)
+                        .FirstOrDefault(),
                     a.AppointmentDate,
                     a.AppointmentTime,
                     a.Status,
@@ -137,6 +149,10 @@ namespace MediBook.Api.Controllers
                     DoctorSpecialty = a.Doctor.Specialty,
                     a.HospitalId,
                     HospitalName = a.Hospital.Name,
+                    VisitorCardNumber = _context.PatientHospitals
+                        .Where(ph => ph.PatientId == a.PatientId && ph.HospitalId == a.HospitalId)
+                        .Select(ph => ph.VisitorCardNumber)
+                        .FirstOrDefault(),
                     a.AppointmentDate,
                     a.AppointmentTime,
                     a.Status,
@@ -163,6 +179,10 @@ namespace MediBook.Api.Controllers
                     DoctorSpecialty = a.Doctor.Specialty,
                     a.HospitalId,
                     HospitalName = a.Hospital.Name,
+                    VisitorCardNumber = _context.PatientHospitals
+                        .Where(ph => ph.PatientId == a.PatientId && ph.HospitalId == a.HospitalId)
+                        .Select(ph => ph.VisitorCardNumber)
+                        .FirstOrDefault(),
                     a.AppointmentDate,
                     a.AppointmentTime,
                     a.Status,
@@ -200,6 +220,39 @@ namespace MediBook.Api.Controllers
             if (hasConflict)
                 return Conflict(new { message = "The doctor already has an appointment at the selected date and time." });
 
+            // 1. Permanent Hospital-Specific Visitor Card (Get or Create)
+            var visitorCard = await _context.PatientHospitals
+                .FirstOrDefaultAsync(ph => ph.PatientId == dto.PatientId && ph.HospitalId == dto.HospitalId);
+
+            bool isFirstVisit = false;
+            if (visitorCard == null)
+            {
+                // First visit to this hospital → generate permanent visitor card
+                isFirstVisit = true;
+                var code = PatientHospitalsController.GetHospitalCode(hospital.Name);
+                var count = await _context.PatientHospitals.CountAsync(ph => ph.HospitalId == dto.HospitalId);
+                var seq = count + 1;
+                var cardNum = $"MB-{code}-{seq:D5}";
+
+                while (await _context.PatientHospitals.AnyAsync(ph => ph.VisitorCardNumber == cardNum))
+                {
+                    seq++;
+                    cardNum = $"MB-{code}-{seq:D5}";
+                }
+
+                visitorCard = new PatientHospital
+                {
+                    PatientId = dto.PatientId,
+                    HospitalId = dto.HospitalId,
+                    VisitorCardNumber = cardNum,
+                    IssuedDate = DateTime.UtcNow,
+                    Status = "Active"
+                };
+
+                _context.PatientHospitals.Add(visitorCard);
+            }
+
+            // 2. Create the Appointment
             var appointment = new Appointment
             {
                 PatientId = dto.PatientId,
@@ -229,6 +282,9 @@ namespace MediBook.Api.Controllers
                     DoctorSpecialty = a.Doctor.Specialty,
                     a.HospitalId,
                     HospitalName = a.Hospital.Name,
+                    VisitorCardNumber = visitorCard.VisitorCardNumber,
+                    VisitorCardIssuedDate = visitorCard.IssuedDate,
+                    IsFirstVisit = isFirstVisit,
                     a.AppointmentDate,
                     a.AppointmentTime,
                     a.Status,

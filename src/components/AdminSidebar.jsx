@@ -3,11 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Building2,
-import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Building2,
   Users,
   Stethoscope,
   CalendarDays,
@@ -20,6 +15,36 @@ import {
   BarChart3
 } from "lucide-react";
 import { clearCurrentUser } from "../utils/auth";
+
+import "./PatientSidebar.css";
+
+function AdminSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isHovered, setIsHovered] = useState(false);
+
+  const isExpanded = !isCollapsed || isHovered || isMobileOpen;
+
+  const isActive = (path) => {
+    if (location.pathname === path) return true;
+    if (path !== "/admin/dashboard" && location.pathname.startsWith(path)) return true;
+    return false;
+  };
+
+  const navItems = [
+    { path: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/admin/hospitals", label: "Hospitals", icon: Building2 },
+    { path: "/admin/doctors", label: "Doctors", icon: Stethoscope },
+    { path: "/admin/patients", label: "Patients", icon: Users },
+    { path: "/admin/appointments", label: "Appointments", icon: CalendarDays },
+    { path: "/admin/reports", label: "Reports", icon: BarChart3 },
+    { path: "/admin/login-management", label: "Login Management", icon: KeyRound }
+  ];
+
+  const handleNavClick = (path) => {
+    navigate(path);
+    if (setIsMobileOpen) setIsMobileOpen(false);
+  };
 
   const handleMouseEnter = () => {
     if (isCollapsed) setIsHovered(true);

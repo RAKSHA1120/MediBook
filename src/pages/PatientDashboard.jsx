@@ -24,11 +24,15 @@ import {
   CalendarPlus,
   AlertTriangle,
   ShieldCheck,
-  Lock
+  Lock,
+  Building2,
+  CreditCard
 } from "lucide-react";
 import { getCurrentUser, getCurrentPatient } from "../utils/auth";
 import { getPatientNotifications, addNotification as storageAddNotif } from "../data/notifications";
 import doctors from "../data/doctors";
+import { api } from "../utils/api";
+import PatientVisitorCard from "../components/PatientVisitorCard";
 
 const getDoctors = () => doctors;
 const getPatientAppointments = (patientId, allAppointments) => {
@@ -110,15 +114,33 @@ function PatientDashboard() {
   const [currentPatient, setCurrentPatientState] = useState(null);
   const [notifications, setNotifications] = useState([]);
 
+  // Visitor Cards State
+  const [visitorCards, setVisitorCards] = useState([]);
+  const [selectedVisitorCard, setSelectedVisitorCard] = useState(null);
+  const [showVisitorCardModal, setShowVisitorCardModal] = useState(false);
+
   const syncPatientData = async () => {
     const user = getCurrentUser();
     const patient = getCurrentPatient();
     setCurrentUser(user);
     setCurrentPatientState(patient);
+    const pId = patient?.id || user?.refId || user?.id;
+
     if (patient || user) {
       setNotifications(await getPatientNotifications(patient?.id, user?.id));
     } else {
       setNotifications([]);
+    }
+
+    if (pId) {
+      try {
+        const res = await api.get(`/patient-hospitals/patient/${pId}`);
+        if (res.success && Array.isArray(res.data)) {
+          setVisitorCards(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load visitor cards:", err);
+      }
     }
   };
 
@@ -444,6 +466,69 @@ function PatientDashboard() {
           </div>
         </section>
 
+        {/* Hospital Visitor Cards Section */}
+        <section className="hospital-visitor-cards-section">
+          <div className="section-header">
+            <h3 className="section-main-title">Hospital Visitor Cards</h3>
+            {visitorCards.length > 0 && (
+              <button className="view-all-link" onClick={() => navigate("/visitor-cards")}>
+                View All
+              </button>
+            )}
+          </div>
+
+          {visitorCards.length > 0 ? (
+            <div className="dashboard-visitor-cards-grid">
+              {visitorCards.map((card) => (
+                <div key={card.id || card.visitorCardNumber} className="dashboard-visitor-card-item">
+                  <div className="d-card-header">
+                    <div className="d-card-title-group">
+                      <Building2 size={18} className="d-card-hospital-icon" />
+                      <span className="d-card-hospital-name">{card.hospitalName}</span>
+                    </div>
+                    <span className="d-card-status">{card.status || "Active"}</span>
+                  </div>
+
+                  <div className="d-card-content">
+                    <div className="d-card-row">
+                      <span className="d-card-label">Visitor Card No:</span>
+                      <span className="d-card-number">{card.visitorCardNumber}</span>
+                    </div>
+                    <div className="d-card-row">
+                      <span className="d-card-label">Issued:</span>
+                      <span className="d-card-date">
+                        {new Date(card.issuedDate).toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric"
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="d-card-actions">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedVisitorCard(card);
+                        setShowVisitorCardModal(true);
+                      }}
+                    >
+                      View Card
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="dashboard-visitor-cards-empty">
+              <Building2 size={24} color="#94a3b8" />
+              <span>No visitor cards yet. Permanent cards are automatically issued when booking your first hospital visit.</span>
+            </div>
+          )}
+        </section>
+
         {/* Recent Activity Section */}
         <section className="recent-activity-section">
           <div className="section-header">
@@ -569,6 +654,28 @@ function PatientDashboard() {
                 Cancel Appointment
               </Button>
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Visitor Card Preview Modal */}
+      {showVisitorCardModal && selectedVisitorCard && (
+        <Modal
+          isOpen={showVisitorCardModal}
+          onClose={() => {
+            setShowVisitorCardModal(false);
+            setSelectedVisitorCard(null);
+          }}
+          title="Hospital Patient Visitor Card"
+          size="md"
+        >
+          <div style={{ display: "flex", justifyContent: "center", padding: "8px 0" }}>
+            <PatientVisitorCard
+              visitorCard={selectedVisitorCard}
+              patient={{ name: selectedVisitorCard.patientName, id: selectedVisitorCard.patientId }}
+              hospital={{ name: selectedVisitorCard.hospitalName }}
+              showPrintBtn={true}
+            />
           </div>
         </Modal>
       )}

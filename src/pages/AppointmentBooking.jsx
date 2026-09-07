@@ -286,7 +286,7 @@ function AppointmentBooking() {
       const pId = currPatient?.id || currUser?.refId || currUser?.id;
       const pName = createdAppt.patientName || currPatient?.name || currUser?.name || "Patient";
       const pContact = currPatient?.contact || currPatient?.mobile || currUser?.mobile || "9876543210";
-      const docHospitalName = createdAppt.hospitalName || doctor.hospital || "MediCare Hospital";
+      const docHospitalName = createdAppt.hospitalName || doctor.hospital || "Hospital";
 
       // Cache created appointment in frontend local context to sync UI & My Appointments
       const localApptObj = {
@@ -295,6 +295,11 @@ function AppointmentBooking() {
         doctorName: createdAppt.doctorName || doctor.name,
         specialty: doctor.specialty || doctor.specialization || "Cardiology",
         hospital: docHospitalName,
+        hospitalName: docHospitalName,
+        hospitalId: createdAppt.hospitalId || hospitalId,
+        visitorCardNumber: createdAppt.visitorCardNumber || null,
+        visitorCardIssuedDate: createdAppt.visitorCardIssuedDate || null,
+        isFirstVisit: createdAppt.isFirstVisit || false,
         location: doctor.location || "Chennai",
         consultationFee: createdAppt.consultationFee ?? feeVal,
         fee: createdAppt.consultationFee ?? feeVal,
@@ -332,13 +337,19 @@ function AppointmentBooking() {
         patientId: pId
       });
 
-      // Navigate to Booking Success page with backend appointment ID
+      // Navigate to Booking Success page with backend appointment ID and visitor card info
       navigate("/booking-success", {
         state: {
           appointmentId: createdAppt.id,
           doctor,
           specialty: doctor.specialty,
           hospital: docHospitalName,
+          hospitalId: createdAppt.hospitalId || doctor.hospitalId || hospitalId,
+          patientId: createdAppt.patientId || pId,
+          patientName: pName,
+          visitorCardNumber: createdAppt.visitorCardNumber,
+          visitorCardIssuedDate: createdAppt.visitorCardIssuedDate,
+          isFirstVisit: createdAppt.isFirstVisit,
           date: selectedDate,
           formattedDate: formatReadableDate(selectedDate),
           time: selectedSlot,
