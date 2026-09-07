@@ -27,7 +27,13 @@ const handleResponse = async (response) => {
 export const api = {
   get: async (endpoint) => {
     try {
-      let response = await fetch(`${BASE_URL}${endpoint}`, {
+      const user = getCurrentUser();
+      const headers = { "Content-Type": "application/json" };
+      if (user) {
+        headers["X-User-Role"] = user.role;
+        headers["X-User-Id"] = user.id;
+      }
+      let response = await fetch(buildUrl(endpoint), {
         method: "GET",
         headers
       });
@@ -49,8 +55,15 @@ export const api = {
   },
 
   post: async (endpoint, body) => {
+    debugger;
     try {
-      let response = await fetch(`${BASE_URL}${endpoint}`, {
+      const user = getCurrentUser();
+      const headers = { "Content-Type": "application/json" };
+      if (user) {
+        headers["X-User-Role"] = user.role;
+        headers["X-User-Id"] = user.id;
+      }
+      let response = await fetch(buildUrl(endpoint), {
         method: "POST",
         headers,
         body: JSON.stringify(body)

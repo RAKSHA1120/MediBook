@@ -30,7 +30,7 @@ function AdminReports() {
   const [error, setError] = useState(null);
 
   // Data states
-  const [summary, setSummary] = useState({ Total: 0, Completed: 0, Upcoming: 0, Pending: 0, Cancelled: 0 });
+  const [summary, setSummary] = useState({ total: 0, completed: 0, upcoming: 0, pending: 0, cancelled: 0 });
   const [trendData, setTrendData] = useState([]);
   const [patientWise, setPatientWise] = useState([]);
   const [doctorWise, setDoctorWise] = useState([]);
@@ -54,7 +54,7 @@ function AdminReports() {
 
       if (!sumRes.success) throw new Error(sumRes.error || "Failed to load summary");
 
-      setSummary(sumRes.data || { Total: 0, Completed: 0, Upcoming: 0, Pending: 0, Cancelled: 0 });
+      setSummary(sumRes.data || { total: 0, completed: 0, upcoming: 0, pending: 0, cancelled: 0 });
       setTrendData(trendRes.data || []);
       setPatientWise(patRes.data || []);
       setDoctorWise(docRes.data || []);
@@ -69,10 +69,10 @@ function AdminReports() {
 
   const statusPieData = useMemo(() => {
     return [
-      { name: "Completed", value: summary.Completed },
-      { name: "Upcoming", value: summary.Upcoming },
-      { name: "Pending", value: summary.Pending },
-      { name: "Cancelled", value: summary.Cancelled }
+      { name: "Completed", value: summary.completed },
+      { name: "Upcoming", value: summary.upcoming },
+      { name: "Pending", value: summary.pending },
+      { name: "Cancelled", value: summary.cancelled }
     ].filter((item) => item.value > 0);
   }, [summary]);
 
@@ -86,7 +86,7 @@ function AdminReports() {
     csvContent += "REPORT PERIOD: " + period.toUpperCase() + "\n\n";
 
     csvContent += "--- OVERALL SUMMARY ---\n";
-    csvContent += `Total,${summary.Total}\nCompleted,${summary.Completed}\nUpcoming,${summary.Upcoming}\nPending,${summary.Pending}\nCancelled,${summary.Cancelled}\n\n`;
+    csvContent += `Total,${summary.total}\nCompleted,${summary.completed}\nUpcoming,${summary.upcoming}\nPending,${summary.pending}\nCancelled,${summary.cancelled}\n\n`;
 
     csvContent += "--- PATIENT WISE ---\n";
     csvContent += "Patient ID,Patient Name,Total Visits,Completed,Upcoming,Pending,Cancelled\n";
@@ -123,6 +123,7 @@ function AdminReports() {
           subtitle="System-wide statistics and performance reports"
         >
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <Button variant={period === "all" ? "primary" : "outline"} size="sm" onClick={() => setPeriod("all")}>Overall</Button>
             <Button variant={period === "today" ? "primary" : "outline"} size="sm" onClick={() => setPeriod("today")}>Today</Button>
             <Button variant={period === "weekly" ? "primary" : "outline"} size="sm" onClick={() => setPeriod("weekly")}>This Week</Button>
             <Button variant={period === "monthly" ? "primary" : "outline"} size="sm" onClick={() => setPeriod("monthly")}>This Month</Button>
@@ -151,23 +152,23 @@ function AdminReports() {
           <section className="admin-stats-grid" style={{ marginBottom: "24px" }}>
             <div className="admin-stat-card">
               <h4 className="admin-stat-title">Total Visits</h4>
-              <p className="admin-stat-value">{summary.Total}</p>
+              <p className="admin-stat-value">{summary.total}</p>
             </div>
             <div className="admin-stat-card">
               <h4 className="admin-stat-title" style={{color: "var(--success)"}}>Completed</h4>
-              <p className="admin-stat-value">{summary.Completed}</p>
+              <p className="admin-stat-value">{summary.completed}</p>
             </div>
             <div className="admin-stat-card">
               <h4 className="admin-stat-title" style={{color: "var(--primary)"}}>Upcoming</h4>
-              <p className="admin-stat-value">{summary.Upcoming}</p>
+              <p className="admin-stat-value">{summary.upcoming}</p>
             </div>
             <div className="admin-stat-card">
               <h4 className="admin-stat-title" style={{color: "var(--warning)"}}>Pending</h4>
-              <p className="admin-stat-value">{summary.Pending}</p>
+              <p className="admin-stat-value">{summary.pending}</p>
             </div>
             <div className="admin-stat-card">
               <h4 className="admin-stat-title" style={{color: "var(--error)"}}>Cancelled</h4>
-              <p className="admin-stat-value">{summary.Cancelled}</p>
+              <p className="admin-stat-value">{summary.cancelled}</p>
             </div>
           </section>
 
