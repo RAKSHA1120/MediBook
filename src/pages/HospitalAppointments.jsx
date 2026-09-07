@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { CalendarDays, Search, Eye, Filter, Loader2, AlertCircle } from "lucide-react";
 import { getCurrentUser } from "../utils/auth";
+import { api } from "../utils/api";
 
 import PageHeader from "../components/PageHeader";
 import SearchBox from "../components/SearchBox";
@@ -63,6 +64,7 @@ function HospitalAppointments() {
       reason: apptReason,
       consultationFee: apt.consultationFee ?? 500,
       fee: apt.consultationFee ?? 500,
+      notes: apt.notes || null,
       createdAt: apt.createdAt,
       updatedAt: apt.updatedAt
     };
@@ -82,11 +84,11 @@ function HospitalAppointments() {
     setHospital(hosRecord);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments`);
-      if (!response.ok) {
-        throw new Error(`Server returned HTTP ${response.status}`);
+      const response = await api.get(`/Appointments`);
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load appointments");
       }
-      const data = await response.json();
+      const data = response.data;
       const allApiAppts = Array.isArray(data) ? data.map(normalizeBackendAppointment) : [];
 
       const hosIdInt = hosRecord.id || user?.refId || user?.id || "";

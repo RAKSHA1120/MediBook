@@ -45,6 +45,7 @@ export function AppointmentProvider({ children }) {
           reason: apt.reason || "Regular consultation",
           consultationFee: apt.consultationFee ?? 500,
           fee: apt.consultationFee ?? 500,
+          notes: apt.notes || null,
           createdAt: apt.createdAt,
           updatedAt: apt.updatedAt
         }));

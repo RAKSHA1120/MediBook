@@ -503,18 +503,52 @@ function AppointmentDetails() {
 
           {/* Medical Records / Prescription Section */}
           {(() => {
-              // The backend Appointment model has a `Notes` field which stores the prescription/consultation notes
+              if (statusNorm !== "completed") return null;
+              
               const notes = currentAppt.notes;
               
-              if (!notes && statusNorm !== "completed") return null;
+              if (!notes) {
+                  return (
+                      <div className="details-summary-section" style={{ marginTop: '24px' }}>
+                        <h3 className="summary-section-title">Medical Records & Prescription</h3>
+                        <div style={{ padding: '24px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', textAlign: 'center', border: '1px solid var(--border)' }}>
+                            <p style={{ color: 'var(--text-secondary)' }}>The doctor hasn't added prescription notes for this consultation yet.</p>
+                        </div>
+                      </div>
+                  );
+              }
+
+              let parsedDetails = null;
+              try {
+                  parsedDetails = JSON.parse(notes);
+              } catch (e) {
+                  // Fallback to legacy plain text
+              }
 
               return (
                   <div className="details-summary-section" style={{ marginTop: '24px' }}>
                     <h3 className="summary-section-title">Medical Records & Prescription</h3>
                     
-                    {!notes ? (
-                        <div style={{ padding: '24px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', textAlign: 'center', border: '1px solid var(--border)' }}>
-                            <p style={{ color: 'var(--text-secondary)' }}>The doctor hasn't added prescription notes for this consultation yet.</p>
+                    {parsedDetails ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {parsedDetails.diagnosis && (
+                                <div style={{ padding: '16px', background: 'var(--primary-soft)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--primary-light)' }}>
+                                    <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--primary)' }}>Diagnosis / Clinical Details</h4>
+                                    <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{parsedDetails.diagnosis}</p>
+                                </div>
+                            )}
+                            {parsedDetails.prescription && (
+                                <div style={{ padding: '16px', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                                    <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--text-heading)' }}>Prescription / Treatment</h4>
+                                    <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{parsedDetails.prescription}</p>
+                                </div>
+                            )}
+                            {parsedDetails.advice && (
+                                <div style={{ padding: '16px', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                                    <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--text-heading)' }}>Doctor Notes / Advice</h4>
+                                    <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{parsedDetails.advice}</p>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div style={{ padding: '20px', background: 'var(--primary-soft)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--primary-light)' }}>

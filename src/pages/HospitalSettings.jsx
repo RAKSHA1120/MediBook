@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Lock, LogOut, ShieldCheck, Bell, CheckCircle2, AlertCircle, KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, clearCurrentUser } from "../utils/auth";
+import { api } from "../utils/api";
 
 import PageHeader from "../components/PageHeader";
 import Card from "../components/Card";
@@ -40,13 +41,13 @@ function HospitalSettings() {
     }
 
     try {
-      const getRes = await fetch(`${import.meta.env.VITE_API_URL}/Users/${user.id}`);
-      if (!getRes.ok) {
+      const getRes = await api.get(`/Users/${user.id}`);
+      if (!getRes.success) {
         setError("Failed to verify user credentials.");
         return;
       }
       
-      const userData = await getRes.json();
+      const userData = getRes.data;
       
       if (userData.password !== passwordData.current) {
         setError("Current password is incorrect.");
@@ -63,13 +64,9 @@ function HospitalSettings() {
         createdAt: userData.createdDate
       };
       
-      const putRes = await fetch(`${import.meta.env.VITE_API_URL}/Users/${user.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatePayload)
-      });
+      const putRes = await api.put(`/Users/${user.id}`, updatePayload);
       
-      if (!putRes.ok && putRes.status !== 204) {
+      if (!putRes.success) {
         setError("Failed to update password.");
         return;
       }

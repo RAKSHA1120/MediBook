@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Stethoscope, Plus, Search, Eye, Edit, KeyRound, CheckCircle2, ShieldCheck } from "lucide-react";
 import { getCurrentUser } from "../utils/auth";
+import { api } from "../utils/api";
 
 import { generateLoginId, generatePassword } from "../utils/idGenerator";
 import PageHeader from "../components/PageHeader";
@@ -47,9 +48,9 @@ function HospitalDoctors() {
     setHospital(hosRecord);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/Doctors`);
-      if (res.ok) {
-        const allDocs = await res.json();
+      const res = await api.get(`/Doctors`);
+      if (res.success) {
+        const allDocs = res.data;
         const hosDocs = allDocs.filter(d => 
           d.hospitalId === hosRecord.id || 
           (d.hospital && d.hospital.name === hosRecord.name) ||
@@ -116,27 +117,20 @@ function HospitalDoctors() {
     const password = "Doctor@123";
 
     try {
-      const userRes = await fetch(`${import.meta.env.VITE_API_URL}/Users`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const userRes = await api.post(`/Users`, {
           name: docName,
           email: loginId,
           password: password,
           role: "Doctor"
-        })
       });
 
-      if (!userRes.ok) {
+      if (!userRes.success) {
         setError("Failed to create doctor user account.");
         return;
       }
-      const createdUser = await userRes.json();
+      const createdUser = userRes.data;
 
-      const docRes = await fetch(`${import.meta.env.VITE_API_URL}/Doctors`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const docRes = await api.post(`/Doctors`, {
           userId: createdUser.id,
           hospitalId: hospital.id || 4,
           name: createdUser.name,
@@ -147,10 +141,9 @@ function HospitalDoctors() {
           email: loginId,
           phone: formData.contact.trim() || loginId,
           isActive: formData.status === "Active"
-        })
       });
 
-      if (!docRes.ok) {
+      if (!docRes.success) {
         setError("Failed to create doctor profile.");
         return;
       }

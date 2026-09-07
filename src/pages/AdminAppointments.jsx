@@ -31,14 +31,12 @@ function AdminAppointments() {
 
   const fetchAppointments = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments`, {
-        headers: { "Accept": "application/json" }
-      });
-      if (!response.ok) {
-        setDebugLog("Error status: " + response.status);
+      const response = await api.get(`/Appointments`);
+      if (!response.success) {
+        setDebugLog("Error: " + response.error);
         return;
       }
-      const data = await response.json();
+      const data = response.data;
       setDebugLog("Success: fetched " + (data ? data.length : 0) + " items");
       const mapped = (data || []).map(a => ({
         ...a,

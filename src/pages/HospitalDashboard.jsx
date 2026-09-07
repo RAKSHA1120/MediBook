@@ -10,6 +10,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { getCurrentUser } from "../utils/auth";
+import { api } from "../utils/api";
 
 import Card from "../components/Card";
 import StatusBadge from "../components/StatusBadge";
@@ -208,21 +209,19 @@ function HospitalDashboard() {
         .toLowerCase();
 
       // Get Doctors and Appointments from ASP.NET API
-      const [doctorsRes, appointmentsRes] =
-        await Promise.all([
-          fetch(`${import.meta.env.VITE_API_URL}/Doctors`),
-          fetch(`${import.meta.env.VITE_API_URL}/Appointments`)
-        ]);
+      const [doctorsRes, appointmentsRes] = await Promise.all([
+        api.get("/Doctors"),
+        api.get("/Appointments")
+      ]);
 
-      if (!doctorsRes.ok || !appointmentsRes.ok) {
+      if (!doctorsRes.success || !appointmentsRes.success) {
         throw new Error(
-          `Server returned error. Doctors: ${doctorsRes.status}, Appointments: ${appointmentsRes.status}`
+          `Server returned error. Doctors: ${doctorsRes.error}, Appointments: ${appointmentsRes.error}`
         );
       }
 
-      const doctorsData = await doctorsRes.json();
-      const appointmentsData =
-        await appointmentsRes.json();
+      const doctorsData = doctorsRes.data;
+      const appointmentsData = appointmentsRes.data;
 
       // Make sure API responses are arrays
       const allDoctors = Array.isArray(doctorsData)

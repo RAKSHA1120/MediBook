@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Search, Eye, Users, UserCheck, CalendarCheck, Clock, Loader2, AlertCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
+import { api } from "../utils/api";
 import StatusBadge from "../components/StatusBadge";
 import EmptyState from "../components/EmptyState";
 import "../pages/AdminShared.css";
@@ -77,11 +78,11 @@ function DoctorPatients() {
         setDoctorPatients([]);
         return;
       }
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/doctor/${docIdInt}`);
-      if (!response.ok) {
-        throw new Error(`Server returned HTTP ${response.status}`);
+      const response = await api.get(`/Appointments/doctor/${docIdInt}`);
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load patient records");
       }
-      const data = await response.json();
+      const data = response.data;
       const myAppts = Array.isArray(data) ? data.map(normalizeBackendAppointment) : [];
 
       const patientMap = new Map();

@@ -354,3 +354,25 @@
 .appointment-details-modal .detail-row:last-child {
   border-bottom: none;
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-container {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  .print-only-title {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 24px;
+    font-size: 24px;
+    font-weight: 700;
+  }
+  .admin-reports-page {
+    background: white !important;
+    padding: 0 !important;
+  }
+}

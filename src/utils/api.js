@@ -1,4 +1,16 @@
-const BASE_URL = import.meta.env.VITE_API_URL;
+import { getCurrentUser } from "./auth";
+
+const getBaseUrl = () => {
+  const url = import.meta.env.VITE_API_URL || "http://localhost:5107/api";
+  return url.replace(/\/+$/, "");
+};
+
+const BASE_URL = getBaseUrl();
+
+const buildUrl = (endpoint) => {
+  const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  return `${BASE_URL}${path}`;
+};
 
 const handleResponse = async (response) => {
   const isJson = response.headers.get("content-type")?.includes("application/json");
@@ -15,9 +27,15 @@ const handleResponse = async (response) => {
 export const api = {
   get: async (endpoint) => {
     try {
-      const response = await fetch(`${BASE_URL}${endpoint}`, {
+      const user = getCurrentUser();
+      const headers = { "Content-Type": "application/json" };
+      if (user) {
+        headers["X-User-Role"] = user.role;
+        headers["X-User-Id"] = user.id;
+      }
+      const response = await fetch(buildUrl(endpoint), {
         method: "GET",
-        headers: { "Content-Type": "application/json" }
+        headers
       });
       return await handleResponse(response);
     } catch (error) {
@@ -28,9 +46,15 @@ export const api = {
 
   post: async (endpoint, body) => {
     try {
-      const response = await fetch(`${BASE_URL}${endpoint}`, {
+      const user = getCurrentUser();
+      const headers = { "Content-Type": "application/json" };
+      if (user) {
+        headers["X-User-Role"] = user.role;
+        headers["X-User-Id"] = user.id;
+      }
+      const response = await fetch(buildUrl(endpoint), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(body)
       });
       return await handleResponse(response);
@@ -42,9 +66,15 @@ export const api = {
 
   put: async (endpoint, body) => {
     try {
-      const response = await fetch(`${BASE_URL}${endpoint}`, {
+      const user = getCurrentUser();
+      const headers = { "Content-Type": "application/json" };
+      if (user) {
+        headers["X-User-Role"] = user.role;
+        headers["X-User-Id"] = user.id;
+      }
+      const response = await fetch(buildUrl(endpoint), {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(body)
       });
       return await handleResponse(response);
@@ -56,9 +86,15 @@ export const api = {
 
   delete: async (endpoint) => {
     try {
-      const response = await fetch(`${BASE_URL}${endpoint}`, {
+      const user = getCurrentUser();
+      const headers = { "Content-Type": "application/json" };
+      if (user) {
+        headers["X-User-Role"] = user.role;
+        headers["X-User-Id"] = user.id;
+      }
+      const response = await fetch(buildUrl(endpoint), {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" }
+        headers
       });
       return await handleResponse(response);
     } catch (error) {

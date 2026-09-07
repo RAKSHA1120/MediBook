@@ -19,6 +19,7 @@ import PrimaryButton from "../components/PrimaryButton";
 import SecondaryButton from "../components/SecondaryButton";
 import Toast from "../components/Toast";
 import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
+import { api } from "../utils/api";
 import "./DoctorProfile.css";
 
 
@@ -206,9 +207,9 @@ function DoctorProfile() {
       const doc = getCurrentDoctor();
       const doctorId = user?.doctorId || doc?.id || profile?.id;
       if (doctorId) {
-        const getRes = await fetch(`${import.meta.env.VITE_API_URL}/Doctors/${doctorId}`);
-        if (getRes.ok) {
-          const existing = await getRes.json();
+        const getRes = await api.get(`/Doctors/${doctorId}`);
+        if (getRes.success) {
+          const existing = getRes.data;
           const putBody = {
             ...existing,
             name: formattedName,
@@ -220,11 +221,7 @@ function DoctorProfile() {
             consultationFee: Number(formData.consultationFee),
             registrationNumber: formData.registrationNumber?.trim() || ""
           };
-          await fetch(`${import.meta.env.VITE_API_URL}/Doctors/${doctorId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(putBody)
-          });
+          await api.put(`/Doctors/${doctorId}`, putBody);
         }
       }
     } catch (err) {

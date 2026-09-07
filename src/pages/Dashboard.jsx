@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
+import { api } from "../utils/api";
 import StatusBadge from "../components/StatusBadge";
 import EmptyState from "../components/EmptyState";
 import {
@@ -89,11 +90,11 @@ function Dashboard() {
          setAppointments([]);
          return;
       }
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/doctor/${docIdInt}`);
-      if (!response.ok) {
-        throw new Error(`Server returned HTTP ${response.status}`);
+      const response = await api.get(`/Appointments/doctor/${docIdInt}`);
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load appointments");
       }
-      const data = await response.json();
+      const data = response.data;
       const myAppts = Array.isArray(data) ? data.map(normalizeBackendAppointment) : [];
       setAppointments(myAppts);
     } catch (err) {
@@ -173,12 +174,8 @@ function Dashboard() {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/${id}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-      if (response.ok) {
+      const response = await api.put(`/Appointments/${id}/status`, { status: newStatus });
+      if (response.success) {
         setAppointments((prev) =>
           prev.map((a) => (String(a.id) === String(id) ? { ...a, status: newStatus } : a))
         );

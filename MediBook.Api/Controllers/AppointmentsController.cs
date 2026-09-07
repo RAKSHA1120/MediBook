@@ -22,6 +22,14 @@ namespace MediBook.Api.Controllers
         public string Status { get; set; } = string.Empty;
     }
 
+    public class CompleteVisitDto
+    {
+        public int DoctorId { get; set; }
+        public string Diagnosis { get; set; } = string.Empty;
+        public string Prescription { get; set; } = string.Empty;
+        public string Advice { get; set; } = string.Empty;
+    }
+
     [ApiController]
     [Route("api/[controller]")]
     public class AppointmentsController : ControllerBase
@@ -262,6 +270,54 @@ namespace MediBook.Api.Controllers
             appointment.Status = dto.Status;
             await _context.SaveChangesAsync();
             return NoContent();
+        }
+
+        [HttpPut("{id}/complete")]
+        public async Task<IActionResult> CompleteAppointment(int id, [FromBody] CompleteVisitDto dto)
+        {
+            var appointment = await _context.Appointments.FindAsync(id);
+            if (appointment == null) return NotFound(new { message = "Appointment not found." });
+
+            if (appointment.DoctorId != dto.DoctorId)
+                return Unauthorized(new { message = "You are not authorized to complete this appointment." });
+
+            if (appointment.Status == "Completed" || appointment.Status == "Cancelled")
+                return BadRequest(new { message = "Appointment cannot be completed in its current state." });
+
+            var details = new
+            {
+                diagnosis = dto.Diagnosis,
+                prescription = dto.Prescription,
+                advice = dto.Advice
+            };
+
+            appointment.Status = "Completed";
+            appointment.Notes = System.Text.Json.JsonSerializer.Serialize(details);
+
+            await _context.SaveChangesAsync();
+
+            var updatedAppointment = await _context.Appointments
+                .Where(a => a.Id == appointment.Id)
+                .Select(a => new
+                {
+                    a.Id,
+                    a.PatientId,
+                    PatientName = a.Patient.Name,
+                    a.DoctorId,
+                    DoctorName = a.Doctor.Name,
+                    DoctorSpecialty = a.Doctor.Specialty,
+                    a.HospitalId,
+                    HospitalName = a.Hospital.Name,
+                    a.AppointmentDate,
+                    a.AppointmentTime,
+                    a.Status,
+                    a.Reason,
+                    a.Notes,
+                    a.CreatedAt
+                })
+                .FirstOrDefaultAsync();
+
+            return Ok(updatedAppointment);
         }
 
         [HttpPut("{id}/cancel")]

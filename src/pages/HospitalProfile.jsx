@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Building2, MapPin, Phone, Mail, Edit2, Save, X, CheckCircle2, Shield, BedDouble } from "lucide-react";
 import { getCurrentUser } from "../utils/auth";
+import { api } from "../utils/api";
 import PageHeader from "../components/PageHeader";
 import Card from "../components/Card";
 import Input from "../components/Input";
@@ -24,12 +25,12 @@ function HospitalProfile() {
 
     try {
       const hospitalId = user.refId || 1;
-      const response = await fetch(`${process.env.API_BASE_URL}/api/Hospitals/${hospitalId}`);
-      if (response.ok) {
-        const data = await response.json();
+      const response = await api.get(`/Hospitals/${hospitalId}`);
+      if (response.success) {
+        const data = response.data;
         const mappedData = {
           ...data,
-          location: data.city, // map back to UI field name
+          location: data.city,
           bedCount: data.bedCapacity
         };
         setHospital(mappedData);
@@ -57,13 +58,9 @@ function HospitalProfile() {
         email: formData.email
       };
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/Hospitals/${hospital.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(putBody)
-      });
+      const res = await api.put(`/Hospitals/${hospital.id}`, putBody);
 
-      if (res.ok) {
+      if (res.success) {
         setHospital(formData);
         setIsEditing(false);
         setSuccessMessage("Hospital facility profile updated successfully!");

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Users, Search, Eye, Phone, Calendar } from "lucide-react";
 import { getCurrentUser } from "../utils/auth";
+import { api } from "../utils/api";
 
 import PageHeader from "../components/PageHeader";
 import SearchBox from "../components/SearchBox";
@@ -33,15 +34,15 @@ function HospitalPatients() {
 
     try {
       const [apptsRes, patientsRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/Appointments`),
-        fetch(`${import.meta.env.VITE_API_URL}/Patients`)
+        api.get(`/Appointments`),
+        api.get(`/Patients`)
       ]);
 
       let allAppts = [];
-      if (apptsRes.ok) allAppts = await apptsRes.json();
+      if (apptsRes.success) allAppts = apptsRes.data;
 
       let allPatients = [];
-      if (patientsRes.ok) allPatients = await patientsRes.json();
+      if (patientsRes.success) allPatients = patientsRes.data;
 
       const hosAppts = allAppts.filter(
         a => a.hospitalId === hosRecord.id || a.hospitalName === hosRecord.name

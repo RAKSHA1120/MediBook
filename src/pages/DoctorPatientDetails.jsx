@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, User, CalendarDays, Loader2, AlertCircle } from "lucide-react";
 import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
+import { api } from "../utils/api";
 
 import PageHeader from "../components/PageHeader";
 import Card from "../components/Card";
@@ -26,10 +27,10 @@ function DoctorPatientDetails() {
                 const doctorId = user?.doctorId || doc?.id || user?.id;
 
                 // Load all appointments for this doctor then filter by patient
-                const res = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/doctor/${doctorId}`);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                const appts = Array.isArray(data) ? data : [];
+                const res = await api.get(`/Appointments/doctor/${doctorId}`);
+                if (!res.success) throw new Error(res.error || "Network error");
+                
+                const appts = Array.isArray(res.data) ? res.data : [];
 
                 // Find the patient by ID from their appointments
                 const patientAppts = appts.filter(a =>

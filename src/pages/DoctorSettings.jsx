@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, clearCurrentUser } from "../utils/auth";
+import { api } from "../utils/api";
 
 import PageHeader from "../components/PageHeader";
 import Card from "../components/Card";
@@ -58,23 +59,14 @@ function DoctorSettings() {
         return;
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/Users/${currentUser.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
+      const response = await api.put(`/Users/${currentUser.id}`, {
             name: currentUser.name,
             email: currentUser.email,
             password: passwordData.new,
             role: currentUser.role
-          })
-        }
-      );
+      });
 
-      if (!response.ok) {
+      if (!response.success) {
         throw new Error("Failed to update password.");
       }
 

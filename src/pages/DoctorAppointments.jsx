@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Search, Eye, Calendar, CalendarCheck, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
+import { api } from "../utils/api";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
 import EmptyState from "../components/EmptyState";
@@ -19,6 +20,7 @@ function DoctorAppointments() {
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [consultationNotes, setConsultationNotes] = useState("");
   const [prescribedMedicines, setPrescribedMedicines] = useState("");
+  const [doctorAdvice, setDoctorAdvice] = useState("");
 
   // Helper to format backend time strings (e.g. "10:30:00" -> "10:30 AM")
   const formatBackendTime = (timeStr) => {
@@ -63,6 +65,7 @@ function DoctorAppointments() {
       reason: apptReason,
       consultationFee: apt.consultationFee ?? 500,
       fee: apt.consultationFee ?? 500,
+      notes: apt.notes || null,
       createdAt: apt.createdAt,
       updatedAt: apt.updatedAt
     };
@@ -83,11 +86,11 @@ function DoctorAppointments() {
          return;
       }
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/doctor/${docIdInt}`);
-      if (!response.ok) {
-        throw new Error(`Server returned HTTP ${response.status}`);
+      const response = await api.get(`/Appointments/doctor/${docIdInt}`);
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load appointments");
       }
-      const data = await response.json();
+      const data = response.data;
       const myAppts = Array.isArray(data) ? data.map(normalizeBackendAppointment) : [];
 
       setAppointments(myAppts);
@@ -107,12 +110,8 @@ function DoctorAppointments() {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/${id}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-      if (response.ok) {
+      const response = await api.put(`/Appointments/${id}/status`, { status: newStatus });
+      if (response.success) {
         setAppointments((prev) =>
           prev.map((a) => (String(a.id) === String(id) ? { ...a, status: newStatus } : a))
         );
@@ -557,6 +556,18 @@ function DoctorAppointments() {
               />
             </div>
 
+            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-heading)" }}>Doctor Notes / Advice</label>
+              <textarea
+                className="field-input"
+                rows="3"
+                placeholder="E.g., Take adequate rest and drink plenty of water"
+                value={doctorAdvice}
+                onChange={(e) => setDoctorAdvice(e.target.value)}
+                style={{ resize: "vertical", minHeight: "80px" }}
+              />
+            </div>
+
             <div className="modal-actions" style={{ marginTop: "16px", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
               <Button variant="outline" onClick={() => setIsPrescriptionModalOpen(false)}>Cancel</Button>
               <Button
@@ -564,39 +575,22 @@ function DoctorAppointments() {
                 onClick={() => {
                   const completeConsultation = async () => {
                     try {
-                        // We must fetch the full backend model structure to do a successful PUT
-                        const getResponse = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/${selectedAppointment.id}`);
-                        if (getResponse.ok) {
-                            const backendAppt = await getResponse.json();
-                            const finalNotes = `Diagnosis:\n${consultationNotes}\n\nPrescribed Medicines:\n${prescribedMedicines}`;
-                            
-                            // Reconstruct the exact backend model expected by the API (not the DTO)
-                            const putPayload = {
-                                id: backendAppt.id,
-                                patientId: backendAppt.patientId,
-                                doctorId: backendAppt.doctorId,
-                                hospitalId: backendAppt.hospitalId,
-                                appointmentDate: backendAppt.appointmentDate,
-                                appointmentTime: backendAppt.appointmentTime,
-                                status: "Completed",
-                                reason: backendAppt.reason,
-                                notes: finalNotes,
-                                createdAt: backendAppt.createdAt || new Date().toISOString()
-                            };
-                            
-                            const putResponse = await fetch(`${import.meta.env.VITE_API_URL}/Appointments/${selectedAppointment.id}`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(putPayload)
-                            });
+                        const putPayload = {
+                            doctorId: selectedAppointment.doctorId,
+                            diagnosis: consultationNotes,
+                            prescription: prescribedMedicines,
+                            advice: doctorAdvice
+                        };
+                        
+                        const putResponse = await api.put(`/Appointments/${selectedAppointment.id}/complete`, putPayload);
 
-                            if (putResponse.ok || putResponse.status === 204) {
-                                setAppointments((prev) =>
-                                  prev.map((a) => (String(a.id) === String(selectedAppointment.id) ? { ...a, status: "Completed", notes: finalNotes } : a))
-                                );
-                            } else {
-                                console.error("Failed to update appointment:", await putResponse.text());
-                            }
+                        if (putResponse.success) {
+                            const updatedAppt = putResponse.data;
+                            setAppointments((prev) =>
+                              prev.map((a) => (String(a.id) === String(selectedAppointment.id) ? { ...a, status: "Completed", notes: updatedAppt.notes } : a))
+                            );
+                        } else {
+                            console.error("Failed to complete appointment:", putResponse.error);
                         }
                     } catch (e) {
                         console.error("Error completing consultation:", e);
@@ -605,6 +599,7 @@ function DoctorAppointments() {
                     setIsPrescriptionModalOpen(false);
                     setConsultationNotes("");
                     setPrescribedMedicines("");
+                    setDoctorAdvice("");
                   };
                   
                   completeConsultation();

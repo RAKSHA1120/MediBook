@@ -5,6 +5,7 @@ import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import NotificationCard from "../components/NotificationCard";
 import { getCurrentUser } from "../utils/auth";
+import { api } from "../utils/api";
 
 import "./Notifications.css";
 
@@ -33,9 +34,9 @@ function HospitalNotifications() {
     setHospital(hosRecord);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/Notifications/user/${user.id}`);
-      if (res.ok) {
-        const data = await res.json();
+      const res = await api.get(`/Notifications/user/${user.id}`);
+      if (res.success) {
+        const data = res.data;
         const mapped = data.map((n) => ({
           id: n.id,
           title: n.title,
@@ -86,7 +87,7 @@ function HospitalNotifications() {
     const unread = notifications.filter((n) => !n.read);
     for (const notif of unread) {
       try {
-        await fetch(`${import.meta.env.VITE_API_URL}/Notifications/${notif.id}/read`, { method: "PUT" });
+        await api.put(`/Notifications/${notif.id}/read`);
       } catch (e) {
         console.error(e);
       }
@@ -97,7 +98,7 @@ function HospitalNotifications() {
   const handleCardClick = async (notif) => {
     if (!notif.read) {
       try {
-        await fetch(`${import.meta.env.VITE_API_URL}/Notifications/${notif.id}/read`, { method: "PUT" });
+        await api.put(`/Notifications/${notif.id}/read`);
         loadHospitalNotifications();
       } catch (e) {
         console.error(e);

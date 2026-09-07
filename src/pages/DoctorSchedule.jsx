@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Clock, Plus, Trash2, CalendarClock, Save, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
+import { api } from "../utils/api";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import EmptyState from "../components/EmptyState";
@@ -52,11 +53,11 @@ function DoctorSchedule() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/DoctorSchedules/doctor/${docIdInt}`);
-      if (!response.ok) {
-        throw new Error(`Server returned HTTP ${response.status}`);
+      const response = await api.get(`/DoctorSchedules/doctor/${docIdInt}`);
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load schedule");
       }
-      const data = await response.json();
+      const data = response.data;
       if (Array.isArray(data) && data.length > 0) {
         const weeklyMap = {
           Monday: [],
@@ -130,12 +131,12 @@ function DoctorSchedule() {
     try {
       setLoading(true);
       // 1. Fetch existing schedules
-      const getRes = await fetch(`${import.meta.env.VITE_API_URL}/DoctorSchedules/doctor/${docIdInt}`);
-      if (getRes.ok) {
-        const existingSchedules = await getRes.json();
+      const getRes = await api.get(`/DoctorSchedules/doctor/${docIdInt}`);
+      if (getRes.success) {
+        const existingSchedules = getRes.data;
         // 2. Delete all existing
         for (const es of existingSchedules) {
-          await fetch(`${import.meta.env.VITE_API_URL}/DoctorSchedules/${es.id}`, { method: "DELETE" });
+          await api.delete(`/DoctorSchedules/${es.id}`);
         }
       }
 
@@ -154,16 +155,12 @@ function DoctorSchedule() {
           const [startStr, endStr] = slot.split(" - ");
           const startTime = parseTime(startStr);
           const endTime = parseTime(endStr);
-          await fetch(`${import.meta.env.VITE_API_URL}/DoctorSchedules`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+          await api.post(`/DoctorSchedules`, {
               doctorId: docIdInt,
               dayOfWeek: day,
               startTime: startTime,
               endTime: endTime,
               isAvailable: true
-            })
           });
         }
       }
