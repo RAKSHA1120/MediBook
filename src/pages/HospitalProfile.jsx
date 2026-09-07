@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Building2, MapPin, Phone, Mail, Edit2, Save, X, CheckCircle2, Shield, BedDouble } from "lucide-react";
-import { getCurrentUser, getHospitals, updateHospital } from "../utils/storage";
+import { getCurrentUser } from "../utils/auth";
 import PageHeader from "../components/PageHeader";
 import Card from "../components/Card";
 import Input from "../components/Input";
@@ -18,37 +18,60 @@ function HospitalProfile() {
     loadHospitalProfile();
   }, []);
 
-  const loadHospitalProfile = () => {
+  const loadHospitalProfile = async () => {
     const user = getCurrentUser();
     if (!user) return;
 
-    const hospitals = getHospitals();
-    const match = hospitals.find((h) => h.id === user.refId || h.name === user.name) || {
-      id: user.refId || "HOS-008",
-      name: user.name || "MediCare Hospital",
-      type: "Private",
-      category: "Multi Specialty",
-      location: "Chennai",
-      contact: "+91 44 9900 1122",
-      email: "admin@medicarehospitals.com",
-      status: "Active",
-      address: "90 T Nagar, Chennai",
-      bedCount: 250
-    };
-
-    setHospital(match);
-    setFormData(match);
+    try {
+      const hospitalId = user.refId || 1; 
+      const response = await fetch(`http://localhost:5107/api/Hospitals/${hospitalId}`);
+      if (response.ok) {
+        const data = await response.json();
+        const mappedData = {
+          ...data,
+          location: data.city, // map back to UI field name
+          bedCount: data.bedCapacity
+        };
+        setHospital(mappedData);
+        setFormData(mappedData);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!hospital?.id) return;
 
-    updateHospital(hospital.id, formData);
-    setHospital(formData);
-    setIsEditing(false);
-    setSuccessMessage("Hospital facility profile updated successfully!");
-    setTimeout(() => setSuccessMessage(""), 4000);
+    try {
+      const putBody = {
+        ...hospital,
+        name: formData.name,
+        type: formData.type,
+        category: formData.category,
+        bedCapacity: Number(formData.bedCount) || 0,
+        city: formData.location, // map from UI field name
+        address: formData.address,
+        phone: formData.contact,
+        email: formData.email
+      };
+      
+      const res = await fetch(`http://localhost:5107/api/Hospitals/${hospital.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(putBody)
+      });
+      
+      if (res.ok) {
+        setHospital(formData);
+        setIsEditing(false);
+        setSuccessMessage("Hospital facility profile updated successfully!");
+        setTimeout(() => setSuccessMessage(""), 4000);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (

@@ -22,7 +22,9 @@ import SecondaryButton from "../components/SecondaryButton";
 import {
   getStoredPatientProfile,
   savePatientProfile,
-  getPatientInitials
+  getPatientInitials,
+  refreshPatientProfile,
+  savePatientProfileAsync
 } from "../data/patientProfile";
 import "./PatientProfile.css";
 
@@ -47,6 +49,9 @@ function PatientProfile() {
 
   // Sync profile if external update occurs
   useEffect(() => {
+    // Initial fetch from API
+    refreshPatientProfile();
+
     const handleUpdate = () => {
       const updated = getStoredPatientProfile();
       setProfile(updated);
@@ -132,7 +137,7 @@ function PatientProfile() {
     setIsEditing(false);
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!validateForm()) {
       showNotification("Validation Error", "Please fill in all required fields correctly.", "error");
       return;
@@ -155,15 +160,23 @@ function PatientProfile() {
       formattedDob
     };
 
-    savePatientProfile(updatedProfile);
-    setProfile(updatedProfile);
-    setIsEditing(false);
-
-    showNotification(
-      "Profile Updated",
-      "Profile updated successfully.",
-      "success"
-    );
+    const result = await savePatientProfileAsync(updatedProfile);
+    
+    if (result.success) {
+      setProfile(updatedProfile);
+      setIsEditing(false);
+      showNotification(
+        "Profile Updated",
+        "Profile updated successfully.",
+        "success"
+      );
+    } else {
+      showNotification(
+        "Update Failed",
+        result.error || "Failed to update profile.",
+        "error"
+      );
+    }
   };
 
   const initials = getPatientInitials(profile.name);

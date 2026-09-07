@@ -12,7 +12,15 @@ import "./NotificationCard.css";
 
 function NotificationCard({ notification, onClick }) {
   const navigate = useNavigate();
-  const { id, type, subType, title, message, createdAt, read, appointmentId } = notification;
+  const { id, type, subType, title, message, appointmentId } = notification;
+  const read = notification.isRead ?? notification.read;
+  
+  // Format createdAt correctly
+  let createdAt = notification.createdAt;
+  if (createdAt && createdAt.includes("T")) {
+    const d = new Date(createdAt);
+    createdAt = d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+  }
 
   // Determine icon & style variant
   const getIconAndStyle = () => {

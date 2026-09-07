@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Stethoscope, X, Building2, Loader2, AlertCircle } from "lucide-react";
-import { getHospitals } from "../utils/storage";
+
+import { api } from "../utils/api";
 import Button from "../components/Button";
 import Select from "../components/Select";
 import Toast from "../components/Toast";
@@ -98,16 +99,16 @@ function DoctorList() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("https://localhost:7050/api/doctors");
-      if (!response.ok) {
-        throw new Error(`Server returned status ${response.status}`);
+      const response = await api.get("/Doctors");
+      if (!response.success) {
+        throw new Error(response.error || "Failed to fetch doctors");
       }
-      const data = await response.json();
+      const data = response.data;
       const normalized = (Array.isArray(data) ? data : []).map(normalizeDoctor);
       setDoctorsList(normalized);
     } catch (err) {
       console.error("Error fetching doctors from API:", err);
-      setError("Unable to connect to the backend server (https://localhost:7050/api/doctors). Please ensure the backend API is running.");
+      setError("Unable to connect to the backend server. Please ensure the backend API is running.");
     } finally {
       setLoading(false);
     }
@@ -360,16 +361,16 @@ function DoctorList() {
     setSelectedProfileDoctor(null);
 
     try {
-      const response = await fetch(`https://localhost:7050/api/doctors/${doc.id}`);
-      if (!response.ok) {
-        throw new Error(`Server returned status ${response.status}`);
+      const response = await api.get(`/Doctors/${doc.id}`);
+      if (!response.success) {
+        throw new Error(response.error || "Failed to fetch doctor profile");
       }
-      const data = await response.json();
+      const data = response.data;
       const normalized = normalizeDoctor(data);
       setSelectedProfileDoctor(normalized);
     } catch (err) {
       console.error(`Error fetching profile for doctor ID ${doc.id}:`, err);
-      setProfileError(`Unable to fetch doctor profile from backend API (https://localhost:7050/api/doctors/${doc.id}).`);
+      setProfileError(`Unable to fetch doctor profile from backend API.`);
     } finally {
       setProfileLoading(false);
     }

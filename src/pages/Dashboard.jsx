@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { updateAppointmentStatus, getCurrentUser, getCurrentDoctor } from "../utils/storage";
+import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
 import StatusBadge from "../components/StatusBadge";
 import EmptyState from "../components/EmptyState";
 import {
@@ -81,37 +81,20 @@ function Dashboard() {
     setCurrentUser(user);
     setCurrentDoctor(doc);
 
-    const rawDocId = doc?.id ?? user?.refId ?? user?.id;
-    const rawDocName = doc?.name ?? user?.name;
-
-    const docIdInt = parseInt(String(rawDocId || "").replace(/\D/g, ""), 10);
-    const normDocName = String(rawDocName || "").trim().toLowerCase();
+    const rawDocId = user?.doctorId || doc?.id || user?.refId || user?.id;
+    const docIdInt = rawDocId || "";
 
     try {
-      const response = await fetch("https://localhost:7050/api/Appointments");
+      if (!docIdInt) {
+         setAppointments([]);
+         return;
+      }
+      const response = await fetch(`http://localhost:5107/api/Appointments/doctor/${docIdInt}`);
       if (!response.ok) {
         throw new Error(`Server returned HTTP ${response.status}`);
       }
       const data = await response.json();
-      const allApiAppts = Array.isArray(data) ? data.map(normalizeBackendAppointment) : [];
-
-      // Filter appointments belonging to current doctor
-      const myAppts = allApiAppts.filter((apt) => {
-        const aptDocIdInt = parseInt(String(apt.doctorId || "").replace(/\D/g, ""), 10);
-        const aptDocNameStr = String(apt.doctorName || "").trim().toLowerCase();
-
-        // 1. Doctor ID match
-        if (docIdInt && aptDocIdInt && docIdInt === aptDocIdInt) return true;
-
-        // 2. Doctor Name match
-        if (normDocName && aptDocNameStr && (normDocName === aptDocNameStr || normDocName.includes(aptDocNameStr) || aptDocNameStr.includes(normDocName))) return true;
-
-        // 3. Fallback for doctor ID 1 / default doctor if no specific doctor ID
-        if ((!docIdInt || docIdInt === 1) && (!aptDocIdInt || aptDocIdInt === 1)) return true;
-
-        return false;
-      });
-
+      const myAppts = Array.isArray(data) ? data.map(normalizeBackendAppointment) : [];
       setAppointments(myAppts);
     } catch (err) {
       console.error("Error loading doctor dashboard appointments from backend:", err);
@@ -188,11 +171,21 @@ function Dashboard() {
     });
   }, [appointments]);
 
-  const handleStatusChange = (id, newStatus) => {
-    updateAppointmentStatus(id, newStatus);
-    setAppointments((prev) =>
-      prev.map((a) => (String(a.id) === String(id) ? { ...a, status: newStatus } : a))
-    );
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      const response = await fetch(`http://localhost:5107/api/Appointments/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (response.ok) {
+        setAppointments((prev) =>
+          prev.map((a) => (String(a.id) === String(id) ? { ...a, status: newStatus } : a))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to update status", err);
+    }
   };
 
   // Format doctor name cleanly

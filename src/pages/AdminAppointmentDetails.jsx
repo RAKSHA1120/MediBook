@@ -16,7 +16,8 @@ import {
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import Button from "../components/Button";
-import { getAppointments, updateAppointmentStatus, getPatients, getDoctors } from "../utils/storage";
+import { api } from "../utils/api";
+
 import "./AdminDashboard.css";
 import "./AdminShared.css";
 import "./AdminAppointmentDetails.css";
@@ -33,46 +34,41 @@ function AdminAppointmentDetails() {
   const [doctorDetails, setDoctorDetails] = useState(null);
 
   useEffect(() => {
-    const allAppts = getAppointments();
-    const targetId = toLowerStr(id);
-    const found = allAppts.find(a => toLowerStr(a.id) === targetId);
+    const fetchDetails = async () => {
+      try {
+        const res = await api.get(`/Appointments/${id}`);
+        if (res.success && res.data) {
+          const apt = res.data;
+          // Map backend date and time
+          apt.date = apt.appointmentDate ? String(apt.appointmentDate).split('T')[0] : apt.date;
+          apt.time = apt.appointmentTime || apt.time;
+          
+          setAppointment(apt);
 
-    if (found) {
-      setAppointment(found);
+          // Optionally load patient and doctor details from endpoints
+          try {
+            if (apt.patientId) {
+              const pRes = await api.get(`/Patients/${apt.patientId}`);
+              if (pRes.success) setPatientDetails(pRes.data);
+            }
+          } catch(e) {}
 
-      // Find matching patient record safely
-      const allPatients = getPatients();
-      const pName = toLowerStr(found.patientName || found.patient);
-      const pId = toLowerStr(found.patientId);
+          try {
+            if (apt.doctorId) {
+              const dRes = await api.get(`/Doctors/${apt.doctorId}`);
+              if (dRes.success) setDoctorDetails(dRes.data);
+            }
+          } catch(e) {}
+        } else {
+          setAppointment(null);
+        }
+      } catch (err) {
+        console.error("Failed to load appointment details", err);
+        setAppointment(null);
+      }
+    };
 
-      const matchingPatient = allPatients.find(p => {
-        const pRecordId = toLowerStr(p.id);
-        const pRecordName = toLowerStr(p.name);
-        return (
-          (pId !== "" && pRecordId !== "" && pRecordId === pId) ||
-          (pName !== "" && pRecordName !== "" && pRecordName === pName)
-        );
-      });
-      setPatientDetails(matchingPatient || null);
-
-      // Find matching doctor record safely
-      const allDoctors = getDoctors();
-      const rawDName = toLowerStr(found.doctorName || found.doctor);
-      const cleanDName = rawDName.replace(/^dr\.\s*/, "");
-      const dId = toLowerStr(found.doctorId);
-
-      const matchingDoctor = allDoctors.find(d => {
-        const dRecordId = toLowerStr(d.id);
-        const dRecordName = toLowerStr(d.name).replace(/^dr\.\s*/, "");
-        return (
-          (dId !== "" && dRecordId !== "" && dRecordId === dId) ||
-          (cleanDName !== "" && dRecordName !== "" && (dRecordName.includes(cleanDName) || cleanDName.includes(dRecordName)))
-        );
-      });
-      setDoctorDetails(matchingDoctor || null);
-    } else {
-      setAppointment(null);
-    }
+    fetchDetails();
   }, [id]);
 
   const handleStatusChange = (newStatus) => {

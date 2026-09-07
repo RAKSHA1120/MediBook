@@ -10,9 +10,8 @@ import {
   ClipboardList,
   UserPlus
 } from "lucide-react";
-import { getDoctors, getPatients, getAppointments, getHospitals } from "../utils/storage";
-import { getHospitalsStorage } from "./AdminHospitals";
 import StatusBadge from "../components/StatusBadge";
+import { api } from "../utils/api";
 import "./AdminDashboard.css";
 
 function AdminDashboard() {
@@ -32,37 +31,59 @@ function AdminDashboard() {
   const [recentDoctors, setRecentDoctors] = useState([]);
 
   useEffect(() => {
-    const loadDashboardData = () => {
-      const hospitals = getHospitals();
-      const docs = getDoctors();
-      const pats = getPatients();
-      const appts = getAppointments();
+    const loadDashboardData = async () => {
+      try {
+        const [statsRes, hospitalsRes, docsRes, patsRes, apptsRes] = await Promise.all([
+          api.get("/Dashboard/stats"),
+          api.get("/Hospitals"),
+          api.get("/Doctors"),
+          api.get("/Patients"),
+          api.get("/Appointments")
+        ]);
 
-      const todayStr = new Date().toISOString().split("T")[0];
+        const hospitals = hospitalsRes.success && Array.isArray(hospitalsRes.data) ? hospitalsRes.data : [];
+        const docs = docsRes.success && Array.isArray(docsRes.data) ? docsRes.data : [];
+        const pats = patsRes.success && Array.isArray(patsRes.data) ? patsRes.data : [];
+        const rawAppts = apptsRes.success && Array.isArray(apptsRes.data) ? apptsRes.data : [];
+        const appts = rawAppts.map(a => ({
+          ...a,
+          date: a.appointmentDate ? String(a.appointmentDate).split('T')[0] : a.date,
+          time: a.appointmentTime || a.time,
+          type: a.appointmentType || a.type
+        }));
 
-      setStats({
-        totalHospitals: hospitals.length,
-        totalDoctors: docs.length,
-        totalPatients: pats.length,
-        totalAppointments: appts.length,
-        todayAppointments: appts.filter(a => a.date === todayStr || String(a.date).toLowerCase().includes("today")).length,
-        upcomingAppointments: appts.filter(a => (a.status || "").toLowerCase() === "confirmed" || (a.status || "").toLowerCase() === "pending").length,
-        activeDoctors: docs.filter(d => (d.status || "Active").toLowerCase() === "active").length
-      });
+        if (statsRes.success) {
+          setStats({
+            totalHospitals: statsRes.data.totalHospitals,
+            totalDoctors: statsRes.data.totalDoctors,
+            totalPatients: statsRes.data.totalPatients,
+            totalAppointments: statsRes.data.totalAppointments,
+            todayAppointments: statsRes.data.todayAppointments,
+            upcomingAppointments: appts.filter(a => (a.status || "").toLowerCase() === "confirmed" || (a.status || "").toLowerCase() === "pending" || (a.status || "").toLowerCase() === "upcoming").length,
+            activeDoctors: docs.filter(d => (d.status || "Active").toLowerCase() === "active").length
+          });
+        } else {
+          // fallback if stats endpoint fails
+          const todayStr = new Date().toISOString().split("T")[0];
+          setStats({
+            totalHospitals: hospitals.length,
+            totalDoctors: docs.length,
+            totalPatients: pats.length,
+            totalAppointments: appts.length,
+            todayAppointments: appts.filter(a => String(a.appointmentDate || a.date || "").startsWith(todayStr) || String(a.date).toLowerCase().includes("today")).length,
+            upcomingAppointments: appts.filter(a => (a.status || "").toLowerCase() === "confirmed" || (a.status || "").toLowerCase() === "pending" || (a.status || "").toLowerCase() === "upcoming").length,
+            activeDoctors: docs.filter(d => (d.status || "Active").toLowerCase() === "active").length
+          });
+        }
 
-      setRecentAppointments(appts.slice(-4).reverse());
-      setRecentDoctors(docs.slice(-4).reverse());
+        setRecentAppointments(appts.slice(-4).reverse());
+        setRecentDoctors(docs.slice(-4).reverse());
+      } catch (err) {
+        console.error("Failed to load dashboard data", err);
+      }
     };
 
     loadDashboardData();
-
-    window.addEventListener("medibook_hospitals_updated", loadDashboardData);
-    window.addEventListener("storage", loadDashboardData);
-
-    return () => {
-      window.removeEventListener("medibook_hospitals_updated", loadDashboardData);
-      window.removeEventListener("storage", loadDashboardData);
-    };
   }, []);
 
   return (

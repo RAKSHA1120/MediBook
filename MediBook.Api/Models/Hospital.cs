@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Collections.Generic;
 
 namespace MediBook.Api.Models
 {
@@ -8,25 +8,21 @@ namespace MediBook.Api.Models
 
         public string Name { get; set; } = string.Empty;
 
-        public string? Type { get; set; }
-
-        public string? Category { get; set; }
-
         public string? Address { get; set; }
-
-        public string? Location { get; set; }
-
-        public string? City { get; set; }
-
-        public string? State { get; set; }
 
         public string? Phone { get; set; }
 
         public string? Email { get; set; }
 
-        public string Status { get; set; } = "Active";
+        public string? Type { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string? Category { get; set; }
+
+        public int? BedCapacity { get; set; }
+
+        public string? City { get; set; }
+
+        public bool IsActive { get; set; } = true;
 
         // Relationship with Doctors
         public ICollection<Doctor> Doctors { get; set; } = new List<Doctor>();

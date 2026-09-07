@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Search, Eye, Users, UserCheck, CalendarCheck, Clock, Loader2, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, getCurrentDoctor, getPatients } from "../utils/storage";
+import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
 import StatusBadge from "../components/StatusBadge";
 import EmptyState from "../components/EmptyState";
 import "../pages/AdminShared.css";
@@ -68,66 +68,41 @@ function DoctorPatients() {
 
     const user = getCurrentUser();
     const doc = getCurrentDoctor();
-    const rawDocId = doc?.id ?? user?.refId ?? user?.id;
-    const rawDocName = doc?.name ?? user?.name;
+    const rawDocId = user?.doctorId || doc?.id || user?.refId || user?.id;
 
-    const docIdInt = parseInt(String(rawDocId || "").replace(/\D/g, ""), 10);
-    const normDocName = String(rawDocName || "").trim().toLowerCase();
+    const docIdInt = rawDocId || "";
 
     try {
-      const response = await fetch("https://localhost:7050/api/Appointments");
+      if (!docIdInt) {
+        setDoctorPatients([]);
+        return;
+      }
+      const response = await fetch(`http://localhost:5107/api/Appointments/doctor/${docIdInt}`);
       if (!response.ok) {
         throw new Error(`Server returned HTTP ${response.status}`);
       }
       const data = await response.json();
-      const allApiAppts = Array.isArray(data) ? data.map(normalizeBackendAppointment) : [];
+      const myAppts = Array.isArray(data) ? data.map(normalizeBackendAppointment) : [];
 
-      // Filter appointments belonging to current doctor
-      const myAppts = allApiAppts.filter((apt) => {
-        const aptDocIdInt = parseInt(String(apt.doctorId || "").replace(/\D/g, ""), 10);
-        const aptDocNameStr = String(apt.doctorName || "").trim().toLowerCase();
-
-        // 1. Doctor ID match
-        if (docIdInt && aptDocIdInt && docIdInt === aptDocIdInt) return true;
-
-        // 2. Doctor Name match
-        if (normDocName && aptDocNameStr && (normDocName === aptDocNameStr || normDocName.includes(aptDocNameStr) || aptDocNameStr.includes(normDocName))) return true;
-
-        // 3. Fallback for doctor ID 1 / default doctor if no specific doctor ID
-        if ((!docIdInt || docIdInt === 1) && (!aptDocIdInt || aptDocIdInt === 1)) return true;
-
-        return false;
-      });
-
-      const allPatients = getPatients();
       const patientMap = new Map();
 
       myAppts.forEach((apt) => {
         const pIdStr = String(apt.patientId ?? "").trim();
         const pNameStr = String(apt.patientName || apt.patient || "").trim();
 
-        let matchedPatient = allPatients.find((p) => {
-          const idStr = String(p.id ?? "").trim();
-          const nameStr = String(p.name ?? "").toLowerCase().trim();
-          return (
-            (pIdStr !== "" && pIdStr.toLowerCase() !== "n/a" && idStr.toLowerCase() === pIdStr.toLowerCase()) ||
-            (pNameStr !== "" && nameStr === pNameStr.toLowerCase())
-          );
-        });
-
-        const resolvedId = matchedPatient?.id || (pIdStr !== "" && pIdStr.toLowerCase() !== "n/a" ? pIdStr : `P-${pNameStr.replace(/\s+/g, "")}`);
+        const resolvedId = pIdStr !== "" && pIdStr.toLowerCase() !== "n/a" ? pIdStr : `P-${pNameStr.replace(/\s+/g, "")}`;
         const key = String(resolvedId).trim().toLowerCase();
         const aptDate = apt.date || "Today";
 
         if (!patientMap.has(key)) {
           patientMap.set(key, {
-            id: matchedPatient?.id || (pIdStr !== "" && pIdStr.toLowerCase() !== "n/a" ? pIdStr : "P-101"),
-            name: matchedPatient?.name || pNameStr || "Patient",
-            age: matchedPatient?.age ? `${matchedPatient.age} yrs` : (matchedPatient?.ageGender ? String(matchedPatient.ageGender) : "32 yrs"),
-            gender: matchedPatient?.gender || "Male",
-            contact: matchedPatient?.contact || matchedPatient?.phone || apt.patientContact || apt.contact || "N/A",
-            email: matchedPatient?.email || "N/A",
-            status: matchedPatient?.status || "Active",
+            id: resolvedId,
+            name: pNameStr || "Patient",
+            age: "N/A",
+            gender: "N/A",
+            contact: apt.patientContact || apt.contact || "N/A",
+            email: "N/A",
+            status: "Active",
             lastAppointment: aptDate,
             appointmentsCount: 1
           });

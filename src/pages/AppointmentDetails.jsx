@@ -31,14 +31,15 @@ import EmptyState from "../components/EmptyState";
 import { addNotification } from "../data/notifications";
 import { useAppointments } from "../context/AppointmentContext";
 import { getStoredPatientProfile } from "../data/patientProfile";
-import { getCurrentUser, getCurrentPatient, getDoctors, getAppointments } from "../utils/storage";
-import { checkIsSlotBooked, normalizeStatus } from "../utils/appointmentStorage";
+import { getCurrentUser } from "../utils/auth";
+
+
 import "./AppointmentDetails.css";
 
 function AppointmentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { appointments, cancelAppointment, rescheduleAppointment } = useAppointments();
+  const { appointments, cancelAppointment, rescheduleAppointment, isSlotBooked } = useAppointments();
 
   // Find target appointment from context or global storage
   const currentAppt = useMemo(() => {
@@ -267,7 +268,7 @@ function AppointmentDetails() {
     ];
 
     allSlots.forEach((slot) => {
-      if (checkIsSlotBooked(appointments, doctorId, newSelectedDate, slot, currentId, doctorName)) {
+      if (isSlotBooked(doctorId, newSelectedDate, slot)) {
         booked.push(slot);
       }
     });
@@ -311,7 +312,7 @@ function AppointmentDetails() {
     setIsRescheduling(true);
   };
 
-  const handleConfirmRescheduleSubmit = () => {
+  const handleConfirmRescheduleSubmit = async () => {
     if (!newSelectedDate || !newSelectedSlot) return;
 
     let formattedNewDate = newSelectedDate;
@@ -327,7 +328,7 @@ function AppointmentDetails() {
       }
     } catch (e) {}
 
-    const result = rescheduleAppointment(currentAppt.id, newSelectedDate, newSelectedSlot, formattedNewDate);
+    const result = await rescheduleAppointment(currentAppt.id, newSelectedDate, newSelectedSlot, formattedNewDate);
     if (!result.success) {
       showNotification("Reschedule Failed", result.message, "error");
       return;
@@ -339,7 +340,7 @@ function AppointmentDetails() {
     const pId = currentAppt.patientId || getCurrentPatient()?.id || getCurrentUser()?.refId || getCurrentUser()?.id || "P1";
     const uId = getCurrentUser()?.id || "U_P1";
 
-    addNotification({
+    await addNotification({
       type: "appointment",
       subType: "rescheduled",
       title: "Appointment Rescheduled",
@@ -357,14 +358,14 @@ function AppointmentDetails() {
   };
 
   // Cancel Handlers
-  const handleConfirmCancelSubmit = () => {
-    cancelAppointment(currentAppt.id);
+  const handleConfirmCancelSubmit = async () => {
+    await cancelAppointment(currentAppt.id);
     setShowCancelModal(false);
 
     const pId = currentAppt.patientId || getCurrentPatient()?.id || getCurrentUser()?.refId || getCurrentUser()?.id || "P1";
     const uId = getCurrentUser()?.id || "U_P1";
 
-    addNotification({
+    await addNotification({
       type: "appointment",
       subType: "cancelled",
       title: "Appointment Cancelled",
@@ -502,33 +503,25 @@ function AppointmentDetails() {
 
           {/* Medical Records / Prescription Section */}
           {(() => {
-              const prescriptions = JSON.parse(localStorage.getItem("medibook_prescriptions") || "[]");
-              const prescription = prescriptions.find(p => String(p.appointmentId) === String(currentAppt.id));
+              // The backend Appointment model has a `Notes` field which stores the prescription/consultation notes
+              const notes = currentAppt.notes;
               
-              if (!prescription && statusNorm !== "completed") return null;
+              if (!notes && statusNorm !== "completed") return null;
 
               return (
                   <div className="details-summary-section" style={{ marginTop: '24px' }}>
                     <h3 className="summary-section-title">Medical Records & Prescription</h3>
                     
-                    {!prescription ? (
+                    {!notes ? (
                         <div style={{ padding: '24px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', textAlign: 'center', border: '1px solid var(--border)' }}>
                             <p style={{ color: 'var(--text-secondary)' }}>The doctor hasn't added prescription notes for this consultation yet.</p>
                         </div>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            <div style={{ padding: '20px', background: 'var(--primary-soft)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--primary-light)' }}>
-                                <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: 'var(--primary)' }}>Consultation Notes / Diagnosis</h4>
-                                <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
-                                    {prescription.notes || "No notes provided."}
-                                </p>
-                            </div>
-                            <div style={{ padding: '20px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
-                                <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: 'var(--text-heading)' }}>Prescribed Medicines</h4>
-                                <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
-                                    {prescription.medicines || "No medicines prescribed."}
-                                </p>
-                            </div>
+                        <div style={{ padding: '20px', background: 'var(--primary-soft)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--primary-light)' }}>
+                            <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: 'var(--primary)' }}>Consultation Notes / Diagnosis</h4>
+                            <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                                {notes}
+                            </p>
                         </div>
                     )}
                   </div>

@@ -5,7 +5,8 @@ import SearchBox from "../components/SearchBox";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import StatusBadge from "../components/StatusBadge";
-import { getUsers, updateUser, updateDoctor, updatePatient } from "../utils/storage";
+import { api } from "../utils/api";
+
 import "./AdminDashboard.css";
 import "./AdminShared.css";
 
@@ -28,10 +29,20 @@ function AdminLoginManagement() {
     loadUsersData();
   }, []);
 
-  const loadUsersData = () => {
-    const allUsers = getUsers();
-    setUsers(allUsers);
+  const loadUsersData = async () => {
+    try {
+      const res = await api.get("/Users");
+      if (res.success && Array.isArray(res.data)) {
+        setUsers(res.data);
+      } else {
+        setUsers([]);
+      }
+    } catch (err) {
+      console.error("Failed to load users", err);
+      setUsers([]);
+    }
   };
+
 
   // Close dropdown on outside click
   useEffect(() => {

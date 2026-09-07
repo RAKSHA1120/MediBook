@@ -1,4 +1,5 @@
-﻿using MediBook.Api.Data;
+using MediBook.Api.Data;
+using MediBook.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,7 +27,16 @@ namespace MediBook.Api.Controllers
             return Ok(notifications);
         }
 
-        // GET: api/Notifications/user/1
+        // GET: api/Notifications/{id}
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetNotification(int id)
+        {
+            var notification = await _context.Notifications.FindAsync(id);
+            if (notification == null) return NotFound();
+            return Ok(notification);
+        }
+
+        // GET: api/Notifications/user/{userId}
         [HttpGet("user/{userId}")]
         public async Task<IActionResult> GetUserNotifications(int userId)
         {
@@ -38,29 +48,41 @@ namespace MediBook.Api.Controllers
             return Ok(notifications);
         }
 
-        // PUT: api/Notifications/1/read
+        // POST: api/Notifications
+        [HttpPost]
+        public async Task<IActionResult> CreateNotification([FromBody] Notification notification)
+        {
+            if (notification == null) return BadRequest();
+            notification.CreatedAt = DateTime.UtcNow;
+            
+            _context.Notifications.Add(notification);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetNotification), new { id = notification.Id }, notification);
+        }
+
+        // PUT: api/Notifications/{id}/read
         [HttpPut("{id}/read")]
         public async Task<IActionResult> MarkAsRead(int id)
         {
-            var notification = await _context.Notifications
-                .FirstOrDefaultAsync(n => n.Id == id);
-
-            if (notification == null)
-            {
-                return NotFound(new
-                {
-                    message = "Notification not found."
-                });
-            }
+            var notification = await _context.Notifications.FindAsync(id);
+            if (notification == null) return NotFound(new { message = "Notification not found." });
 
             notification.IsRead = true;
-
             await _context.SaveChangesAsync();
+            return NoContent();
+        }
 
-            return Ok(new
-            {
-                message = "Notification marked as read."
-            });
+        // DELETE: api/Notifications/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteNotification(int id)
+        {
+            var notification = await _context.Notifications.FindAsync(id);
+            if (notification == null) return NotFound();
+
+            _context.Notifications.Remove(notification);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }

@@ -16,13 +16,15 @@ import {
   Loader2,
   AlertCircle
 } from "lucide-react";
-import { getDoctors, getCurrentPatient, getCurrentUser, getPatientAppointments, addNotification } from "../utils/storage";
+import { getCurrentUser } from "../utils/auth";
+
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 import PageHeader from "../components/PageHeader";
 import AppointmentCard from "../components/AppointmentCard";
 import EmptyState from "../components/EmptyState";
+import { api } from "../utils/api";
 import "./MyAppointments.css";
 
 import { useAppointments } from "../context/AppointmentContext";
@@ -46,17 +48,16 @@ function MyAppointments() {
   // Toast State
   const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
 
-  // Fetch Appointments from ASP.NET Core backend (GET /api/Appointments)
+  // Fetch Appointments from ASP.NET Core backend
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("https://localhost:7050/api/Appointments");
-      if (!response.ok) {
-        throw new Error(`Server returned HTTP ${response.status}`);
+      const response = await api.get("/Appointments");
+      if (!response.success) {
+        throw new Error(response.error);
       }
-      const data = await response.json();
-      setApiAppointments(Array.isArray(data) ? data : []);
+      setApiAppointments(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error("Error loading appointments from backend:", err);
       setError("Unable to connect to backend server. Please check if the ASP.NET Core API is running.");
@@ -123,21 +124,18 @@ function MyAppointments() {
     // Use backend API data if available, otherwise fallback to context
     const sourceList = apiAppointments.length > 0 ? apiAppointments.map(normalizeApiAppointment) : appointments;
 
-    const pIdInt = parseInt(String(p?.id || p?.patientId || u?.refId || u?.id || "").replace(/\D/g, ""), 10);
+    const pIdInt = u?.refId || p?.id || p?.patientId || u?.id;
     const pNameStr = String(p?.name || u?.name || "").trim().toLowerCase();
 
     return sourceList.filter((apt) => {
-      const aptPIdInt = parseInt(String(apt.patientId || "").replace(/\D/g, ""), 10);
+      const aptPIdInt = apt.patientId;
       const aptPNameStr = String(apt.patientName || "").trim().toLowerCase();
 
       // 1. Direct numeric patient ID match
-      if (pIdInt && aptPIdInt && pIdInt === aptPIdInt) return true;
+      if (pIdInt && aptPIdInt && String(pIdInt) === String(aptPIdInt)) return true;
 
       // 2. Patient Name match
       if (pNameStr && aptPNameStr && (pNameStr === aptPNameStr || pNameStr.includes(aptPNameStr) || aptPNameStr.includes(pNameStr))) return true;
-
-      // 3. Fallback for default patient ID 1 / P1
-      if ((!pIdInt || pIdInt === 1) && (!aptPIdInt || aptPIdInt === 1)) return true;
 
       return false;
     });
@@ -237,17 +235,21 @@ function MyAppointments() {
   };
 
   // Handle Confirm Cancel
-  const handleConfirmCancel = () => {
+  const handleConfirmCancel = async () => {
     if (!appointmentToCancel) return;
 
-    setApiAppointments((prev) =>
-      prev.map((a) => (String(a.id) === String(appointmentToCancel.id) ? { ...a, status: "Cancelled" } : a))
-    );
+    // Call backend to cancel
+    const res = await api.put(`/Appointments/${appointmentToCancel.id}/status`, { status: "Cancelled" });
+    
+    if (res.success || res.error === "Network error or API offline") {
+      setApiAppointments((prev) =>
+        prev.map((a) => (String(a.id) === String(appointmentToCancel.id) ? { ...a, status: "Cancelled" } : a))
+      );
 
-    cancelAppointment(appointmentToCancel.id);
-    setShowCancelModal(false);
+      cancelAppointment(appointmentToCancel.id);
+      setShowCancelModal(false);
 
-    const docName = appointmentToCancel.doctorName || appointmentToCancel.doctor || "the doctor";
+      const docName = appointmentToCancel.doctorName || appointmentToCancel.doctor || "the doctor";
     const pId = appointmentToCancel.patientId || getCurrentPatient()?.id || getCurrentUser()?.refId || getCurrentUser()?.id || "P1";
     const uId = getCurrentUser()?.id || "U_P1";
 
@@ -268,6 +270,13 @@ function MyAppointments() {
       "Your appointment has been successfully cancelled.",
       "error"
     );
+    } else {
+      showNotification(
+        "Cancellation Failed",
+        res.error || "Failed to cancel appointment. Please try again.",
+        "error"
+      );
+    }
   };
 
   // Readable date formatter

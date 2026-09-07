@@ -3,8 +3,11 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add controllers
-builder.Services.AddControllers();
+// Add controllers with JSON options
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+});
 
 // Add Swagger / OpenAPI services
 builder.Services.AddEndpointsApiExplorer();
@@ -33,6 +36,9 @@ builder.Services.AddCors(options =>
 });
 var app = builder.Build();
 
+
+
+
 // Enable Swagger UI and JSON endpoint
 app.UseSwagger();
 app.UseSwaggerUI(c =>
@@ -42,7 +48,10 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseCors("AllowReactApp");
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthorization();
 

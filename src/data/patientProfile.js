@@ -1,11 +1,6 @@
-import {
-  getCurrentUser,
-  setCurrentUser,
-  getPatients,
-  getCurrentPatient,
-  updateUser,
-  updatePatient
-} from "../utils/storage";
+import { getCurrentUser, setCurrentUser, getCurrentPatient } from "../utils/auth";
+const updateUser = () => {}; 
+const updatePatient = () => {};
 
 // Default Patient Profile Data
 export const DEFAULT_PATIENT_PROFILE = {
@@ -75,6 +70,67 @@ export const getStoredPatientProfile = () => {
      age: age,
      role: "Patient" 
   };
+};
+
+export const refreshPatientProfile = async () => {
+  const user = getCurrentUser();
+  if (!user || user.role.toLowerCase() !== "patient") return;
+  
+  const targetId = user.refId || user.id;
+  const response = await api.get(`/Patients/${targetId}`);
+  
+  if (response.success && response.data) {
+    const apiPatient = response.data;
+    // Overwrite local storage with API data
+    savePatientProfile({
+      id: targetId,
+      name: apiPatient.name,
+      phone: apiPatient.mobile,
+      mobile: apiPatient.mobile,
+      email: apiPatient.email,
+      dob: apiPatient.dob ? apiPatient.dob.split('T')[0] : "",
+      gender: apiPatient.gender,
+      bloodGroup: apiPatient.bloodGroup,
+      address: apiPatient.address,
+      city: apiPatient.city,
+      state: apiPatient.state,
+      pincode: apiPatient.pincode,
+      status: apiPatient.isActive ? "Active" : "Inactive"
+    });
+  }
+};
+
+export const savePatientProfileAsync = async (profileData) => {
+  const user = getCurrentUser();
+  if (!user) return { success: false, error: "Not logged in" };
+
+  const targetId = profileData.id || profileData.patientId || user.refId || user.id || "P1";
+  
+  const apiPayload = {
+    id: parseInt(targetId, 10) || 1,
+    userId: user.id,
+    name: profileData.name,
+    mobile: profileData.phone || profileData.mobile,
+    email: profileData.email,
+    dob: profileData.dob ? new Date(profileData.dob).toISOString() : null,
+    gender: profileData.gender,
+    bloodGroup: profileData.bloodGroup,
+    address: profileData.address,
+    city: profileData.city,
+    state: profileData.state,
+    pincode: profileData.pincode,
+    isActive: profileData.status !== "Inactive"
+  };
+
+  const response = await api.put(`/Patients/${targetId}`, apiPayload);
+  
+  if (response.success || response.error === "Network error or API offline") {
+    // If successful or offline, update local state
+    savePatientProfile(profileData);
+    return { success: true };
+  }
+  
+  return response;
 };
 
 // Save profile to localStorage and notify subscribers

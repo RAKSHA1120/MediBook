@@ -76,14 +76,14 @@ function AppRoutes() {
         <Route path="/design-system" element={<DesignSystem />} />
 
         {/* Doctor Routes */}
-        <Route path="/doctor/dashboard" element={<PatientLayout><Dashboard /></PatientLayout>} />
-        <Route path="/doctor/appointments" element={<PatientLayout><DoctorAppointments /></PatientLayout>} />
-        <Route path="/doctor/patients" element={<PatientLayout><DoctorPatients /></PatientLayout>} />
-        <Route path="/doctor/patients/:id" element={<PatientLayout><DoctorPatientDetails /></PatientLayout>} />
-        <Route path="/doctor/schedule" element={<PatientLayout><DoctorSchedule /></PatientLayout>} />
-        <Route path="/doctor/notifications" element={<PatientLayout><DoctorNotifications /></PatientLayout>} />
-        <Route path="/doctor/profile" element={<PatientLayout><DoctorProfile /></PatientLayout>} />
-        <Route path="/doctor/settings" element={<PatientLayout><DoctorSettings /></PatientLayout>} />
+        <Route path="/doctor/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
+        <Route path="/doctor/appointments" element={<DashboardLayout><DoctorAppointments /></DashboardLayout>} />
+        <Route path="/doctor/patients" element={<DashboardLayout><DoctorPatients /></DashboardLayout>} />
+        <Route path="/doctor/patients/:id" element={<DashboardLayout><DoctorPatientDetails /></DashboardLayout>} />
+        <Route path="/doctor/schedule" element={<DashboardLayout><DoctorSchedule /></DashboardLayout>} />
+        <Route path="/doctor/notifications" element={<DashboardLayout><DoctorNotifications /></DashboardLayout>} />
+        <Route path="/doctor/profile" element={<DashboardLayout><DoctorProfile /></DashboardLayout>} />
+        <Route path="/doctor/settings" element={<DashboardLayout><DoctorSettings /></DashboardLayout>} />
 
         {/* Hospital Routes */}
         <Route path="/hospital-dashboard" element={<HospitalLayout><HospitalDashboard /></HospitalLayout>} />

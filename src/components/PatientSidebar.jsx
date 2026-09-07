@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import Button from "./Button";
 import { getStoredNotifications } from "../data/notifications";
-import { getCurrentUser, getCurrentPatient, getCurrentDoctor, getPatientNotifications, getDoctorNotifications, clearCurrentUser } from "../utils/storage";
+import { getCurrentUser, clearCurrentUser } from "../utils/auth";
+
 import "./PatientSidebar.css";
 
 function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) {
@@ -28,19 +29,19 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
 
   // Sync notification unread count dynamically for current patient / doctor
   useEffect(() => {
-    const updateUnread = () => {
+    const updateUnread = async () => {
       try {
         const u = getCurrentUser();
         if (u && u.role === "doctor") {
           const doc = getCurrentDoctor();
           const docId = doc?.id ?? u?.refId ?? u?.id;
-          const notifs = getDoctorNotifications(docId, u?.id);
+          const notifs = await getDoctorNotifications(docId, u?.id);
           const unread = notifs.filter((n) => !n.read).length;
           setUnreadCount(unread);
         } else {
           const p = getCurrentPatient();
           const pId = p?.id ?? u?.refId ?? u?.id;
-          const notifs = getPatientNotifications(pId, u?.id);
+          const notifs = await getPatientNotifications(pId, u?.id);
           const unread = notifs.filter((n) => !n.read).length;
           setUnreadCount(unread);
         }

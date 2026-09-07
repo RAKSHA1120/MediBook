@@ -53,6 +53,29 @@ namespace MediBook.Api.Controllers
             return Ok(schedules);
         }
 
+        // GET: api/DoctorSchedules/1
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetSchedule(int id)
+        {
+            var schedule = await _context.DoctorSchedules
+                .Where(ds => ds.Id == id)
+                .Select(ds => new
+                {
+                    id = ds.Id,
+                    doctorId = ds.DoctorId,
+                    doctorName = ds.Doctor != null ? ds.Doctor.Name : null,
+                    dayOfWeek = ds.DayOfWeek,
+                    startTime = ds.StartTime,
+                    endTime = ds.EndTime,
+                    isAvailable = ds.IsAvailable
+                })
+                .FirstOrDefaultAsync();
+
+            if (schedule == null) return NotFound();
+
+            return Ok(schedule);
+        }
+
         // GET: api/DoctorSchedules/doctor/1
         [HttpGet("doctor/{doctorId}")]
         public async Task<IActionResult> GetDoctorSchedules(int doctorId)
