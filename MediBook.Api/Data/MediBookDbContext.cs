@@ -1,4 +1,4 @@
-﻿using MediBook.Api.Models;
+using MediBook.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace MediBook.Api.Data
@@ -42,6 +42,11 @@ namespace MediBook.Api.Data
                 .WithMany(h => h.Doctors)
                 .HasForeignKey(d => d.HospitalId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Doctor → ConsultationFee precision
+            modelBuilder.Entity<Doctor>()
+                .Property(d => d.ConsultationFee)
+                .HasPrecision(18, 2);
 
             // Doctor → DoctorSchedules (One-to-Many)
             modelBuilder.Entity<DoctorSchedule>()
