@@ -110,6 +110,7 @@ function AdminPatients() {
 
   // Open Edit Modal with pre-filled patient info
   const handleOpenEdit = (patient) => {
+    setSelectedPatient(patient); // ensure selectedPatient is always set when editing
     setEditFormData({
       id: patient.id,
       name: patient.name || "",
@@ -117,7 +118,8 @@ function AdminPatients() {
       gender: patient.gender || "Male",
       contact: patient.contact || patient.phone || "",
       email: patient.email || "",
-      status: patient.status || "Active"
+      status: patient.status || "Active",
+      userId: patient.userId
     });
     setIsEditModalOpen(true);
   };
@@ -127,7 +129,7 @@ function AdminPatients() {
     e.preventDefault();
     const updates = {
       id: editFormData.id,
-      userId: selectedPatient.userId,
+      userId: editFormData.userId,
       name: editFormData.name.trim(),
       age: editFormData.age,
       gender: editFormData.gender,

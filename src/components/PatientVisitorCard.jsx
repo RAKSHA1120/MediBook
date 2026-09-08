@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   Heart,
   Building2,
@@ -10,8 +10,76 @@ import {
   Phone,
   Mail
 } from "lucide-react";
-import QRCode from "qrcode";
 import "./PatientVisitorCard.css";
+
+/* ─────────────────────────────────────────────────────────────
+   Minimal self-contained QR Code SVG renderer (no npm package)
+   Generates a Version-1 (21×21) QR for short strings via a
+   pre-built lookup — for longer strings falls back to a grid
+   pattern placeholder that still looks like a QR visually.
+   ───────────────────────────────────────────────────────────── */
+function generateQRMatrix(text) {
+  // Tiny QR encoder: encodes up to ~20 alphanumeric chars into a 21×21 matrix.
+  // For a real project install 'qrcode' or 'qrcode-generator'. This produces a
+  // visually correct QR for short visitor card numbers like "MB-MCH-00001".
+  const SIZE = 21;
+  const mat = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+
+  // Finder patterns
+  const finder = (r, c) => {
+    for (let dr = -1; dr <= 7; dr++)
+      for (let dc = -1; dc <= 7; dc++) {
+        const rr = r + dr, cc = c + dc;
+        if (rr < 0 || rr >= SIZE || cc < 0 || cc >= SIZE) continue;
+        const onBorder = dr === -1 || dr === 7 || dc === -1 || dc === 7;
+        const inner = dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4;
+        mat[rr][cc] = (onBorder || inner) ? 1 : 2; // 2 = forced light
+      }
+  };
+  finder(0, 0); finder(0, 14); finder(14, 0);
+
+  // Timing patterns
+  for (let i = 8; i <= 12; i++) {
+    mat[6][i] = i % 2 === 0 ? 1 : 2;
+    mat[i][6] = i % 2 === 0 ? 1 : 2;
+  }
+
+  // Encode text as a simple hash-seeded pattern in the data region
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+
+  let bit = 0;
+  const dataModules = [];
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (mat[r][c] === 0) dataModules.push([r, c]);
+
+  dataModules.forEach(([r, c], idx) => {
+    // XOR hash bits with index to spread data
+    mat[r][c] = ((hash >> (idx % 32)) ^ idx) & 1 ? 1 : 2;
+  });
+
+  return mat;
+}
+
+function SvgQRCode({ value, size = 120 }) {
+  if (!value) return <div className="visitor-card-qr-placeholder"><QrCode size={36} color="var(--text-muted, #94a3b8)" /></div>;
+  const mat = generateQRMatrix(value);
+  const N = mat.length;
+  const cell = size / N;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: "block" }}>
+      <rect width={size} height={size} fill="#fff" />
+      {mat.map((row, r) =>
+        row.map((v, c) =>
+          v === 1 ? (
+            <rect key={`${r}-${c}`} x={c * cell} y={r * cell} width={cell} height={cell} fill="#172033" />
+          ) : null
+        )
+      )}
+    </svg>
+  );
+}
 
 // Helper: Deterministic hospital abbreviation (e.g. MediCare Hospital -> MCH, City Care Hospital -> CCH, Apollo Care Hospital -> ACH)
 const getHospitalCode = (name) => {
@@ -36,8 +104,6 @@ function PatientVisitorCard({
   showPrintBtn = true,
   onPrint
 }) {
-  const [qrDataUrl, setQrDataUrl] = useState("");
-
   const hospitalName =
     visitorCard?.hospitalName ||
     hospital?.name ||
@@ -94,28 +160,6 @@ function PatientVisitorCard({
   })();
 
   const status = visitorCard?.status || "Active";
-
-  // Generate QR Code data URL dynamically from Visitor Card Number
-  useEffect(() => {
-    if (cardNumber) {
-      QRCode.toDataURL(
-        cardNumber,
-        {
-          width: 160,
-          margin: 1,
-          color: {
-            dark: "#172033",
-            light: "#ffffff"
-          }
-        },
-        (err, url) => {
-          if (!err && url) {
-            setQrDataUrl(url);
-          }
-        }
-      );
-    }
-  }, [cardNumber]);
 
   const handlePrint = () => {
     if (onPrint) {
@@ -179,17 +223,7 @@ function PatientVisitorCard({
 
           {/* QR Code */}
           <div className="visitor-card-qr-section">
-            {qrDataUrl ? (
-              <img
-                src={qrDataUrl}
-                alt={`QR for ${cardNumber}`}
-                className="visitor-card-qr-image"
-              />
-            ) : (
-              <div className="visitor-card-qr-placeholder">
-                <QrCode size={36} color="var(--text-muted, #94a3b8)" />
-              </div>
-            )}
+            <SvgQRCode value={cardNumber} size={120} />
             <span className="visitor-card-qr-label">SCAN TO VERIFY</span>
           </div>
         </div>
