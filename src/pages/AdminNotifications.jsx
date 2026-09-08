@@ -1,9 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCheck, Bell, Calendar, Info, BellOff, Trash2 } from "lucide-react";
+import { CheckCheck, Bell, Calendar, Info, BellOff } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import NotificationCard from "../components/NotificationCard";
+import { getCurrentUser } from "../utils/auth";
+import { api } from "../utils/api";
 
 import "./Notifications.css";
 
@@ -20,9 +22,29 @@ function AdminNotifications() {
     return () => window.removeEventListener("medibook_notifications_updated", handleUpdate);
   }, []);
 
-  const loadAdminNotifications = () => {
-    const allNotifs = getNotifications();
-    setNotifications(allNotifs);
+  const loadAdminNotifications = async () => {
+    const user = getCurrentUser();
+    try {
+      const endpoint = user?.id ? `/Notifications/user/${user.id}` : "/Notifications";
+      const res = await api.get(endpoint);
+      if (res.success && Array.isArray(res.data)) {
+        setNotifications(
+          res.data.map((n) => ({
+            id: n.id,
+            title: n.title,
+            message: n.message,
+            type: n.type || "appointment",
+            read: n.isRead,
+            isRead: n.isRead,
+            appointmentId: n.appointmentId,
+            createdAt: n.createdAt,
+            timestamp: n.createdAt,
+          }))
+        );
+      }
+    } catch (e) {
+      console.warn("Failed to load admin notifications", e);
+    }
   };
 
   const counts = useMemo(() => {
@@ -32,7 +54,7 @@ function AdminNotifications() {
     ).length;
     const reminders = notifications.filter((n) => n.type === "reminder").length;
     const system = notifications.filter((n) => n.type === "system" || (!n.type && !n.appointmentId)).length;
-    const unread = notifications.filter((n) => !n.read).length;
+    const unread = notifications.filter((n) => !n.read && !n.isRead).length;
     return { all, appointments, reminders, system, unread };
   }, [notifications]);
 
@@ -51,20 +73,24 @@ function AdminNotifications() {
     return notifications;
   }, [notifications, activeTab]);
 
-  const handleMarkAll = () => {
-    markAllNotificationsAsRead();
-    loadAdminNotifications();
+  const handleMarkAll = async () => {
+    const unreadItems = notifications.filter((n) => !n.read && !n.isRead);
+    for (const item of unreadItems) {
+      try {
+        await api.put(`/Notifications/${item.id}/read`);
+      } catch (e) {}
+    }
+    await loadAdminNotifications();
+    window.dispatchEvent(new Event("medibook_notifications_updated"));
   };
 
-  const handleClearAll = () => {
-    clearAllNotifications();
-    loadAdminNotifications();
-  };
-
-  const handleCardClick = (notif) => {
-    if (!notif.read) {
-      markNotificationAsRead(notif.id);
-      loadAdminNotifications();
+  const handleCardClick = async (notif) => {
+    if (!notif.read && !notif.isRead) {
+      try {
+        await api.put(`/Notifications/${notif.id}/read`);
+        window.dispatchEvent(new Event("medibook_notifications_updated"));
+      } catch (e) {}
+      await loadAdminNotifications();
     }
     if (notif.appointmentId) {
       navigate(`/admin/appointments/${notif.appointmentId}`);

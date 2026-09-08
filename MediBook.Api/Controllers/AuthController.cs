@@ -56,21 +56,40 @@ namespace MediBook.Api.Controllers
                 if (user.Role.ToLower() == "patient")
                 {
                     var p = await _context.Patients.FirstOrDefaultAsync(x => x.UserId == user.Id);
-                    if (p != null) refId = p.Id;
+                    if (p != null)
+                    {
+                        if (!p.IsActive)
+                        {
+                            return Unauthorized(new { message = "This patient account has been deactivated. Please contact your administrator." });
+                        }
+                        refId = p.Id;
+                    }
                 }
                 else if (user.Role.ToLower() == "doctor")
                 {
-                    var d = await _context.Doctors.FirstOrDefaultAsync(x => x.UserId == user.Id);
-                    if (d != null) refId = d.Id;
+                    var d = await _context.Doctors.FirstOrDefaultAsync(x => x.UserId == user.Id)
+                            ?? await _context.Doctors.FirstOrDefaultAsync(x => x.Email == user.Email);
+                    if (d != null)
+                    {
+                        if (!d.IsActive)
+                        {
+                            return Unauthorized(new { message = "This doctor account has been deactivated. Please contact your administrator." });
+                        }
+                        refId = d.Id;
+                    }
                 }
                 else if (user.Role.ToLower() == "hospital")
                 {
-                    var h = await _context.Hospitals.FirstOrDefaultAsync(x => x.Email == user.Email);
-                    if (h == null)
+                    var h = await _context.Hospitals.FirstOrDefaultAsync(x => x.Email == user.Email)
+                            ?? await _context.Hospitals.FirstOrDefaultAsync(x => x.Name == user.Name);
+                    if (h != null)
                     {
-                        h = await _context.Hospitals.FirstOrDefaultAsync(x => x.Name == user.Name);
+                        if (!h.IsActive)
+                        {
+                            return Unauthorized(new { message = "This hospital account has been deactivated. Please contact your administrator." });
+                        }
+                        refId = h.Id;
                     }
-                    if (h != null) refId = h.Id;
                 }
 
                 return Ok(new

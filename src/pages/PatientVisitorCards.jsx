@@ -193,6 +193,7 @@ function PatientVisitorCards() {
           onClose={handleCloseModal}
           title="Hospital Patient Visitor Card"
           size="md"
+          className="visitor-card-modal"
         >
           <div style={{ display: "flex", justifyContent: "center", padding: "8px 0" }}>
             <PatientVisitorCard

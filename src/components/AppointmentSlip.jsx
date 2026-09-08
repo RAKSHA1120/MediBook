@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Heart, Printer, CheckCircle2, ShieldCheck, MapPin, Building2, Calendar, Clock, User, Tag } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import Button from "./Button";
@@ -38,18 +38,34 @@ function AppointmentSlip({ appointment, patient, showPrintBtn = true, onPrint })
   const displayTime = appointment.time || "10:30 AM";
   const status = appointment.status || "confirmed";
 
+  // Add/remove print class on body for appointment slip print isolation
+  useEffect(() => {
+    const handleAfterPrint = () => {
+      document.body.classList.remove("printing-appointment-slip");
+    };
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      window.removeEventListener("afterprint", handleAfterPrint);
+      document.body.classList.remove("printing-appointment-slip");
+    };
+  }, []);
+
   const handlePrint = () => {
     if (onPrint) {
       onPrint();
     } else {
-      window.print();
+      document.body.classList.remove("printing-visitor-card");
+      document.body.classList.add("printing-appointment-slip");
+      requestAnimationFrame(() => {
+        window.print();
+      });
     }
   };
 
   const visitorCardNumber = appointment?.visitorCardNumber || appointment?.visitorCard?.visitorCardNumber || null;
 
   return (
-    <div className="appointment-slip-card">
+    <div className="appointment-slip-card printable-appointment-slip">
       {/* Top Slip Header / Branding */}
       <div className="slip-header">
         <div className="slip-brand">

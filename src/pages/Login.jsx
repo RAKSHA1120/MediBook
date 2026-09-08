@@ -161,8 +161,20 @@ function Login({ initialTab = "signin" }) {
             setErrors({ mobile: "Invalid Doctor email or password" });
           }
         } else {
-          setCurrentUser(user);
           const role = user.role.toLowerCase();
+          if (role === "doctor" && !user.doctorId) {
+            if (user.refId) {
+              user.doctorId = user.refId;
+            } else {
+              try {
+                const docRes = await api.get(`/Doctors/user/${user.id}`);
+                if (docRes.success && docRes.data) {
+                  user.doctorId = docRes.data.id;
+                }
+              } catch (e) {}
+            }
+          }
+          setCurrentUser(user);
           if (role === "admin") navigate("/admin/dashboard");
           else if (role === "hospital") navigate("/hospital/dashboard");
           else if (role === "doctor") navigate("/doctor/dashboard");

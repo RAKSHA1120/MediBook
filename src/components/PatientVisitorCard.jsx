@@ -117,11 +117,27 @@ function PatientVisitorCard({
     }
   }, [cardNumber]);
 
+  // Add/remove print class on body for visitor card print isolation
+  useEffect(() => {
+    const handleAfterPrint = () => {
+      document.body.classList.remove("printing-visitor-card");
+    };
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      window.removeEventListener("afterprint", handleAfterPrint);
+      document.body.classList.remove("printing-visitor-card");
+    };
+  }, []);
+
   const handlePrint = () => {
     if (onPrint) {
       onPrint();
     } else {
-      window.print();
+      document.body.classList.remove("printing-appointment-slip");
+      document.body.classList.add("printing-visitor-card");
+      requestAnimationFrame(() => {
+        window.print();
+      });
     }
   };
 

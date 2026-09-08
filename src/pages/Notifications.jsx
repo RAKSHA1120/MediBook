@@ -16,16 +16,26 @@ function Notifications() {
   const [activeTab, setActiveTab] = useState("all");
 
   const fetchApiNotifications = async () => {
-    const res = await api.get("/Notifications");
-    if (res.success && Array.isArray(res.data)) {
-      // Map API fields if needed, but assuming they match for now
-      // Or just combine with local notifications
-      setNotifications(res.data);
-    } else {
-      const p = getCurrentPatient();
-      const u = getCurrentUser();
-      setNotifications(await getPatientNotifications(p?.id, u?.id));
+    const u = getCurrentUser();
+    if (u?.id) {
+      const res = await api.get(`/Notifications/user/${u.id}`);
+      if (res.success && Array.isArray(res.data)) {
+        setNotifications(res.data.map(n => ({
+          id: n.id,
+          userId: n.userId,
+          title: n.title,
+          message: n.message,
+          type: n.type || "appointment",
+          read: n.isRead,
+          isRead: n.isRead,
+          createdAt: n.createdAt,
+          timestamp: n.createdAt
+        })));
+        return;
+      }
     }
+    const p = getCurrentPatient();
+    setNotifications(await getPatientNotifications(p?.id, u?.id));
   };
 
   useEffect(() => {
