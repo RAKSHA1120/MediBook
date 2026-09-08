@@ -10,6 +10,7 @@ const NotificationContext = createContext({
   fetchNotifications: async () => {},
   markAsRead: async () => {},
   markAllAsRead: async () => {},
+  clearAll: async () => {},
   showToast: () => {},
 });
 
@@ -45,11 +46,9 @@ export function NotificationProvider({ children }) {
     }
 
     try {
-      const endpoint = user.role?.toLowerCase() === "admin"
-        ? "/Notifications"
-        : `/Notifications/user/${user.id}`;
-
+      const endpoint = `/Notifications/user/${user.id}`;
       const res = await api.get(endpoint);
+
       if (res.success && Array.isArray(res.data)) {
         const mapped = res.data.map((n) => ({
           id: n.id,
@@ -57,8 +56,10 @@ export function NotificationProvider({ children }) {
           title: n.title,
           message: n.message,
           type: n.type || "appointment",
-          read: n.isRead,
-          isRead: n.isRead,
+          subType: n.subType,
+          appointmentId: n.appointmentId,
+          read: Boolean(n.isRead),
+          isRead: Boolean(n.isRead),
           createdAt: n.createdAt,
           timestamp: n.createdAt,
         }));
@@ -101,6 +102,20 @@ export function NotificationProvider({ children }) {
     window.dispatchEvent(new Event("medibook_notifications_updated"));
   }, [notifications]);
 
+  const clearAll = useCallback(async () => {
+    const toDelete = [...notifications];
+    setNotifications([]);
+    setUnreadCount(0);
+    for (const item of toDelete) {
+      try {
+        await api.delete(`/Notifications/${item.id}`);
+      } catch (e) {
+        // ignore individual failures
+      }
+    }
+    window.dispatchEvent(new Event("medibook_notifications_updated"));
+  }, [notifications]);
+
   // Connect to SignalR when logged in, disconnect on logout
   useEffect(() => {
     const syncConnection = async () => {
@@ -125,8 +140,15 @@ export function NotificationProvider({ children }) {
     const handleAuthChange = () => syncConnection();
     window.addEventListener("medibook_current_user_updated", handleAuthChange);
 
+    // Re-sync on global notification updates (mark-as-read, clear-all, etc.)
+    const handleNotifsUpdated = () => {
+      fetchNotifications();
+    };
+    window.addEventListener("medibook_notifications_updated", handleNotifsUpdated);
+
     return () => {
       window.removeEventListener("medibook_current_user_updated", handleAuthChange);
+      window.removeEventListener("medibook_notifications_updated", handleNotifsUpdated);
       notificationHub.stopConnection();
     };
   }, [fetchNotifications]);
@@ -142,6 +164,8 @@ export function NotificationProvider({ children }) {
         title: incoming.title || "New Notification",
         message: incoming.message || "",
         type: incoming.type || "appointment",
+        subType: incoming.subType,
+        appointmentId: incoming.appointmentId,
         isRead: incoming.isRead || false,
         read: incoming.isRead || false,
         createdAt: incoming.createdAt || new Date().toISOString(),
@@ -194,6 +218,7 @@ export function NotificationProvider({ children }) {
         fetchNotifications,
         markAsRead,
         markAllAsRead,
+        clearAll,
         showToast,
       }}
     >
