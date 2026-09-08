@@ -1,4 +1,6 @@
 import { getCurrentUser, setCurrentUser, getCurrentPatient } from "../utils/auth";
+import { api } from "../utils/api";
+
 const updateUser = () => {}; 
 const updatePatient = () => {};
 
