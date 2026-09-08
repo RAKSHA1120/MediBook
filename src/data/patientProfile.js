@@ -47,7 +47,7 @@ export const getStoredPatientProfile = () => {
      } catch (e) {}
   }
 
-  const patientId = patientRecord?.id || user.refId || user.id || "P1";
+  const patientId = user.refId || patientRecord?.id || user.id || "P1";
 
   let rawName = extraData.name || patientRecord?.name || user.name || "Patient";
   if (rawName.startsWith("Patient (") && rawName.endsWith(")")) {
@@ -106,7 +106,7 @@ export const savePatientProfileAsync = async (profileData) => {
   const user = getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
 
-  const targetId = profileData.id || profileData.patientId || user.refId || user.id || "P1";
+  const targetId = user.refId || profileData.patientId || profileData.id || user.id || "P1";
   
   const apiPayload = {
     id: parseInt(targetId, 10) || 1,
