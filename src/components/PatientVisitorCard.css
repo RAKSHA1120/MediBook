@@ -318,7 +318,7 @@
    Print Styles
    ================================================== */
 @page {
-  size: auto;
+  size: A4 portrait;
   margin: 10mm;
 }
 
@@ -336,20 +336,83 @@
     print-color-adjust: exact !important;
   }
 
-  /* Hide all elements on the page by default */
-  body * {
+  /* Universally hide non-printable UI elements across all print modes */
+  .no-print,
+  .modal-header,
+  .modal-footer,
+  .modal-close-btn,
+  .patient-sidebar,
+  .sidebar,
+  .patient-top-navbar,
+  .navbar,
+  .visitor-cards-header-section,
+  .visitor-cards-info-alert,
+  .visitor-cards-grid,
+  .visitor-cards-empty,
+  .details-main-card,
+  .details-visitor-card-section,
+  .page-header,
+  .toast-container,
+  .btn-print-visitor-card,
+  .visitor-card-actions,
+  .success-header,
+  .visitor-card-booking-banner,
+  .success-action-buttons {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    overflow: hidden !important;
+  }
+
+  /* ----------------------------------------------------
+     VISITOR CARD PRINT MODE ONLY
+     Applied when user clicks "Print Visitor Card"
+     ---------------------------------------------------- */
+
+  /* Hide background elements only during visitor card print */
+  body.printing-visitor-card *,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) * {
     visibility: hidden !important;
   }
 
-  /* Unconstrain every layout ancestor so the card is never clipped or culled */
-  #root,
-  .patient-layout,
-  .patient-main-content,
-  .patient-page-container,
-  .modal-overlay,
-  .modal-container,
-  .modal-body,
-  .visitor-card-container {
+  /* Completely collapse appointment slip during visitor card print */
+  body.printing-visitor-card .appointment-slip-card,
+  body.printing-visitor-card .printable-appointment-slip,
+  body.printing-visitor-card .booking-success-wrapper,
+  body.printing-visitor-card .booking-success-card,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .appointment-slip-card,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .printable-appointment-slip,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .booking-success-wrapper,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .booking-success-card {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    overflow: hidden !important;
+  }
+
+  /* Unconstrain modal & layout ancestors only during visitor card print */
+  body.printing-visitor-card #root,
+  body.printing-visitor-card .patient-layout,
+  body.printing-visitor-card .patient-main-content,
+  body.printing-visitor-card .patient-page-container,
+  body.printing-visitor-card .modal-overlay,
+  body.printing-visitor-card .modal-container,
+  body.printing-visitor-card .modal-body,
+  body.printing-visitor-card .visitor-card-container,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) #root,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .patient-layout,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .patient-main-content,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .patient-page-container,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .modal-overlay,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .modal-container,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .modal-body,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .visitor-card-container {
     position: static !important;
     display: block !important;
     width: 100% !important;
@@ -368,112 +431,74 @@
     z-index: auto !important;
   }
 
-  /* Completely collapse non-printable UI elements so they consume 0 flow space */
-  .no-print,
-  .modal-header,
-  .modal-footer,
-  .modal-close-btn,
-  .patient-sidebar,
-  .sidebar,
-  .patient-top-navbar,
-  .navbar,
-  .visitor-cards-header-section,
-  .visitor-cards-info-alert,
-  .visitor-cards-grid,
-  .visitor-cards-empty,
-  .details-main-card,
-  .details-visitor-card-section,
-  .page-header,
-  .toast-container,
-  .btn-print-visitor-card,
-  .visitor-card-actions {
-    display: none !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* Expose only the visitor card and all its contents */
-  .printable-visitor-card,
-  .printable-visitor-card * {
+  /* Expose only visitor card badge in visitor card print mode */
+  body.printing-visitor-card .printable-visitor-card,
+  body.printing-visitor-card .printable-visitor-card *,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .printable-visitor-card,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .printable-visitor-card * {
     visibility: visible !important;
   }
 
-  /* Centered, professional medical badge dimensions */
-  .printable-visitor-card {
+  /* Centered, professional medical badge dimensions on A4 portrait */
+  body.printing-visitor-card .printable-visitor-card,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .printable-visitor-card {
     position: absolute !important;
     left: 50% !important;
     top: 50% !important;
     transform: translate(-50%, -50%) !important;
     display: block !important;
-    width: 95mm !important;
-    max-width: 95mm !important;
-    min-height: 58mm !important;
+    width: 460px !important;
+    max-width: 180mm !important;
     box-sizing: border-box !important;
     margin: 0 !important;
-    padding: 14px 18px !important;
-    background: #ffffff !important;
-    border: 1.5px solid #2f6fa3 !important;
-    border-radius: 12px !important;
+    padding: 24px !important;
+    background: linear-gradient(135deg, #ffffff 0%, #f4fafd 100%) !important;
+    border: 1.5px solid var(--border, #d9e7f0) !important;
+    border-radius: 16px !important;
     box-shadow: none !important;
-    color: #172033 !important;
+    color: var(--text-primary, #52657a) !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
   }
 
-  .printable-visitor-card .visitor-card-header {
-    margin-bottom: 10px !important;
-    padding-bottom: 10px !important;
+  body.printing-visitor-card .printable-visitor-card::before,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .printable-visitor-card::before {
+    content: "" !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 4px !important;
+    background: linear-gradient(90deg, #2f6fa3 0%, #6ec0ff 100%) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    visibility: visible !important;
   }
 
-  .printable-visitor-card .visitor-card-brand-title {
-    font-size: 1rem !important;
-  }
-
-  .printable-visitor-card .visitor-card-tag {
-    font-size: 0.65rem !important;
-    padding: 2px 8px !important;
-  }
-
-  .printable-visitor-card .visitor-card-hospital-section {
-    padding: 8px 10px !important;
-    margin-bottom: 10px !important;
-  }
-
-  .printable-visitor-card .visitor-card-hospital-name {
-    font-size: 0.92rem !important;
-  }
-
-  .printable-visitor-card .visitor-card-validity-text {
-    font-size: 0.72rem !important;
-  }
-
-  .printable-visitor-card .visitor-card-patient-name {
-    font-size: 0.95rem !important;
-  }
-
-  .printable-visitor-card .visitor-card-patient-id-badge {
-    font-size: 0.72rem !important;
-  }
-
-  .printable-visitor-card .visitor-card-qr-image {
-    width: 70px !important;
-    height: 70px !important;
-  }
-
-  .printable-visitor-card .visitor-card-number-section {
-    padding: 8px 12px !important;
-    margin-bottom: 10px !important;
-  }
-
-  .printable-visitor-card .visitor-card-number-code {
-    font-size: 1.05rem !important;
-  }
-
-  .printable-visitor-card .visitor-card-footer {
-    padding-top: 8px !important;
-    font-size: 0.7rem !important;
+  /* ----------------------------------------------------
+     WHEN NOT IN VISITOR CARD PRINT MODE
+     (e.g. Printing Appointment Slip)
+     Completely suppress visitor card & modal
+     ---------------------------------------------------- */
+  body.printing-appointment-slip .printable-visitor-card,
+  body.printing-appointment-slip .visitor-card-modal,
+  body.printing-appointment-slip .modal-overlay,
+  body.printing-appointment-slip .modal-container,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .printable-visitor-card,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .visitor-card-modal,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .modal-overlay,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .modal-container {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    overflow: hidden !important;
   }
 }

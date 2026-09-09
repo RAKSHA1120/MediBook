@@ -39,15 +39,14 @@ function HospitalPatients() {
       const [apptsRes, patientsRes, cardsRes] = await Promise.all([
         api.get("/Appointments"),
         api.get("/Patients"),
-        fetch(`http://localhost:5107/api/patient-hospitals/hospital/${hosRecord.id}`)
+        api.get(`/patient-hospitals/hospital/${hosRecord.id}`)
       ]);
 
       // api.get() returns { success, data }
       let allAppts = apptsRes.success ? (apptsRes.data || []) : [];
       let allPatients = patientsRes.success ? (patientsRes.data || []) : [];
 
-      let allCards = [];
-      if (cardsRes.ok) allCards = await cardsRes.json();
+      let allCards = cardsRes.success ? (cardsRes.data || []) : [];
 
       const cardMap = {};
       allCards.forEach((c) => {

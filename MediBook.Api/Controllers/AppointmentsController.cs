@@ -1,5 +1,6 @@
 using MediBook.Api.Data;
 using MediBook.Api.Models;
+using MediBook.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,10 +36,12 @@ namespace MediBook.Api.Controllers
     public class AppointmentsController : ControllerBase
     {
         private readonly MediBookDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public AppointmentsController(MediBookDbContext context)
+        public AppointmentsController(MediBookDbContext context, INotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
 
         [HttpGet]
@@ -268,6 +271,14 @@ namespace MediBook.Api.Controllers
 
             _context.Appointments.Add(appointment);
             await _context.SaveChangesAsync();
+
+            // Attach pre-fetched entities so NotificationService has immediate access
+            appointment.Patient = patient;
+            appointment.Doctor = doctor;
+            appointment.Hospital = hospital;
+
+            // Send real-time notifications for appointment creation
+            await _notificationService.NotifyAppointmentCreatedAsync(appointment);
             
             // Reload the appointment with related entities to map it correctly
             var createdAppointment = await _context.Appointments
@@ -323,8 +334,13 @@ namespace MediBook.Api.Controllers
             var appointment = await _context.Appointments.FindAsync(id);
             if (appointment == null) return NotFound();
 
+            var oldStatus = appointment.Status;
             appointment.Status = dto.Status;
             await _context.SaveChangesAsync();
+
+            // Send real-time notifications for status change
+            await _notificationService.NotifyAppointmentStatusChangedAsync(appointment, oldStatus, dto.Status);
+
             return NoContent();
         }
 
@@ -347,10 +363,14 @@ namespace MediBook.Api.Controllers
                 advice = dto.Advice
             };
 
+            var oldStatus = appointment.Status;
             appointment.Status = "Completed";
             appointment.Notes = System.Text.Json.JsonSerializer.Serialize(details);
 
             await _context.SaveChangesAsync();
+
+            // Send real-time notifications for appointment completion
+            await _notificationService.NotifyAppointmentStatusChangedAsync(appointment, oldStatus, "Completed");
 
             var updatedAppointment = await _context.Appointments
                 .Where(a => a.Id == appointment.Id)
@@ -382,8 +402,13 @@ namespace MediBook.Api.Controllers
             var appointment = await _context.Appointments.FindAsync(id);
             if (appointment == null) return NotFound();
 
+            var oldStatus = appointment.Status;
             appointment.Status = "Cancelled";
             await _context.SaveChangesAsync();
+
+            // Send real-time notifications for appointment cancellation
+            await _notificationService.NotifyAppointmentStatusChangedAsync(appointment, oldStatus, "Cancelled");
+
             return NoContent();
         }
 

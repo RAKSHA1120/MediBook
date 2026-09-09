@@ -1,4 +1,6 @@
 using MediBook.Api.Data;
+using MediBook.Api.Hubs;
+using MediBook.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +10,15 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
 });
+
+// Add SignalR support
+builder.Services.AddSignalR();
+
+// Register Notification Service
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
+// Register Doctor Account Sync Service
+builder.Services.AddScoped<IDoctorAccountSyncService, DoctorAccountSyncService>();
 
 // Add Swagger / OpenAPI services
 builder.Services.AddEndpointsApiExplorer();
@@ -31,7 +42,8 @@ builder.Services.AddCors(options =>
                 "https://localhost:5174"
             )
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 var app = builder.Build();
@@ -56,5 +68,13 @@ if (!app.Environment.IsDevelopment())
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<NotificationHub>("/notificationHub");
+
+// Run conservative Doctor Account Sync on startup
+using (var scope = app.Services.CreateScope())
+{
+    var syncService = scope.ServiceProvider.GetRequiredService<IDoctorAccountSyncService>();
+    await syncService.SyncDoctorAccountsAsync();
+}
 
 app.Run();

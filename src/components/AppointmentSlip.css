@@ -188,36 +188,88 @@
 /* ==================================================
    @media print STYLES (PRINT ONLY)
    ================================================== */
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
 @media print {
-  /* Hide all page content by default */
-  body * {
+  /* When printing appointment slip: unconstrain ancestors so slip is never clipped or hidden */
+  body.printing-appointment-slip #root,
+  body.printing-appointment-slip .patient-layout,
+  body.printing-appointment-slip .patient-main-content,
+  body.printing-appointment-slip .booking-success-wrapper,
+  body.printing-appointment-slip .booking-success-card,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) #root,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .patient-layout,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .patient-main-content,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .booking-success-wrapper,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .booking-success-card {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  /* When printing visitor card, completely collapse appointment slip */
+  body.printing-visitor-card .appointment-slip-card,
+  body.printing-visitor-card .printable-appointment-slip,
+  body:has(.visitor-card-modal) .appointment-slip-card,
+  body:has(.visitor-card-modal) .printable-appointment-slip {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    overflow: hidden !important;
+  }
+
+  /* Hide background content outside the appointment slip */
+  body.printing-appointment-slip *,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) * {
     visibility: hidden !important;
   }
 
-  /* Expose printable card or appointment slip */
-  .appointment-slip-card,
-  .appointment-slip-card *,
-  .printable-visitor-card,
-  .printable-visitor-card * {
+  /* Expose appointment slip ONLY when not printing visitor card */
+  body.printing-appointment-slip .printable-appointment-slip,
+  body.printing-appointment-slip .printable-appointment-slip *,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .printable-appointment-slip,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .printable-appointment-slip * {
     visibility: visible !important;
   }
 
-  /* Fit appointment slip perfectly on one A4 page */
-  .appointment-slip-card {
-    position: absolute !important;
-    left: 50% !important;
-    top: 20px !important;
-    transform: translateX(-50%) !important;
+  /* Fit appointment slip centered on one A4 portrait page */
+  body.printing-appointment-slip .printable-appointment-slip,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .printable-appointment-slip {
+    position: static !important;
+    display: block !important;
     width: 100% !important;
-    max-width: 650px !important;
-    margin: 0 !important;
-    padding: 28px !important;
+    max-width: 180mm !important;
+    margin: 0 auto !important;
+    padding: 24px 28px !important;
+    box-sizing: border-box !important;
     box-shadow: none !important;
-    border: 2px solid #0f172a !important;
+    border: 1.5px solid #0f172a !important;
     background: #ffffff !important;
     color: #0f172a !important;
     border-radius: 8px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    break-inside: avoid !important;
     page-break-inside: avoid !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
   }
 
   .slip-divider {
@@ -241,16 +293,24 @@
     color: #92400e !important;
   }
 
-  /* Completely hide Print buttons and non-printable elements */
+  /* Completely hide Print buttons, modals, and non-printable elements */
   .no-print,
   .appointment-slip-actions,
+  .btn-print-slip,
   .patient-sidebar,
+  .sidebar,
+  .patient-top-navbar,
   .navbar,
   .toast-container,
   .sidebar-backdrop,
   .success-action-buttons,
-  .success-header {
+  .success-header,
+  .visitor-card-booking-banner {
     display: none !important;
     visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }

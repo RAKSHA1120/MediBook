@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Users, Shield, Stethoscope, UserCheck, User, Eye, EyeOff, Copy, Check, MoreVertical, AlertTriangle } from "lucide-react";
+import { Users, Shield, Stethoscope, UserCheck, User, Eye, Copy, Check, MoreVertical, AlertTriangle, KeyRound, Building2 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import SearchBox from "../components/SearchBox";
 import Button from "../components/Button";
@@ -18,11 +18,18 @@ function AdminLoginManagement() {
 
   const [selectedUser, setSelectedUser] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
 
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [actionUser, setActionUser] = useState(null);
+  const [isStatusUpdating, setIsStatusUpdating] = useState(false);
+
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [resetUser, setResetUser] = useState(null);
+  const [newPasswordInput, setNewPasswordInput] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetFeedback, setResetFeedback] = useState(null);
+
   const [openMenuId, setOpenMenuId] = useState(null);
 
   useEffect(() => {
@@ -42,7 +49,6 @@ function AdminLoginManagement() {
       setUsers([]);
     }
   };
-
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -71,9 +77,10 @@ function AdminLoginManagement() {
     const admin = users.filter(u => (u.role || "").toLowerCase() === "admin").length;
     const doctor = users.filter(u => (u.role || "").toLowerCase() === "doctor").length;
     const patient = users.filter(u => (u.role || "").toLowerCase() === "patient").length;
+    const hospital = users.filter(u => (u.role || "").toLowerCase() === "hospital").length;
     const active = users.filter(u => (u.status || "Active") === "Active").length;
 
-    return { total, admin, doctor, patient, active };
+    return { total, admin, doctor, patient, hospital, active };
   }, [users]);
 
   // Filtered Users
@@ -100,6 +107,8 @@ function AdminLoginManagement() {
         return { background: "#f3e8ff", color: "#7c3aed", border: "1px solid #ddd6fe" };
       case "doctor":
         return { background: "var(--primary-soft)", color: "var(--primary)", border: "1px solid rgba(47, 111, 163, 0.2)" };
+      case "hospital":
+        return { background: "#fef3c7", color: "#d97706", border: "1px solid #fde68a" };
       default:
         return { background: "#ecfdf5", color: "#059669", border: "1px solid #a7f3d0" };
     }
@@ -120,32 +129,66 @@ function AdminLoginManagement() {
     setIsStatusModalOpen(true);
   };
 
-  const confirmStatusToggle = () => {
-    if (actionUser) {
+  const confirmStatusToggle = async () => {
+    if (!actionUser) return;
+    setIsStatusUpdating(true);
+    try {
       const currentStatus = actionUser.status || "Active";
       const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
 
-      const userKey = actionUser.id || actionUser.mobile || actionUser.loginId;
-      updateUser(userKey, { status: newStatus });
-
-      // Sync linked doctor or patient record status if refId exists
-      if (actionUser.refId) {
-        if (actionUser.role === "doctor") {
-          updateDoctor(actionUser.refId, { status: newStatus });
-        } else if (actionUser.role === "patient") {
-          updatePatient(actionUser.refId, { status: newStatus });
-        }
+      const res = await api.put(`/Users/${actionUser.id}/status`, { status: newStatus });
+      if (res.success) {
+        await loadUsersData();
+      } else {
+        alert(res.error || "Failed to update account status.");
       }
-
-      loadUsersData();
+    } catch (err) {
+      console.error("Failed to update status", err);
+      alert("Failed to update account status.");
+    } finally {
+      setIsStatusUpdating(false);
       setIsStatusModalOpen(false);
       setActionUser(null);
     }
   };
 
+  // Reset Password Action
+  const handleOpenResetPassword = (user) => {
+    setResetUser(user);
+    setNewPasswordInput(user.role?.toLowerCase() === "doctor" ? "Doctor@123" : "MediBook@123");
+    setResetFeedback(null);
+    setIsResetModalOpen(true);
+  };
+
+  const handleConfirmResetPassword = async () => {
+    if (!resetUser) return;
+    setIsResetting(true);
+    setResetFeedback(null);
+    try {
+      const res = await api.post(`/Users/${resetUser.id}/reset-password`, {
+        newPassword: newPasswordInput.trim() || undefined
+      });
+      if (res.success) {
+        setResetFeedback({ success: true, message: `Password for ${resetUser.name} reset successfully.` });
+        setTimeout(() => {
+          setIsResetModalOpen(false);
+          setResetUser(null);
+          setResetFeedback(null);
+        }, 1500);
+      } else {
+        setResetFeedback({ success: false, message: res.error || "Failed to reset password." });
+      }
+    } catch (err) {
+      console.error("Failed to reset password", err);
+      setResetFeedback({ success: false, message: "An unexpected error occurred while resetting password." });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   // Date Formatter Helper
   const formatDate = (dateStr) => {
-    if (!dateStr) return "2026-08-20";
+    if (!dateStr) return "N/A";
     try {
       const d = new Date(dateStr);
       if (!isNaN(d.getTime())) {
@@ -215,6 +258,18 @@ function AdminLoginManagement() {
 
         <div className="admin-stat-card">
           <div className="admin-stat-header">
+            <span className="admin-stat-label">Hospital Accounts</span>
+            <div className="admin-stat-icon-wrapper" style={{ background: "#fef3c7", color: "#d97706" }}>
+              <Building2 size={20} />
+            </div>
+          </div>
+          <div className="admin-stat-number">{stats.hospital}</div>
+          <div className="admin-stat-divider" />
+          <span className="admin-stat-subtext">Registered hospital accounts</span>
+        </div>
+
+        <div className="admin-stat-card">
+          <div className="admin-stat-header">
             <span className="admin-stat-label">Active Accounts</span>
             <div className="admin-stat-icon-wrapper" style={{ background: "#f0fdf4", color: "#16a34a" }}>
               <UserCheck size={20} />
@@ -248,6 +303,7 @@ function AdminLoginManagement() {
               <option value="Admin">Admin</option>
               <option value="Doctor">Doctor</option>
               <option value="Patient">Patient</option>
+              <option value="Hospital">Hospital</option>
             </select>
 
             {/* Status Filter Dropdown */}
@@ -274,9 +330,9 @@ function AdminLoginManagement() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th style={{ width: "24%" }}>USER</th>
+                <th style={{ width: "26%" }}>USER</th>
                 <th style={{ width: "22%" }}>LOGIN ID / USERNAME</th>
-                <th style={{ width: "16%" }}>ROLE</th>
+                <th style={{ width: "14%" }}>ROLE</th>
                 <th style={{ width: "14%" }}>ACCOUNT STATUS</th>
                 <th style={{ width: "14%" }}>CREATED DATE</th>
                 <th style={{ width: "10%", textAlign: "right" }}>ACTIONS</th>
@@ -286,9 +342,25 @@ function AdminLoginManagement() {
               {filteredUsers.map(user => {
                 const roleStyle = getRoleBadgeStyle(user.role);
                 const initials = user.name ? user.name.charAt(0).toUpperCase() : "U";
-                const userKey = user.id || user.mobile || user.loginId;
-                const loginIdentifier = user.loginId || user.mobile || "N/A";
-                const createdDate = formatDate(user.createdDate || user.date);
+                const userKey = user.id || user.loginId;
+                const loginIdentifier = user.loginId || "N/A";
+                const createdDate = formatDate(user.createdDate || user.createdAt);
+
+                // Subtext resolution: clear user/profile IDs
+                let subtext = `User ID: #${user.id}`;
+                const roleLower = (user.role || "").toLowerCase();
+                if (roleLower === "doctor") {
+                  subtext = user.doctorId
+                    ? `Doc ID: #${user.doctorId} | User ID: #${user.id}`
+                    : `User ID: #${user.id} (No Doctor Profile)`;
+                } else if (roleLower === "patient" && user.refId) {
+                  subtext = `Patient ID: #${user.refId} | User ID: #${user.id}`;
+                } else if (roleLower === "hospital") {
+                  const hId = user.hospitalId || user.refId;
+                  subtext = hId
+                    ? `Hospital ID: #${hId} | User ID: #${user.id}`
+                    : `User ID: #${user.id} (No Hospital Profile)`;
+                }
 
                 return (
                   <tr key={userKey}>
@@ -303,7 +375,7 @@ function AdminLoginManagement() {
                             {user.name || "User"}
                           </span>
                           <span className="user-subtext" style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
-                            {user.id || user.refId || "N/A"}
+                            {subtext}
                           </span>
                         </div>
                       </div>
@@ -328,7 +400,7 @@ function AdminLoginManagement() {
                         textTransform: "capitalize",
                         ...roleStyle
                       }}>
-                        {user.role || "user"}
+                        {user.role || "User"}
                       </span>
                     </td>
 
@@ -347,11 +419,11 @@ function AdminLoginManagement() {
                     {/* ACTIONS */}
                     <td className="nowrap text-right" style={{ textAlign: "right" }}>
                       <div className="table-actions-cell">
-                        {/* View Credentials Button */}
+                        {/* View Details Button */}
                         <button
                           className="icon-action-btn"
-                          title="View Credentials"
-                          onClick={() => { setSelectedUser(user); setShowPassword(false); setIsViewModalOpen(true); }}
+                          title="View Account Details"
+                          onClick={() => { setSelectedUser(user); setIsViewModalOpen(true); }}
                         >
                           <Eye size={17} />
                         </button>
@@ -375,12 +447,20 @@ function AdminLoginManagement() {
                                 className="more-menu-item"
                                 onClick={() => {
                                   setSelectedUser(user);
-                                  setShowPassword(false);
                                   setIsViewModalOpen(true);
                                   setOpenMenuId(null);
                                 }}
                               >
-                                View Credentials
+                                View Account Details
+                              </button>
+                              <button
+                                className="more-menu-item"
+                                onClick={() => {
+                                  handleOpenResetPassword(user);
+                                  setOpenMenuId(null);
+                                }}
+                              >
+                                Reset Password
                               </button>
                               <button
                                 className={`more-menu-item ${(user.status || "Active") === "Active" ? "danger" : ""}`}
@@ -411,11 +491,11 @@ function AdminLoginManagement() {
         </div>
       </div>
 
-      {/* View Credentials & Account Details Modal */}
+      {/* View Account Details Modal (Strictly No Plain Password Exposure) */}
       <Modal 
         isOpen={isViewModalOpen} 
-        onClose={() => { setIsViewModalOpen(false); setShowPassword(false); }} 
-        title="User Credentials & Access Details"
+        onClose={() => setIsViewModalOpen(false)} 
+        title="User Account Details"
         className="hospital-modal-container"
       >
         {selectedUser && (
@@ -433,9 +513,29 @@ function AdminLoginManagement() {
               <div>
                 <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>USER ID</label>
                 <div style={{ fontSize: "15px", fontWeight: "600", color: "var(--primary)", marginTop: "4px" }}>
-                  {selectedUser.id || selectedUser.refId || "N/A"}
+                  #{selectedUser.id}
                 </div>
               </div>
+
+              {/* Doctor ID / Reference ID (if applicable) */}
+              {(selectedUser.role || "").toLowerCase() === "doctor" && (
+                <div>
+                  <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>DOCTOR ID</label>
+                  <div style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-heading)", marginTop: "4px" }}>
+                    {selectedUser.doctorId ? `#${selectedUser.doctorId}` : <span style={{ color: "var(--text-muted)", fontStyle: "italic", fontSize: "13px" }}>No linked profile</span>}
+                  </div>
+                </div>
+              )}
+
+              {/* Hospital ID (if applicable) */}
+              {(selectedUser.role || "").toLowerCase() === "hospital" && (
+                <div>
+                  <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>HOSPITAL ID</label>
+                  <div style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-heading)", marginTop: "4px" }}>
+                    {selectedUser.hospitalId || selectedUser.refId ? `#${selectedUser.hospitalId || selectedUser.refId}` : <span style={{ color: "var(--text-muted)", fontStyle: "italic", fontSize: "13px" }}>No linked profile</span>}
+                  </div>
+                </div>
+              )}
 
               {/* Role */}
               <div>
@@ -469,41 +569,15 @@ function AdminLoginManagement() {
                 <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>LOGIN ID / USERNAME</label>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
                   <span style={{ fontSize: "14.5px", fontWeight: "600", color: "var(--text-heading)" }}>
-                    {selectedUser.loginId || selectedUser.mobile}
+                    {selectedUser.loginId}
                   </span>
                   <button
                     type="button"
                     title="Copy Login ID"
-                    onClick={() => handleCopy(selectedUser.loginId || selectedUser.mobile, "loginId")}
+                    onClick={() => handleCopy(selectedUser.loginId, "loginId")}
                     style={{ background: "none", border: "none", cursor: "pointer", color: copiedField === "loginId" ? "#10b981" : "var(--text-muted)", padding: "2px" }}
                   >
                     {copiedField === "loginId" ? <Check size={16} /> : <Copy size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Password + Masking & Copy Button */}
-              <div>
-                <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>PASSWORD</label>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
-                  <span style={{ fontFamily: "monospace", fontSize: "15px", fontWeight: "600", color: "var(--text-heading)" }}>
-                    {showPassword ? (selectedUser.password || "123456") : "••••••••"}
-                  </span>
-                  <button
-                    type="button"
-                    title={showPassword ? "Hide Password" : "Show Password"}
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: "2px" }}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                  <button
-                    type="button"
-                    title="Copy Password"
-                    onClick={() => handleCopy(selectedUser.password || "123456", "password")}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: copiedField === "password" ? "#10b981" : "var(--text-muted)", padding: "2px" }}
-                  >
-                    {copiedField === "password" ? <Check size={16} /> : <Copy size={16} />}
                   </button>
                 </div>
               </div>
@@ -512,13 +586,25 @@ function AdminLoginManagement() {
               <div>
                 <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>ACCOUNT CREATED DATE</label>
                 <div style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>
-                  {formatDate(selectedUser.createdDate || selectedUser.date)}
+                  {formatDate(selectedUser.createdDate || selectedUser.createdAt)}
                 </div>
               </div>
             </div>
 
-            <div className="form-actions" style={{ marginTop: "8px" }}>
-              <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>Close</Button>
+            <div className="form-actions" style={{ marginTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+                onClick={() => {
+                  const u = selectedUser;
+                  setIsViewModalOpen(false);
+                  handleOpenResetPassword(u);
+                }}
+              >
+                <KeyRound size={15} /> Reset Password
+              </button>
+              <Button variant="primary" onClick={() => setIsViewModalOpen(false)}>Close</Button>
             </div>
           </div>
         )}
@@ -554,16 +640,82 @@ function AdminLoginManagement() {
             </div>
 
             <div className="form-actions" style={{ marginTop: "10px" }}>
-              <Button variant="outline" type="button" onClick={() => setIsStatusModalOpen(false)}>
+              <Button variant="outline" type="button" disabled={isStatusUpdating} onClick={() => setIsStatusModalOpen(false)}>
                 Cancel
               </Button>
               <Button
                 variant="primary"
                 type="button"
+                disabled={isStatusUpdating}
                 style={(actionUser.status || "Active") === "Active" ? { backgroundColor: "#dc2626", borderColor: "#dc2626", color: "#ffffff" } : {}}
                 onClick={confirmStatusToggle}
               >
-                {(actionUser.status || "Active") === "Active" ? "Disable Account" : "Enable Account"}
+                {isStatusUpdating ? "Updating..." : ((actionUser.status || "Active") === "Active" ? "Disable Account" : "Enable Account")}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Admin Reset Password Modal */}
+      <Modal
+        isOpen={isResetModalOpen}
+        onClose={() => { setIsResetModalOpen(false); setResetUser(null); setResetFeedback(null); }}
+        title="Reset Account Password"
+        className="hospital-modal-container"
+      >
+        {resetUser && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "var(--primary-soft)", color: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <KeyRound size={20} />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: "15px", color: "var(--text-heading)" }}>
+                  Reset password for {resetUser.name}
+                </h4>
+                <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                  {resetUser.loginId} ({resetUser.role})
+                </span>
+              </div>
+            </div>
+
+            {resetFeedback && (
+              <div style={{
+                padding: "10px 14px",
+                borderRadius: "8px",
+                fontSize: "13px",
+                backgroundColor: resetFeedback.success ? "#ecfdf5" : "#fef2f2",
+                color: resetFeedback.success ? "#065f46" : "#b91c1c",
+                border: resetFeedback.success ? "1px solid #a7f3d0" : "1px solid #fecaca"
+              }}>
+                {resetFeedback.message}
+              </div>
+            )}
+
+            <div>
+              <label className="form-label" style={{ fontSize: "13px", fontWeight: "600", marginBottom: "6px", display: "block" }}>
+                New Temporary Password
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "14px" }}
+                value={newPasswordInput}
+                onChange={(e) => setNewPasswordInput(e.target.value)}
+                placeholder="Enter new password"
+              />
+              <span style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px", display: "block" }}>
+                Standard default: {resetUser.role?.toLowerCase() === "doctor" ? "Doctor@123" : "MediBook@123"}
+              </span>
+            </div>
+
+            <div className="form-actions" style={{ marginTop: "8px" }}>
+              <Button variant="outline" type="button" disabled={isResetting} onClick={() => setIsResetModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="button" disabled={isResetting} onClick={handleConfirmResetPassword}>
+                {isResetting ? "Resetting..." : "Confirm Password Reset"}
               </Button>
             </div>
           </div>

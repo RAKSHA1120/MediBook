@@ -3,9 +3,35 @@ import PageHeader from "../components/PageHeader";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import { api } from "../utils/api";
-import { Loader2, Download, Printer, AlertCircle } from "lucide-react";
+import {
+  Loader2,
+  Download,
+  AlertCircle,
+  Activity,
+  CheckCircle2,
+  Calendar,
+  Clock,
+  CalendarCheck,
+  UserCheck
+} from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from "recharts";
 
 import "./AdminShared.css";
+import "./AdminDashboard.css";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -202,7 +228,15 @@ function AdminReports() {
     ].filter((item) => item.value > 0);
   }, [summary]);
 
-  const handlePrint = () => window.print();
+  const todayAppointmentsCount = useMemo(() => {
+    if (period === "today") return summary.total || 0;
+    const todayStr = new Date().toISOString().split("T")[0];
+    const todayTrend = trendData.find((t) => t.date === todayStr);
+    return todayTrend ? todayTrend.visits : 0;
+  }, [period, summary.total, trendData]);
+
+  const upcomingAppointmentsCount = (summary.upcoming || 0) + (summary.pending || 0);
+  const activeDoctorsCount = doctorWise.length;
 
   const handleExportCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
@@ -252,76 +286,156 @@ function AdminReports() {
             <Button variant={period === "monthly" ? "primary" : "outline"} size="sm" onClick={() => setPeriod("monthly")}>This Month</Button>
             <Button variant={period === "yearly" ? "primary" : "outline"} size="sm" onClick={() => setPeriod("yearly")}>This Year</Button>
             <div style={{ width: "1px", height: "30px", backgroundColor: "var(--border)", margin: "0 10px" }}></div>
-            <Button variant="outline" size="sm" onClick={handleExportCSV}><Download size={16} style={{marginRight: "6px"}}/> Export CSV</Button>
-            <Button variant="outline" size="sm" onClick={handlePrint}><Printer size={16} style={{marginRight: "6px"}}/> Print PDF</Button>
+            <Button variant="outline" size="sm" onClick={handleExportCSV}><Download size={16} style={{ marginRight: "6px" }} /> Export CSV</Button>
           </div>
         </PageHeader>
       </div>
 
       {error ? (
         <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "40px", color: "var(--error)", background: "#fef2f2", borderRadius: "12px" }}>
-            <AlertCircle size={24} />
-            <p style={{margin: 0, fontWeight: 500}}>{error}</p>
+          <AlertCircle size={24} />
+          <p style={{ margin: 0, fontWeight: 500 }}>{error}</p>
         </div>
       ) : loading ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "100px", gap: "12px" }}>
-            <Loader2 size={36} style={{ color: "var(--primary)", animation: "spin 1s linear infinite" }} />
-            <p style={{ color: "var(--text-muted)", margin: 0, fontWeight: 500 }}>Generating reports...</p>
+          <Loader2 size={36} style={{ color: "var(--primary)", animation: "spin 1s linear infinite" }} />
+          <p style={{ color: "var(--text-muted)", margin: 0, fontWeight: 500 }}>Generating reports...</p>
         </div>
       ) : (
         <div className="print-container">
           <h2 className="print-only-title" style={{ display: "none" }}>MediBook Admin Report - {period.toUpperCase()}</h2>
 
-          <section className="admin-stats-grid" style={{ marginBottom: "24px" }}>
+          {/* TIER 1: 4 MAIN KPI SUMMARY CARDS */}
+          <section className="admin-stats-grid">
+            {/* 1. Total Visits */}
             <div className="admin-stat-card">
-              <h4 className="admin-stat-title">Total Visits</h4>
-              <p className="admin-stat-value">{summary.total}</p>
+              <div className="admin-stat-header">
+                <span className="admin-stat-label">Total Visits</span>
+                <div className="admin-stat-icon-wrapper">
+                  <Activity size={20} />
+                </div>
+              </div>
+              <div className="admin-stat-number">{summary.total || 0}</div>
+              <div className="admin-stat-divider" />
+              <div className="admin-stat-subtext">Total recorded visits</div>
             </div>
+
+            {/* 2. Completed */}
             <div className="admin-stat-card">
-              <h4 className="admin-stat-title" style={{color: "var(--success)"}}>Completed</h4>
-              <p className="admin-stat-value">{summary.completed}</p>
+              <div className="admin-stat-header">
+                <span className="admin-stat-label">Completed</span>
+                <div className="admin-stat-icon-wrapper">
+                  <CheckCircle2 size={20} />
+                </div>
+              </div>
+              <div className="admin-stat-number">{summary.completed || 0}</div>
+              <div className="admin-stat-divider" />
+              <div className="admin-stat-subtext">Successfully completed visits</div>
             </div>
+
+            {/* 3. Upcoming */}
             <div className="admin-stat-card">
-              <h4 className="admin-stat-title" style={{color: "var(--primary)"}}>Upcoming</h4>
-              <p className="admin-stat-value">{summary.upcoming}</p>
+              <div className="admin-stat-header">
+                <span className="admin-stat-label">Upcoming</span>
+                <div className="admin-stat-icon-wrapper">
+                  <Calendar size={20} />
+                </div>
+              </div>
+              <div className="admin-stat-number">{summary.upcoming || 0}</div>
+              <div className="admin-stat-divider" />
+              <div className="admin-stat-subtext">Confirmed future visits</div>
             </div>
+
+            {/* 4. Pending */}
             <div className="admin-stat-card">
-              <h4 className="admin-stat-title" style={{color: "var(--warning)"}}>Pending</h4>
-              <p className="admin-stat-value">{summary.pending}</p>
-            </div>
-            <div className="admin-stat-card">
-              <h4 className="admin-stat-title" style={{color: "var(--error)"}}>Cancelled</h4>
-              <p className="admin-stat-value">{summary.cancelled}</p>
+              <div className="admin-stat-header">
+                <span className="admin-stat-label">Pending</span>
+                <div className="admin-stat-icon-wrapper">
+                  <Clock size={20} />
+                </div>
+              </div>
+              <div className="admin-stat-number">{summary.pending || 0}</div>
+              <div className="admin-stat-divider" />
+              <div className="admin-stat-subtext">Awaiting confirmation</div>
             </div>
           </section>
 
-          <section className="dashboard-main-info-grid" style={{ marginBottom: "24px" }}>
-             <Card>
-                <h3 className="section-main-title">Visit Trend</h3>
-                <div style={{ height: "260px", width: "100%" }}>
-                  <SvgLineChart data={trendData} dataKey="visits" xKey="date" />
+          {/* TIER 2: COMPACT OPERATIONAL OVERVIEW BAR */}
+          <section className="operational-overview-bar">
+            {/* Today's Appointments */}
+            <div className="operational-overview-item">
+              <div className="operational-overview-icon">
+                <Clock size={18} />
+              </div>
+              <div className="operational-overview-details">
+                <div className="operational-overview-header">
+                  <span className="operational-overview-label">Today's Appointments</span>
+                  <span className="operational-overview-val">{todayAppointmentsCount}</span>
                 </div>
-             </Card>
-             <Card>
-                <h3 className="section-main-title">Status Distribution</h3>
-                <div style={{ height: "260px", width: "100%" }}>
-                  <SvgPieChart data={statusPieData} />
+                <span className="operational-overview-subtext">Scheduled today</span>
+              </div>
+            </div>
+
+            <div className="operational-overview-divider" />
+
+            {/* Upcoming Appointments */}
+            <div className="operational-overview-item">
+              <div className="operational-overview-icon">
+                <CalendarCheck size={18} />
+              </div>
+              <div className="operational-overview-details">
+                <div className="operational-overview-header">
+                  <span className="operational-overview-label">Upcoming Appointments</span>
+                  <span className="operational-overview-val">{upcomingAppointmentsCount}</span>
                 </div>
-             </Card>
+                <span className="operational-overview-subtext">Confirmed & pending</span>
+              </div>
+            </div>
+
+            <div className="operational-overview-divider" />
+
+            {/* Active Doctors */}
+            <div className="operational-overview-item">
+              <div className="operational-overview-icon">
+                <UserCheck size={18} />
+              </div>
+              <div className="operational-overview-details">
+                <div className="operational-overview-header">
+                  <span className="operational-overview-label">Active Doctors</span>
+                  <span className="operational-overview-val">{activeDoctorsCount}</span>
+                </div>
+                <span className="operational-overview-subtext">Available for consultation</span>
+              </div>
+            </div>
           </section>
 
           <section className="dashboard-main-info-grid" style={{ marginBottom: "24px" }}>
             <Card>
-                <h3 className="section-main-title">Doctor-wise Visits</h3>
-                <div style={{ height: "260px", width: "100%" }}>
-                  <SvgBarChart data={doctorWise} dataKey="totalVisits" nameKey="doctorName" color="var(--primary)" />
-                </div>
+              <h3 className="section-main-title">Visit Trend</h3>
+              <div style={{ height: "260px", width: "100%" }}>
+                <SvgLineChart data={trendData} dataKey="visits" xKey="date" />
+              </div>
             </Card>
             <Card>
-                <h3 className="section-main-title">Hospital-wise Visits</h3>
-                <div style={{ height: "260px", width: "100%" }}>
-                  <SvgBarChart data={hospitalWise} dataKey="totalVisits" nameKey="hospitalName" color="#00C49F" />
-                </div>
+              <h3 className="section-main-title">Status Distribution</h3>
+              <div style={{ height: "260px", width: "100%" }}>
+                <SvgPieChart data={statusPieData} />
+              </div>
+            </Card>
+          </section>
+
+          <section className="dashboard-main-info-grid" style={{ marginBottom: "24px" }}>
+            <Card>
+              <h3 className="section-main-title">Doctor-wise Visits</h3>
+              <div style={{ height: "260px", width: "100%" }}>
+                <SvgBarChart data={doctorWise} dataKey="totalVisits" nameKey="doctorName" color="var(--primary)" />
+              </div>
+            </Card>
+            <Card>
+              <h3 className="section-main-title">Hospital-wise Visits</h3>
+              <div style={{ height: "260px", width: "100%" }}>
+                <SvgBarChart data={hospitalWise} dataKey="totalVisits" nameKey="hospitalName" color="#00C49F" />
+              </div>
             </Card>
           </section>
 
@@ -351,7 +465,7 @@ function AdminReports() {
                     </tr>
                   ))}
                   {patientWise.length === 0 && (
-                    <tr><td colSpan="6" style={{textAlign: "center", color: "var(--text-muted)", padding: "20px"}}>No patient data found for this period.</td></tr>
+                    <tr><td colSpan="6" style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px" }}>No patient data found for this period.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -386,7 +500,7 @@ function AdminReports() {
                     </tr>
                   ))}
                   {doctorWise.length === 0 && (
-                    <tr><td colSpan="7" style={{textAlign: "center", color: "var(--text-muted)", padding: "20px"}}>No doctor data found for this period.</td></tr>
+                    <tr><td colSpan="7" style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px" }}>No doctor data found for this period.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -419,7 +533,7 @@ function AdminReports() {
                     </tr>
                   ))}
                   {hospitalWise.length === 0 && (
-                    <tr><td colSpan="6" style={{textAlign: "center", color: "var(--text-muted)", padding: "20px"}}>No hospital data found for this period.</td></tr>
+                    <tr><td colSpan="6" style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px" }}>No hospital data found for this period.</td></tr>
                   )}
                 </tbody>
               </table>
