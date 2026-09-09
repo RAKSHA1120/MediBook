@@ -37,3 +37,14 @@ MediBook.Api/*.csproj.user
 *.db
 *.db-shm
 *.db-wal
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Database files/folder
+database/
+
+# Local ASP.NET configuration
+MediBook.Api/appsettings.json
