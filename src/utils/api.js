@@ -5,7 +5,7 @@ const getBaseUrl = () => {
   return url.replace(/\/+$/, "");
 };
 
-const BASE_URL = getBaseUrl();
+export const BASE_URL = getBaseUrl();
 
 const buildUrl = (endpoint) => {
   const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;

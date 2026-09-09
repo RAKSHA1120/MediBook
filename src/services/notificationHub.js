@@ -1,8 +1,9 @@
 import { HubConnectionBuilder, LogLevel, HubConnectionState } from "@microsoft/signalr";
 
+import { BASE_URL } from "../utils/api";
+
 const getHubUrl = () => {
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5107/api";
-  const baseUrl = apiUrl.replace(/\/api\/?$/i, "").replace(/\/+$/, "");
+  const baseUrl = BASE_URL.replace(/\/api\/?$/i, "").replace(/\/+$/, "");
   return `${baseUrl}/notificationHub`;
 };
 

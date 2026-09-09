@@ -259,7 +259,14 @@ function PatientProfile() {
 
             <div className="profile-field-group">
               <span className="field-label">Date of Birth</span>
-              <div className="field-value-text">{profile.formattedDob || profile.dob}</div>
+              <div className="field-value-text">
+                {profile.dob ? profile.dob.split("-").reverse().join("-") : "N/A"}
+              </div>
+            </div>
+
+            <div className="profile-field-group">
+              <span className="field-label">Age</span>
+              <div className="field-value-text">{profile.age || "N/A"}</div>
             </div>
 
             <div className="profile-field-group">
@@ -328,10 +335,27 @@ function PatientProfile() {
                 id="input-dob"
                 type="date"
                 className={`field-input ${errors.dob ? "has-error" : ""}`}
-                value={formData.dob}
+                value={formData.dob || ""}
                 onChange={(e) => handleInputChange("dob", e.target.value)}
               />
               {errors.dob && <span className="field-error-text">{errors.dob}</span>}
+            </div>
+
+            <div className="profile-field-group">
+              <label className="field-label" htmlFor="input-age">
+                Age
+              </label>
+              <input
+                id="input-age"
+                type="number"
+                min="0"
+                max="120"
+                className={`field-input ${errors.age ? "has-error" : ""}`}
+                value={formData.age || ""}
+                onChange={(e) => handleInputChange("age", e.target.value)}
+                placeholder="Age in years"
+              />
+              {errors.age && <span className="field-error-text">{errors.age}</span>}
             </div>
 
             <div className="profile-field-group">

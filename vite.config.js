@@ -10,6 +10,7 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    exclude: ['MediBook.Api']
+    exclude: ['MediBook.Api'],
+    include: ['@microsoft/signalr']
   }
 })

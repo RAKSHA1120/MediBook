@@ -1,4 +1,6 @@
 import { getCurrentUser, setCurrentUser, getCurrentPatient } from "../utils/auth";
+import { api } from "../utils/api";
+
 const updateUser = () => {}; 
 const updatePatient = () => {};
 
@@ -45,7 +47,7 @@ export const getStoredPatientProfile = () => {
      } catch (e) {}
   }
 
-  const patientId = patientRecord?.id || user.refId || user.id || "P1";
+  const patientId = user.refId || patientRecord?.id || user.id || "P1";
 
   let rawName = extraData.name || patientRecord?.name || user.name || "Patient";
   if (rawName.startsWith("Patient (") && rawName.endsWith(")")) {
@@ -89,6 +91,7 @@ export const refreshPatientProfile = async () => {
       mobile: apiPatient.mobile,
       email: apiPatient.email,
       dob: apiPatient.dob ? apiPatient.dob.split('T')[0] : "",
+      age: apiPatient.age,
       gender: apiPatient.gender,
       bloodGroup: apiPatient.bloodGroup,
       address: apiPatient.address,
@@ -104,7 +107,7 @@ export const savePatientProfileAsync = async (profileData) => {
   const user = getCurrentUser();
   if (!user) return { success: false, error: "Not logged in" };
 
-  const targetId = profileData.id || profileData.patientId || user.refId || user.id || "P1";
+  const targetId = user.refId || profileData.patientId || profileData.id || user.id || "P1";
   
   const apiPayload = {
     id: parseInt(targetId, 10) || 1,
@@ -113,6 +116,7 @@ export const savePatientProfileAsync = async (profileData) => {
     mobile: profileData.phone || profileData.mobile,
     email: profileData.email,
     dob: profileData.dob ? new Date(profileData.dob).toISOString() : null,
+    age: profileData.age ? parseInt(profileData.age, 10) : null,
     gender: profileData.gender,
     bloodGroup: profileData.bloodGroup,
     address: profileData.address,

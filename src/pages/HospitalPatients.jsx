@@ -37,27 +37,28 @@ function HospitalPatients() {
 
     try {
       const [apptsRes, patientsRes, cardsRes] = await Promise.all([
-        fetch("http://localhost:5107/api/Appointments"),
-        fetch("http://localhost:5107/api/Patients"),
-        fetch(`http://localhost:5107/api/patient-hospitals/hospital/${hosRecord.id}`)
+        api.get("/Appointments"),
+        api.get("/Patients"),
+        api.get(`/patient-hospitals/hospital/${hosRecord.id}`)
       ]);
 
-      let allAppts = [];
-      if (apptsRes.success) allAppts = apptsRes.data;
+      // api.get() returns { success, data }
+      let allAppts = apptsRes.success ? (apptsRes.data || []) : [];
+      let allPatients = patientsRes.success ? (patientsRes.data || []) : [];
 
-      let allPatients = [];
-      if (patientsRes.success) allPatients = patientsRes.data;
-
-      let allCards = [];
-      if (cardsRes.ok) allCards = await cardsRes.json();
+      let allCards = cardsRes.success ? (cardsRes.data || []) : [];
 
       const cardMap = {};
       allCards.forEach((c) => {
         cardMap[c.patientId] = c;
       });
 
+      // Filter appointments belonging to this hospital (by id OR name)
       const hosAppts = allAppts.filter(
-        (a) => a.hospitalId === hosRecord.id || a.hospitalName === hosRecord.name
+        (a) =>
+          String(a.hospitalId) === String(hosRecord.id) ||
+          (a.hospitalName && hosRecord.name &&
+            String(a.hospitalName).toLowerCase() === String(hosRecord.name).toLowerCase())
       );
 
       const patientIds = [...new Set(hosAppts.map((a) => a.patientId))].filter(Boolean);

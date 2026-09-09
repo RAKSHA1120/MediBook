@@ -35,12 +35,153 @@ import "./AdminDashboard.css";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
+/* ─────────────────────────────────────────
+   Lightweight SVG Line Chart
+   ───────────────────────────────────────── */
+function SvgLineChart({ data, dataKey = "visits", xKey = "date" }) {
+  const W = 500, H = 220, PAD = { top: 16, right: 16, bottom: 40, left: 40 };
+  if (!data || data.length === 0)
+    return <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>No trend data for this period</div>;
+
+  const values = data.map(d => Number(d[dataKey]) || 0);
+  const maxV = Math.max(...values, 1);
+  const iW = W - PAD.left - PAD.right;
+  const iH = H - PAD.top - PAD.bottom;
+
+  const xPos = i => PAD.left + (i / (data.length - 1 || 1)) * iW;
+  const yPos = v => PAD.top + iH - (v / maxV) * iH;
+
+  const points = data.map((d, i) => `${xPos(i)},${yPos(Number(d[dataKey]) || 0)}`).join(" ");
+  const fillPoints = `${PAD.left},${PAD.top + iH} ${points} ${xPos(data.length - 1)},${PAD.top + iH}`;
+
+  // Y ticks
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(f => Math.round(maxV * f));
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "100%" }}>
+      {/* Grid */}
+      {yTicks.map(v => (
+        <g key={v}>
+          <line x1={PAD.left} x2={W - PAD.right} y1={yPos(v)} y2={yPos(v)} stroke="#e5e7eb" strokeDasharray="4 3" />
+          <text x={PAD.left - 6} y={yPos(v) + 4} textAnchor="end" fontSize={10} fill="#9ca3af">{v}</text>
+        </g>
+      ))}
+      {/* Area fill */}
+      <polygon points={fillPoints} fill="var(--primary)" fillOpacity={0.1} />
+      {/* Line */}
+      <polyline points={points} fill="none" stroke="var(--primary)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+      {/* Dots + X labels */}
+      {data.map((d, i) => (
+        <g key={i}>
+          <circle cx={xPos(i)} cy={yPos(Number(d[dataKey]) || 0)} r={4} fill="var(--primary)" />
+          <text x={xPos(i)} y={H - 8} textAnchor="middle" fontSize={9} fill="#9ca3af">
+            {String(d[xKey]).slice(0, 5)}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Lightweight SVG Horizontal Bar Chart
+   ───────────────────────────────────────── */
+function SvgBarChart({ data, dataKey = "totalVisits", nameKey = "doctorName", color = "var(--primary)" }) {
+  const W = 500, ROW_H = 44, PAD = { top: 12, right: 20, bottom: 12, left: 120 };
+  if (!data || data.length === 0)
+    return <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>No data available</div>;
+
+  const items = data.slice(0, 5);
+  const H = PAD.top + items.length * ROW_H + PAD.bottom;
+  const maxV = Math.max(...items.map(d => Number(d[dataKey]) || 0), 1);
+  const barW = W - PAD.left - PAD.right;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "100%" }}>
+      {items.map((d, i) => {
+        const val = Number(d[dataKey]) || 0;
+        const bw = (val / maxV) * barW;
+        const y = PAD.top + i * ROW_H;
+        const label = String(d[nameKey]);
+        return (
+          <g key={i}>
+            {/* Name */}
+            <text x={PAD.left - 8} y={y + ROW_H / 2 + 4} textAnchor="end" fontSize={11} fill="#374151">
+              {label.length > 14 ? label.slice(0, 13) + "…" : label}
+            </text>
+            {/* Bar background */}
+            <rect x={PAD.left} y={y + 8} width={barW} height={ROW_H - 18} rx={4} fill="#f3f4f6" />
+            {/* Bar fill */}
+            <rect x={PAD.left} y={y + 8} width={bw} height={ROW_H - 18} rx={4} fill={color} />
+            {/* Value */}
+            <text x={PAD.left + bw + 6} y={y + ROW_H / 2 + 4} fontSize={10} fill="#6b7280">{val}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Lightweight SVG Donut / Pie Chart
+   ───────────────────────────────────────── */
+function SvgPieChart({ data }) {
+  const SIZE = 220, CX = 110, CY = 100, R_OUT = 85, R_IN = 52;
+  if (!data || data.length === 0)
+    return <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>No visits to distribute</div>;
+
+  const total = data.reduce((s, d) => s + d.value, 0);
+  let angle = -Math.PI / 2;
+
+  const slices = data.map((d, i) => {
+    const sweep = (d.value / total) * 2 * Math.PI;
+    const x1 = CX + R_OUT * Math.cos(angle);
+    const y1 = CY + R_OUT * Math.sin(angle);
+    const x2 = CX + R_IN * Math.cos(angle);
+    const y2 = CY + R_IN * Math.sin(angle);
+    angle += sweep;
+    const x3 = CX + R_OUT * Math.cos(angle);
+    const y3 = CY + R_OUT * Math.sin(angle);
+    const x4 = CX + R_IN * Math.cos(angle);
+    const y4 = CY + R_IN * Math.sin(angle);
+    const large = sweep > Math.PI ? 1 : 0;
+    const path = [
+      `M ${x1} ${y1}`,
+      `A ${R_OUT} ${R_OUT} 0 ${large} 1 ${x3} ${y3}`,
+      `L ${x4} ${y4}`,
+      `A ${R_IN} ${R_IN} 0 ${large} 0 ${x2} ${y2}`,
+      "Z"
+    ].join(" ");
+    return { path, color: COLORS[i % COLORS.length], name: d.name, value: d.value };
+  });
+
+  return (
+    <svg viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ width: "100%", height: "100%" }}>
+      {slices.map((s, i) => (
+        <path key={i} d={s.path} fill={s.color} stroke="#fff" strokeWidth={2} />
+      ))}
+      {/* Centre label */}
+      <text x={CX} y={CY - 6} textAnchor="middle" fontSize={13} fontWeight="bold" fill="#374151">{total}</text>
+      <text x={CX} y={CY + 10} textAnchor="middle" fontSize={10} fill="#9ca3af">Total</text>
+      {/* Legend */}
+      {slices.map((s, i) => (
+        <g key={i} transform={`translate(8, ${SIZE - slices.length * 18 + i * 18})`}>
+          <rect width={10} height={10} rx={2} fill={s.color} />
+          <text x={14} y={9} fontSize={10} fill="#374151">{s.name} ({s.value})</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Main Page
+   ───────────────────────────────────────── */
 function AdminReports() {
-  const [period, setPeriod] = useState("today"); // today, weekly, monthly, yearly
+  const [period, setPeriod] = useState("today");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Data states
   const [summary, setSummary] = useState({ total: 0, completed: 0, upcoming: 0, pending: 0, cancelled: 0 });
   const [trendData, setTrendData] = useState([]);
   const [patientWise, setPatientWise] = useState([]);
@@ -98,7 +239,6 @@ function AdminReports() {
   const activeDoctorsCount = doctorWise.length;
 
   const handleExportCSV = () => {
-    // Generate CSV for Patient-wise
     let csvContent = "data:text/csv;charset=utf-8,";
     csvContent += "REPORT PERIOD: " + period.toUpperCase() + "\n\n";
 
@@ -135,8 +275,8 @@ function AdminReports() {
   return (
     <div className="patient-dashboard-content admin-reports-page">
       <div className="no-print">
-        <PageHeader 
-          title="Reports & Analytics" 
+        <PageHeader
+          title="Reports & Analytics"
           subtitle="System-wide statistics and performance reports"
         >
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
@@ -146,25 +286,25 @@ function AdminReports() {
             <Button variant={period === "monthly" ? "primary" : "outline"} size="sm" onClick={() => setPeriod("monthly")}>This Month</Button>
             <Button variant={period === "yearly" ? "primary" : "outline"} size="sm" onClick={() => setPeriod("yearly")}>This Year</Button>
             <div style={{ width: "1px", height: "30px", backgroundColor: "var(--border)", margin: "0 10px" }}></div>
-            <Button variant="outline" size="sm" onClick={handleExportCSV}><Download size={16} style={{marginRight: "6px"}}/> Export CSV</Button>
+            <Button variant="outline" size="sm" onClick={handleExportCSV}><Download size={16} style={{ marginRight: "6px" }} /> Export CSV</Button>
           </div>
         </PageHeader>
       </div>
 
       {error ? (
         <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "40px", color: "var(--error)", background: "#fef2f2", borderRadius: "12px" }}>
-            <AlertCircle size={24} />
-            <p style={{margin: 0, fontWeight: 500}}>{error}</p>
+          <AlertCircle size={24} />
+          <p style={{ margin: 0, fontWeight: 500 }}>{error}</p>
         </div>
       ) : loading ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "100px", gap: "12px" }}>
-            <Loader2 size={36} style={{ color: "var(--primary)", animation: "spin 1s linear infinite" }} />
-            <p style={{ color: "var(--text-muted)", margin: 0, fontWeight: 500 }}>Generating reports...</p>
+          <Loader2 size={36} style={{ color: "var(--primary)", animation: "spin 1s linear infinite" }} />
+          <p style={{ color: "var(--text-muted)", margin: 0, fontWeight: 500 }}>Generating reports...</p>
         </div>
       ) : (
         <div className="print-container">
           <h2 className="print-only-title" style={{ display: "none" }}>MediBook Admin Report - {period.toUpperCase()}</h2>
-          
+
           {/* TIER 1: 4 MAIN KPI SUMMARY CARDS */}
           <section className="admin-stats-grid">
             {/* 1. Total Visits */}
@@ -270,90 +410,32 @@ function AdminReports() {
           </section>
 
           <section className="dashboard-main-info-grid" style={{ marginBottom: "24px" }}>
-             <Card>
-                <h3 className="section-main-title">Visit Trend</h3>
-                <div style={{ height: "300px", width: "100%" }}>
-                  {trendData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={trendData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="date" />
-                        <YAxis allowDecimals={false} />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="visits" stroke="var(--primary)" strokeWidth={3} activeDot={{ r: 8 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>No trend data for this period</div>
-                  )}
-                </div>
-             </Card>
-             <Card>
-                <h3 className="section-main-title">Status Distribution</h3>
-                <div style={{ height: "300px", width: "100%" }}>
-                  {statusPieData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={statusPieData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={100}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {statusPieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>No visits to distribute</div>
-                  )}
-                </div>
-             </Card>
+            <Card>
+              <h3 className="section-main-title">Visit Trend</h3>
+              <div style={{ height: "260px", width: "100%" }}>
+                <SvgLineChart data={trendData} dataKey="visits" xKey="date" />
+              </div>
+            </Card>
+            <Card>
+              <h3 className="section-main-title">Status Distribution</h3>
+              <div style={{ height: "260px", width: "100%" }}>
+                <SvgPieChart data={statusPieData} />
+              </div>
+            </Card>
           </section>
 
           <section className="dashboard-main-info-grid" style={{ marginBottom: "24px" }}>
             <Card>
-                <h3 className="section-main-title">Doctor-wise Visits</h3>
-                <div style={{ height: "300px", width: "100%" }}>
-                  {doctorWise.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={doctorWise.slice(0, 5)} layout="vertical" margin={{ left: 50 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                        <XAxis type="number" allowDecimals={false} />
-                        <YAxis dataKey="doctorName" type="category" width={100} />
-                        <Tooltip />
-                        <Bar dataKey="totalVisits" fill="var(--primary)" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>No data available</div>
-                  )}
-                </div>
+              <h3 className="section-main-title">Doctor-wise Visits</h3>
+              <div style={{ height: "260px", width: "100%" }}>
+                <SvgBarChart data={doctorWise} dataKey="totalVisits" nameKey="doctorName" color="var(--primary)" />
+              </div>
             </Card>
             <Card>
-                <h3 className="section-main-title">Hospital-wise Visits</h3>
-                <div style={{ height: "300px", width: "100%" }}>
-                  {hospitalWise.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={hospitalWise.slice(0, 5)} layout="vertical" margin={{ left: 50 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                        <XAxis type="number" allowDecimals={false} />
-                        <YAxis dataKey="hospitalName" type="category" width={100} />
-                        <Tooltip />
-                        <Bar dataKey="totalVisits" fill="#00C49F" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>No data available</div>
-                  )}
-                </div>
+              <h3 className="section-main-title">Hospital-wise Visits</h3>
+              <div style={{ height: "260px", width: "100%" }}>
+                <SvgBarChart data={hospitalWise} dataKey="totalVisits" nameKey="hospitalName" color="#00C49F" />
+              </div>
             </Card>
           </section>
 
@@ -383,7 +465,7 @@ function AdminReports() {
                     </tr>
                   ))}
                   {patientWise.length === 0 && (
-                    <tr><td colSpan="6" style={{textAlign: "center", color: "var(--text-muted)", padding: "20px"}}>No patient data found for this period.</td></tr>
+                    <tr><td colSpan="6" style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px" }}>No patient data found for this period.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -418,7 +500,7 @@ function AdminReports() {
                     </tr>
                   ))}
                   {doctorWise.length === 0 && (
-                    <tr><td colSpan="7" style={{textAlign: "center", color: "var(--text-muted)", padding: "20px"}}>No doctor data found for this period.</td></tr>
+                    <tr><td colSpan="7" style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px" }}>No doctor data found for this period.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -451,7 +533,7 @@ function AdminReports() {
                     </tr>
                   ))}
                   {hospitalWise.length === 0 && (
-                    <tr><td colSpan="6" style={{textAlign: "center", color: "var(--text-muted)", padding: "20px"}}>No hospital data found for this period.</td></tr>
+                    <tr><td colSpan="6" style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px" }}>No hospital data found for this period.</td></tr>
                   )}
                 </tbody>
               </table>
