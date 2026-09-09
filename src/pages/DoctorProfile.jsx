@@ -20,6 +20,7 @@ import SecondaryButton from "../components/SecondaryButton";
 import Toast from "../components/Toast";
 import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
 import { api } from "../utils/api";
+import ProfileImageUploader from "../components/ProfileImageUploader";
 import "./DoctorProfile.css";
 
 
@@ -79,7 +80,8 @@ function DoctorProfile() {
       hospitalAddress: doc?.address || doc?.hospitalAddress || "123 Healthcare Ave, Block B",
       city: doc?.location || doc?.city || "Bangalore",
       state: doc?.state || "Karnataka",
-      hospitalContact: doc?.hospitalContact || "+91 80 4123 4567"
+      hospitalContact: doc?.hospitalContact || "+91 80 4123 4567",
+      profileImageUrl: doc?.profileImageUrl || user?.profileImageUrl || null
     };
   }
 
@@ -250,6 +252,17 @@ function DoctorProfile() {
     .toUpperCase()
     .slice(0, 2) || "SS";
 
+  const handleImageUpdated = (newImageUrl) => {
+    setProfile(prev => ({ ...prev, profileImageUrl: newImageUrl }));
+    // Also dispatch event so navbar updates
+    const user = getCurrentUser();
+    if (user) {
+      user.profileImageUrl = newImageUrl;
+      sessionStorage.setItem("medibook_current_user", JSON.stringify(user));
+      window.dispatchEvent(new Event("medibook_current_user_updated"));
+    }
+  };
+
   return (
     <div className="patient-profile-page doctor-profile-page">
       {/* Page Header */}
@@ -261,8 +274,11 @@ function DoctorProfile() {
       {/* Top Profile Header Card */}
       <div className="profile-overview-card">
         <div className="overview-left-block">
-          <div className="profile-avatar-circle">{initials}</div>
-          <div className="overview-details">
+          <ProfileImageUploader 
+            currentImageUrl={profile.profileImageUrl} 
+            onImageUpdated={handleImageUpdated} 
+          />
+          <div className="overview-details" style={{ marginLeft: '16px' }}>
             <div className="overview-name-row">
               <h2 className="overview-name">{profile.name}</h2>
               <span className="role-badge">DOCTOR</span>

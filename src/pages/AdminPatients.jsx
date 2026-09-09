@@ -6,6 +6,7 @@ import SearchBox from "../components/SearchBox";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
 import { api } from "../utils/api";
+import ProfileModalTrigger from "../components/ProfileModalTrigger";
 
 import "./AdminDashboard.css";
 import "./AdminShared.css";
@@ -323,19 +324,21 @@ function AdminPatients() {
                   <tr key={p.id}>
                     {/* PATIENT: Avatar, Name, ID */}
                     <td>
-                      <div className="user-info-cell">
-                        <div className="user-avatar" style={{ background: "rgba(47, 111, 163, 0.1)", color: "var(--primary)" }}>
-                          {initials}
+                      <ProfileModalTrigger type="patient" id={p.id}>
+                        <div className="user-info-cell">
+                          <div className="user-avatar" style={{ background: "rgba(47, 111, 163, 0.1)", color: "var(--primary)" }}>
+                            {initials}
+                          </div>
+                          <div className="user-details">
+                            <span className="user-name" style={{ fontSize: "14px", fontWeight: "600" }}>
+                              {p.name}
+                            </span>
+                            <span className="user-subtext" style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                              {p.id}
+                            </span>
+                          </div>
                         </div>
-                        <div className="user-details">
-                          <span className="user-name" style={{ fontSize: "14px", fontWeight: "600" }}>
-                            {p.name}
-                          </span>
-                          <span className="user-subtext" style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
-                            {p.id}
-                          </span>
-                        </div>
-                      </div>
+                      </ProfileModalTrigger>
                     </td>
 
                     {/* AGE */}

@@ -55,7 +55,6 @@ export const api = {
   },
 
   post: async (endpoint, body) => {
-    debugger;
     try {
       const user = getCurrentUser();
       const headers = { "Content-Type": "application/json" };
@@ -121,6 +120,32 @@ export const api = {
       return await handleResponse(response);
     } catch (error) {
       console.error(`API DELETE ${endpoint} error:`, error);
+      return { success: false, error: "Network error or API offline" };
+    }
+  },
+
+  uploadFile: async (endpoint, file) => {
+    try {
+      const user = getCurrentUser();
+      const headers = {};
+      // DO NOT set Content-Type to multipart/form-data here;
+      // fetch will set it automatically with the correct boundary when body is FormData
+      if (user) {
+        headers["X-User-Role"] = user.role;
+        headers["X-User-Id"] = user.id;
+      }
+      
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(buildUrl(endpoint), {
+        method: "POST",
+        headers,
+        body: formData
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error(`API UPLOAD ${endpoint} error:`, error);
       return { success: false, error: "Network error or API offline" };
     }
   }

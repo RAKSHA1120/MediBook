@@ -18,6 +18,7 @@ namespace MediBook.Api.Data
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<PatientHospital> PatientHospitals { get; set; }
+        public DbSet<AppointmentReschedule> AppointmentReschedules { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -107,6 +108,23 @@ namespace MediBook.Api.Data
                 entity.HasIndex(ph => ph.VisitorCardNumber)
                     .IsUnique();
             });
+
+            // AppointmentReschedule
+            modelBuilder.Entity<AppointmentReschedule>(entity =>
+            {
+                entity.HasKey(ar => ar.Id);
+
+                entity.HasOne(ar => ar.Appointment)
+                    .WithMany()
+                    .HasForeignKey(ar => ar.AppointmentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ar => ar.RescheduledByUser)
+                    .WithMany()
+                    .HasForeignKey(ar => ar.RescheduledByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
         }
     }
 }

@@ -57,6 +57,7 @@ export const getStoredPatientProfile = () => {
   const phone = extraData.phone || patientRecord?.contact || patientRecord?.mobile || user.mobile || "";
   const gender = extraData.gender || patientRecord?.gender || user.gender || "Not specified";
   const age = extraData.age || patientRecord?.age || user.age || "N/A";
+  const profileImageUrl = extraData.profileImageUrl || patientRecord?.profileImageUrl || user.profileImageUrl || null;
 
   return { 
      ...DEFAULT_PATIENT_PROFILE, 
@@ -70,7 +71,8 @@ export const getStoredPatientProfile = () => {
      email: extraData.email || patientRecord?.email || `${rawName.toLowerCase().replace(/[^a-z0-9]/g, "") || "patient"}@example.com`,
      gender: gender,
      age: age,
-     role: "Patient" 
+     role: "Patient",
+     profileImageUrl: profileImageUrl
   };
 };
 
@@ -98,7 +100,8 @@ export const refreshPatientProfile = async () => {
       city: apiPatient.city,
       state: apiPatient.state,
       pincode: apiPatient.pincode,
-      status: apiPatient.isActive ? "Active" : "Inactive"
+      status: apiPatient.isActive ? "Active" : "Inactive",
+      profileImageUrl: apiPatient.profileImageUrl
     });
   }
 };
@@ -149,7 +152,8 @@ export const savePatientProfile = (profileData) => {
     ...user,
     name: profileData.name,
     mobile: profileData.phone || profileData.mobile || user.mobile,
-    email: profileData.email || user.email
+    email: profileData.email || user.email,
+    profileImageUrl: profileData.profileImageUrl !== undefined ? profileData.profileImageUrl : user.profileImageUrl
   };
   setCurrentUser(updatedUser);
 

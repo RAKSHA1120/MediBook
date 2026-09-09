@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Users, Search, Eye, Phone, Calendar, CreditCard } from "lucide-react";
 import { getCurrentUser } from "../utils/auth";
 import { api } from "../utils/api";
+import ProfileModalTrigger from "../components/ProfileModalTrigger";
 
 import PageHeader from "../components/PageHeader";
 import SearchBox from "../components/SearchBox";
@@ -182,22 +183,24 @@ function HospitalPatients() {
                 return (
                   <tr key={pat.id}>
                     <td>
-                      <div className="user-info-cell">
-                        <div
-                          className="user-avatar"
-                          style={{ background: "rgba(47, 111, 163, 0.1)", color: "var(--primary)" }}
-                        >
-                          {getInitials(pat.name)}
+                      <ProfileModalTrigger type="patient" id={pat.id}>
+                        <div className="user-info-cell">
+                          <div
+                            className="user-avatar"
+                            style={{ background: "rgba(47, 111, 163, 0.1)", color: "var(--primary)" }}
+                          >
+                            {getInitials(pat.name)}
+                          </div>
+                          <div className="user-details">
+                            <span className="user-name" style={{ fontSize: "14px" }}>
+                              {pat.name}
+                            </span>
+                            <span className="user-subtext" style={{ fontSize: "12px" }}>
+                              ID: {pat.id}
+                            </span>
+                          </div>
                         </div>
-                        <div className="user-details">
-                          <span className="user-name" style={{ fontSize: "14px" }}>
-                            {pat.name}
-                          </span>
-                          <span className="user-subtext" style={{ fontSize: "12px" }}>
-                            ID: {pat.id}
-                          </span>
-                        </div>
-                      </div>
+                      </ProfileModalTrigger>
                     </td>
                     <td>
                       <span

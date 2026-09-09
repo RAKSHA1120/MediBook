@@ -6,6 +6,7 @@ import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
 import EmptyState from "../components/EmptyState";
 import Button from "../components/Button";
+import ProfileModalTrigger from "../components/ProfileModalTrigger";
 import "../pages/AdminShared.css";
 import "../pages/AdminDashboard.css";
 
@@ -18,6 +19,10 @@ function DoctorAppointments() {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTime, setRescheduleTime] = useState("");
+  const [rescheduleReason, setRescheduleReason] = useState("");
   const [consultationNotes, setConsultationNotes] = useState("");
   const [prescribedMedicines, setPrescribedMedicines] = useState("");
   const [doctorAdvice, setDoctorAdvice] = useState("");
@@ -118,6 +123,84 @@ function DoctorAppointments() {
       }
     } catch (err) {
       console.error("Failed to update status", err);
+    }
+  };
+
+  const handleConfirm = async (apt) => {
+    try {
+      const user = getCurrentUser();
+      const doc = getCurrentDoctor();
+      const rawDocId = user?.doctorId || user?.refId || doc?.refId || user?.id;
+      const response = await api.put(`/Appointments/${apt.id}/confirm`, { doctorId: Number(rawDocId) });
+      if (response.success) {
+        setAppointments((prev) =>
+          prev.map((a) => String(a.id) === String(apt.id) ? { ...a, status: "Confirmed" } : a)
+        );
+        setSelectedAppointment((prev) => prev ? { ...prev, status: "Confirmed" } : null);
+      } else {
+        alert(response.error || "Failed to confirm appointment.");
+      }
+    } catch (err) {
+      console.error("Failed to confirm appointment", err);
+    }
+  };
+
+  const handleCancel = async (apt) => {
+    try {
+      const response = await api.put(`/Appointments/${apt.id}/cancel`);
+      if (response.success) {
+        setAppointments((prev) =>
+          prev.map((a) => String(a.id) === String(apt.id) ? { ...a, status: "Cancelled" } : a)
+        );
+        setSelectedAppointment((prev) => prev ? { ...prev, status: "Cancelled" } : null);
+      } else {
+        alert(response.error || "Failed to cancel appointment.");
+      }
+    } catch (err) {
+      console.error("Failed to cancel appointment", err);
+    }
+  };
+
+  const openReschedule = (apt) => {
+    setSelectedAppointment({ ...apt });
+    setRescheduleDate("");
+    setRescheduleTime("");
+    setRescheduleReason("");
+    setIsRescheduleModalOpen(true);
+  };
+
+  const handleReschedule = async () => {
+    if (!selectedAppointment || !rescheduleDate || !rescheduleTime) {
+      alert("Please select a new date and time.");
+      return;
+    }
+    try {
+      const user = getCurrentUser();
+      const doc = getCurrentDoctor();
+      const rawDocId = user?.doctorId || user?.refId || doc?.refId || user?.id;
+      const [hh, mm] = rescheduleTime.split(":");
+      const response = await api.put(`/Appointments/${selectedAppointment.id}/reschedule`, {
+        doctorId: Number(rawDocId),
+        newAppointmentDate: rescheduleDate + "T00:00:00",
+        newAppointmentTime: `${hh}:${mm}:00`,
+        reason: rescheduleReason || null
+      });
+      if (response.success) {
+        const newDate = rescheduleDate;
+        const newTime = rescheduleTime;
+        setAppointments((prev) =>
+          prev.map((a) =>
+            String(a.id) === String(selectedAppointment.id)
+              ? { ...a, date: newDate, time: newTime, appointmentDate: rescheduleDate, status: "Confirmed" }
+              : a
+          )
+        );
+        setIsRescheduleModalOpen(false);
+      } else {
+        alert(response.error || "Failed to reschedule appointment.");
+      }
+    } catch (err) {
+      console.error("Error rescheduling:", err);
     }
   };
 
@@ -365,15 +448,17 @@ function DoctorAppointments() {
                   return (
                     <tr key={apt.id}>
                       <td>
-                        <div className="user-info-cell">
-                          <div className="user-avatar">{initials}</div>
-                          <div className="user-details">
-                            <span className="user-name">{rawPatientName}</span>
-                            {patientIdDisplay && (
-                              <span className="user-subtext">{patientIdDisplay}</span>
-                            )}
+                        <ProfileModalTrigger type="patient" id={apt.patientId}>
+                          <div className="user-info-cell">
+                            <div className="user-avatar">{initials}</div>
+                            <div className="user-details">
+                              <span className="user-name">{rawPatientName}</span>
+                              {patientIdDisplay && (
+                                <span className="user-subtext">{patientIdDisplay}</span>
+                              )}
+                            </div>
                           </div>
-                        </div>
+                        </ProfileModalTrigger>
                       </td>
                       <td className="nowrap">
                         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
@@ -474,34 +559,58 @@ function DoctorAppointments() {
             </div>
 
             {/* Modal Actions Footer */}
-            <div className="modal-actions" style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="modal-actions" style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
               <div>
                 {selectedAppointment.status !== "Cancelled" && selectedAppointment.status !== "Completed" && (
                   <Button
                     variant="outline"
                     onClick={() => {
-                      handleStatusChange(selectedAppointment.id, "Cancelled");
+                      handleCancel(selectedAppointment);
                       setIsDetailsModalOpen(false);
                     }}
+                    style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
                   >
                     Cancel Appointment
                   </Button>
                 )}
               </div>
-              <div style={{ display: "flex", gap: "10px" }}>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 <Button variant="outline" onClick={() => setIsDetailsModalOpen(false)}>
                   Close
                 </Button>
-                {selectedAppointment.status !== "Completed" && selectedAppointment.status !== "Cancelled" && (
+                {/* PENDING: Show Confirm and Reschedule only */}
+                {(selectedAppointment.status === "Pending") && (
                   <>
                     <Button
                       variant="primary"
                       onClick={() => {
-                        handleStatusChange(selectedAppointment.id, "Confirmed");
-                        setIsDetailsModalOpen(false);
+                        handleConfirm(selectedAppointment);
                       }}
                     >
                       Confirm
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsDetailsModalOpen(false);
+                        openReschedule(selectedAppointment);
+                      }}
+                    >
+                      Reschedule
+                    </Button>
+                  </>
+                )}
+                {/* CONFIRMED: Show Complete Consultation and Reschedule */}
+                {selectedAppointment.status === "Confirmed" && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsDetailsModalOpen(false);
+                        openReschedule(selectedAppointment);
+                      }}
+                    >
+                      Reschedule
                     </Button>
                     <Button
                       variant="primary"
@@ -607,6 +716,71 @@ function DoctorAppointments() {
               >
                 Save & Complete
               </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Reschedule Appointment Modal */}
+      <Modal
+        isOpen={isRescheduleModalOpen}
+        onClose={() => setIsRescheduleModalOpen(false)}
+        title="Reschedule Appointment"
+      >
+        {selectedAppointment && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* Current appointment info */}
+            <div style={{ background: "var(--surface-2)", borderRadius: "var(--radius)", padding: "12px 14px", border: "1px solid var(--border)" }}>
+              <p style={{ margin: "0 0 4px", fontSize: "13px", color: "var(--text-muted)", fontWeight: 600 }}>Current Appointment</p>
+              <p style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "var(--text-heading)" }}>
+                {selectedAppointment.date || "N/A"} &nbsp;·&nbsp; {selectedAppointment.time || "N/A"}
+              </p>
+            </div>
+
+            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-heading)" }}>
+                New Date <span style={{ color: "var(--danger)" }}>*</span>
+              </label>
+              <input
+                type="date"
+                className="form-input"
+                value={rescheduleDate}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setRescheduleDate(e.target.value)}
+                style={{ height: "44px" }}
+              />
+            </div>
+
+            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-heading)" }}>
+                New Time <span style={{ color: "var(--danger)" }}>*</span>
+              </label>
+              <input
+                type="time"
+                className="form-input"
+                value={rescheduleTime}
+                onChange={(e) => setRescheduleTime(e.target.value)}
+                style={{ height: "44px" }}
+              />
+            </div>
+
+            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-heading)" }}>
+                Reason <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>(optional)</span>
+              </label>
+              <textarea
+                className="field-input"
+                rows="3"
+                placeholder="E.g., Doctor unavailable, patient requested change..."
+                value={rescheduleReason}
+                onChange={(e) => setRescheduleReason(e.target.value)}
+                style={{ resize: "vertical", minHeight: "80px" }}
+              />
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: "8px", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <Button variant="outline" onClick={() => setIsRescheduleModalOpen(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleReschedule}>Confirm Reschedule</Button>
             </div>
           </div>
         )}
