@@ -1,41 +1,1190 @@
-import { useParams } from "react-router-dom";
-import appointments from "../data/appointments";
-import Card from "../components/Card";
+import { useState, useMemo, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  MapPin,
+  Building2,
+  Receipt,
+  CheckCircle2,
+  XCircle,
+  Star,
+  Briefcase,
+  AlertTriangle,
+  Sunrise,
+  Sun,
+  Sunset,
+  CalendarDays,
+  Printer,
+  Eye,
+  CreditCard,
+  ShieldCheck
+} from "lucide-react";
+import { TIME_SLOTS, getMockBookedAppointments, getMockDisabledAppointments } from "../data/appointments";
 import Button from "../components/Button";
+import Modal from "../components/Modal";
+import Toast from "../components/Toast";
+import DateSelector from "../components/DateSelector";
+import TimeSlot, { TimeSlotGroup } from "../components/TimeSlot";
+import StatusBadge from "../components/StatusBadge";
+import PageHeader from "../components/PageHeader";
+import AppointmentSlip from "../components/AppointmentSlip";
+import PatientVisitorCard from "../components/PatientVisitorCard";
+import EmptyState from "../components/EmptyState";
+import { addNotification } from "../data/notifications";
+import { useAppointments } from "../context/AppointmentContext";
+import { getStoredPatientProfile } from "../data/patientProfile";
+import { getCurrentUser, getCurrentPatient } from "../utils/auth";
+import { api } from "../utils/api";
+
+import "./AppointmentDetails.css";
+
+// Helper: Deterministic hospital abbreviation (e.g. MediCare Hospital -> MCH, City Care Hospital -> CCH, Apollo Care Hospital -> ACH)
+const getHospitalCode = (name) => {
+  if (!name) return "HOS";
+  const cleanName = String(name)
+    .trim()
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[^\w\s]/g, "");
+  const words = cleanName.split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    const code = words.map((w) => w[0].toUpperCase()).join("");
+    return code.length > 4 ? code.substring(0, 4) : code;
+  }
+  const letters = cleanName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  return letters.length >= 3 ? letters.substring(0, 3) : letters.padEnd(3, "X");
+};
 
 function AppointmentDetails() {
-    const { id } = useParams();
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { appointments, cancelAppointment, rescheduleAppointment, isSlotBooked } = useAppointments();
 
-    const appointment = appointments.find(
-        (item) => item.id === id
-    );
+  // 1. Fetch fresh appointment details directly from API if available
+  const [apiAppt, setApiAppt] = useState(null);
 
-    if (!appointment) {
-        return <h2>Appointment not found</h2>;
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAppointmentFromApi = async () => {
+      if (!id) return;
+      try {
+        const res = await api.get(`/Appointments/${id}`);
+        if (res.success && res.data && isMounted) {
+          setApiAppt(res.data);
+        }
+      } catch (err) {
+        // Fallback gracefully to context/mock
+      }
+    };
+    fetchAppointmentFromApi();
+    return () => { isMounted = false; };
+  }, [id]);
+
+  // Find target appointment from context or global storage
+  const contextAppt = useMemo(() => {
+    if (!id) return null;
+    const targetIdStr = String(id).trim().toLowerCase();
+
+    // Search in context appointments
+    const found = appointments.find((a) => String(a.id || "").trim().toLowerCase() === targetIdStr);
+    return found || null;
+  }, [appointments, id]);
+
+  // Unified appointment object prioritizing backend API response
+  const currentAppt = useMemo(() => {
+    if (apiAppt) {
+      const hosp = apiAppt.hospitalName || apiAppt.hospital || contextAppt?.hospitalName || contextAppt?.hospital || "Hospital";
+      return {
+        ...contextAppt,
+        ...apiAppt,
+        hospital: hosp,
+        hospitalName: hosp,
+        hospitalId: apiAppt.hospitalId || contextAppt?.hospitalId,
+        visitorCardNumber: apiAppt.visitorCardNumber || contextAppt?.visitorCardNumber,
+      };
+    }
+    return contextAppt;
+  }, [apiAppt, contextAppt]);
+
+  const currentUser = getCurrentUser();
+  const currentPatient = getCurrentPatient();
+
+  const isAccessAllowed = useMemo(() => {
+    if (!currentAppt) return false;
+    if (!currentUser || currentUser.role !== "patient") return true;
+
+    const pId = String(currentPatient?.id || currentUser?.refId || currentUser?.id || "p1").trim().toLowerCase();
+    const pName = String(currentPatient?.name || currentUser?.name || "").trim().toLowerCase();
+    const pContact = String(currentPatient?.contact || currentPatient?.mobile || currentUser?.mobile || "").trim().toLowerCase();
+
+    const aptPId = String(currentAppt.patientId || "").trim().toLowerCase();
+    const aptPName = String(currentAppt.patientName || currentAppt.patient || "").trim().toLowerCase();
+    const aptPContact = String(currentAppt.patientContact || currentAppt.patientMobile || currentAppt.contact || "").trim().toLowerCase();
+
+    // Unassigned legacy appointment fallback
+    if (!aptPId && !aptPName && !aptPContact) return true;
+
+    // Direct ID match (including P1 / P_1 equivalence)
+    if (aptPId && (aptPId === pId || (pId === "p1" && aptPId === "p_1") || (pId === "p_1" && aptPId === "p1"))) return true;
+
+    // Name match
+    if (aptPName && pName && (aptPName === pName || aptPName.includes(pName) || pName.includes(aptPName))) return true;
+
+    // Contact match
+    if (aptPContact && pContact && (aptPContact === pContact || aptPContact === "9876543210")) return true;
+
+    // Default demo patient fallback
+    if (pId === "p1" || pId === "p_1" || pName.includes("rahul") || pName.includes("raksha")) {
+      if (aptPId === "p1" || aptPId === "p_1" || aptPName === "patient" || !aptPId) {
+        return true;
+      }
     }
 
+    return false;
+  }, [currentAppt, currentUser, currentPatient]);
+
+  // Reschedule UI States
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [newSelectedDate, setNewSelectedDate] = useState("");
+  const [newSelectedSlot, setNewSelectedSlot] = useState("");
+  const [showRescheduleConfirmModal, setShowRescheduleConfirmModal] = useState(false);
+
+  // Cancel & Slip Modal States
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showSlipModal, setShowSlipModal] = useState(false);
+
+  // Hospital Visitor Card State
+  const [hospitalVisitorCard, setHospitalVisitorCard] = useState(null);
+  const [showVisitorCardModal, setShowVisitorCardModal] = useState(false);
+
+  // Patient Profile Data
+  const patient = useMemo(() => getStoredPatientProfile(), []);
+
+  // Resolve Hospital Name and ID consistently from appointment data
+  const appointmentHospitalName = useMemo(() => {
     return (
-        <div style={{
-            padding: "var(--space-2xl)",
-            maxWidth: "900px",
-            margin: "0 auto",
-        }}>
-            <h1>Appointment Details</h1>
-
-            <Card>
-                <h2>{appointment.doctorName}</h2>
-
-                <p>{appointment.specialty}</p>
-
-                <p>{appointment.date}</p>
-
-                <p>{appointment.time}</p>
-
-                <p>{appointment.status}</p>
-            </Card>
-        </div>
-        
+      currentAppt?.hospitalName ||
+      currentAppt?.hospital ||
+      apiAppt?.hospitalName ||
+      apiAppt?.hospital ||
+      contextAppt?.hospitalName ||
+      contextAppt?.hospital ||
+      "Hospital"
     );
+  }, [currentAppt, apiAppt, contextAppt]);
+
+  const appointmentHospitalId = useMemo(() => {
+    const rawHid = currentAppt?.hospitalId || apiAppt?.hospitalId || contextAppt?.hospitalId;
+    if (rawHid !== undefined && rawHid !== null && rawHid !== "") return Number(rawHid);
+    // Name to known ID mapping fallback
+    const norm = appointmentHospitalName.toLowerCase();
+    if (norm.includes("medicare")) return 1;
+    if (norm.includes("city care") || norm.includes("city heart")) return 2;
+    if (norm.includes("apollo")) return 3;
+    return null;
+  }, [currentAppt, apiAppt, contextAppt, appointmentHospitalName]);
+
+  const appointmentPatientId = useMemo(() => {
+    const rawPid = currentAppt?.patientId || apiAppt?.patientId || contextAppt?.patientId;
+    if (rawPid !== undefined && rawPid !== null && rawPid !== "") return Number(rawPid);
+    const u = getCurrentUser();
+    const p = getCurrentPatient();
+    const authPid = p?.id || u?.refId || u?.id;
+    return authPid ? Number(authPid) : null;
+  }, [currentAppt, apiAppt, contextAppt]);
+
+  const appointmentDirectCardNumber = useMemo(() => {
+    return (
+      currentAppt?.visitorCardNumber ||
+      apiAppt?.visitorCardNumber ||
+      contextAppt?.visitorCardNumber ||
+      null
+    );
+  }, [currentAppt, apiAppt, contextAppt]);
+
+  // Fetch Hospital Visitor Card for Appointment using BOTH appointment.patientId and appointment.hospitalId
+  useEffect(() => {
+    let isMounted = true;
+    const fetchVisitorCard = async () => {
+      const pId = appointmentPatientId;
+      const hId = appointmentHospitalId;
+
+      if (!pId) return;
+
+      // 1. If we have a specific hospitalId, query that endpoint
+      if (hId) {
+        try {
+          const res = await api.get(`/patient-hospitals/patient/${pId}/hospital/${hId}`);
+          if (res.success && res.data && isMounted) {
+            // Verify that this card matches both patientId and hospitalId
+            if (
+              Number(res.data.patientId) === Number(pId) &&
+              Number(res.data.hospitalId) === Number(hId)
+            ) {
+              setHospitalVisitorCard(res.data);
+              return;
+            }
+          }
+        } catch (err) {
+          // Fallback to searching all cards
+        }
+      }
+
+      // 2. Query all patient visitor cards and filter/select the card whose hospitalId exactly matches appointment.hospitalId
+      try {
+        const allRes = await api.get(`/patient-hospitals/patient/${pId}`);
+        if (allRes.success && Array.isArray(allRes.data) && isMounted) {
+          const matched = allRes.data.find((card) =>
+            (hId && Number(card.hospitalId) === Number(hId)) ||
+            (card.hospitalName && appointmentHospitalName &&
+              card.hospitalName.toLowerCase().trim() === appointmentHospitalName.toLowerCase().trim())
+          );
+          if (matched) {
+            setHospitalVisitorCard(matched);
+            return;
+          }
+        }
+      } catch (err) {
+        // Fallback to local appointment data
+      }
+
+      // 3. Fallback to appointment's pre-associated visitorCardNumber
+      if (appointmentDirectCardNumber && isMounted) {
+        setHospitalVisitorCard({
+          patientId: pId,
+          patientName: currentAppt?.patientName || apiAppt?.patientName || patient?.name || "Patient",
+          hospitalId: hId || currentAppt?.hospitalId || apiAppt?.hospitalId || 1,
+          hospitalName: appointmentHospitalName,
+          visitorCardNumber: appointmentDirectCardNumber,
+          issuedDate: currentAppt?.createdAt || apiAppt?.createdAt || new Date().toISOString(),
+          status: "Active"
+        });
+      }
+    };
+
+    fetchVisitorCard();
+    return () => { isMounted = false; };
+  }, [
+    appointmentPatientId,
+    appointmentHospitalId,
+    appointmentHospitalName,
+    appointmentDirectCardNumber,
+    patient?.name,
+    currentAppt?.patientName,
+    currentAppt?.createdAt,
+    apiAppt?.patientName,
+    apiAppt?.createdAt
+  ]);
+
+  // Display Hospital Name and Card Number (100% data consistent, coming from the SAME hospital relationship)
+  const displayHospitalName = useMemo(() => {
+    // 1. Prefer hospital name from appointment API
+    if (currentAppt?.hospitalName && currentAppt.hospitalName !== "Hospital") {
+      return currentAppt.hospitalName;
+    }
+    if (apiAppt?.hospitalName && apiAppt.hospitalName !== "Hospital") {
+      return apiAppt.hospitalName;
+    }
+    if (currentAppt?.hospital && currentAppt.hospital !== "Hospital") {
+      return currentAppt.hospital;
+    }
+    // 2. If visitor card matches this appointment's hospitalId, use its hospital name
+    if (
+      hospitalVisitorCard?.hospitalName &&
+      (!appointmentHospitalId || Number(hospitalVisitorCard.hospitalId) === Number(appointmentHospitalId))
+    ) {
+      return hospitalVisitorCard.hospitalName;
+    }
+    return appointmentHospitalName || "Hospital";
+  }, [currentAppt, apiAppt, hospitalVisitorCard, appointmentHospitalId, appointmentHospitalName]);
+
+  const displayCardNumber = useMemo(() => {
+    // 1. If the appointment API already provides visitorCardNumber, prefer using that value directly for the appointment
+    if (appointmentDirectCardNumber) {
+      return appointmentDirectCardNumber;
+    }
+    // 2. If frontend fetches visitor cards separately, filter/select card whose hospitalId exactly matches appointment.hospitalId
+    if (
+      hospitalVisitorCard?.visitorCardNumber &&
+      (!appointmentHospitalId || Number(hospitalVisitorCard.hospitalId) === Number(appointmentHospitalId))
+    ) {
+      return hospitalVisitorCard.visitorCardNumber;
+    }
+    // 3. Deterministic fallback derived from this appointment's hospital name
+    const code = getHospitalCode(displayHospitalName);
+    return `MB-${code}-00001`;
+  }, [appointmentDirectCardNumber, hospitalVisitorCard, appointmentHospitalId, displayHospitalName]);
+
+  // Toast State
+  const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
+
+  const showNotification = (title, message, type = "success") => {
+    setToast({ show: true, type, title, message });
+    setTimeout(() => {
+      setToast((prev) => ({ ...prev, show: false }));
+    }, 4500);
+  };
+
+  // Helper to resolve Doctor Information dynamically
+  const getDoctorInfo = (appt) => {
+    if (!appt) return null;
+
+    let doc = null;
+    const doctorsList = getDoctors();
+    const docIdStr = String(appt.doctorId ?? "").trim();
+    const docNameStr = String(appt.doctorName || appt.doctor || "").trim();
+
+    if (docIdStr !== "") {
+      doc = doctorsList.find((d) => String(d.id ?? "").trim() === docIdStr);
+    }
+    if (!doc && docNameStr !== "") {
+      const normTargetDocName = docNameStr.toLowerCase();
+      doc = doctorsList.find((d) => String(d.name ?? "").trim().toLowerCase() === normTargetDocName);
+    }
+
+    const rawName = appt.doctorName || appt.doctor || doc?.name;
+    const name = String(rawName ?? "").trim() !== "" ? String(rawName).trim() : "Dr. Sarah Smith";
+
+    const rawSpec = appt.specialty || appt.specialization || appt.type || doc?.specialty || doc?.specialization;
+    const specialty = String(rawSpec ?? "").trim() !== "" ? String(rawSpec).trim() : "Cardiology";
+
+    const rawHosp = appt.hospital || appt.hospitalName || doc?.hospital || doc?.hospitalName;
+    const hospital = String(rawHosp ?? "").trim() !== "" ? String(rawHosp).trim() : "City Heart Center";
+
+    const rawLoc = appt.location || doc?.location;
+    const location = String(rawLoc ?? "").trim() !== "" ? String(rawLoc).trim() : "Chennai";
+
+    const feeVal = appt.consultationFee ?? appt.fee ?? doc?.consultationFee ?? doc?.fee;
+    const fee = feeVal !== null && feeVal !== undefined ? feeVal : 1000;
+
+    const experience = appt.experience || doc?.experience || 12;
+    const rating = appt.rating || doc?.rating || 4.8;
+    const reviewCount = appt.reviewCount || doc?.reviewCount || 124;
+
+    const initials = name
+      .split(" ")
+      .filter((n) => n.toLowerCase() !== "dr.")
+      .map((n) => (n && n[0] ? n[0] : ""))
+      .join("")
+      .substring(0, 2)
+      .toUpperCase() || "DR";
+
+    return { docObj: doc, name, specialty, hospital, location, fee, experience, rating, reviewCount, initials };
+  };
+
+  // Normalization helper for status
+  const getNormalizedStatus = (status) => {
+    if (!status) return "upcoming";
+    const s = String(status).toLowerCase();
+    if (s === "upcoming" || s === "confirmed") return "upcoming";
+    if (s === "completed") return "completed";
+    if (s === "cancelled") return "cancelled";
+    return "upcoming";
+  };
+
+  // Date formatter
+  const formatDisplayDate = (dateStr, formattedDate) => {
+    if (formattedDate) return formattedDate;
+    if (!dateStr) return "August 26, 2026";
+    try {
+      const [y, m, d] = dateStr.split("-");
+      if (y && m && d) {
+        const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+        return dateObj.toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric"
+        });
+      }
+    } catch (e) {}
+    return dateStr;
+  };
+
+  // Generate 14 upcoming dates for DateSelector
+  const upcomingDates = useMemo(() => {
+    const list = [];
+    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    for (let i = 0; i < 14; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+
+      const dayName = daysOfWeek[d.getDay()];
+      const dayNum = d.getDate();
+      const monthName = months[d.getMonth()];
+      const year = d.getFullYear();
+
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      const dateString = `${yyyy}-${mm}-${dd}`;
+
+      list.push({
+        dateString,
+        dayName,
+        dayNum,
+        monthName,
+        year
+      });
+    }
+    return list;
+  }, []);
+
+  const docInfo = getDoctorInfo(currentAppt);
+  const bookedSlotsMap = useMemo(() => {
+    return getMockBookedAppointments(1);
+  }, []);
+
+  const disabledSlotsMap = useMemo(() => {
+    return getMockDisabledAppointments(1);
+  }, []);
+
+  const isDateBooked = (dateString) => {
+    const dateObj = upcomingDates.find((d) => d.dateString === dateString);
+    if (!dateObj) return true;
+
+    const workingDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const isWorkingDay = workingDays.some(
+      (day) =>
+        day.toLowerCase() === dateObj.dayName.toLowerCase() ||
+        dateObj.dayName.toLowerCase().startsWith(day.toLowerCase().slice(0, 3))
+    );
+    if (!isWorkingDay) return true;
+
+    const bookedForDate = bookedSlotsMap[dateString] || [];
+    const totalSlotsCount =
+      (TIME_SLOTS?.Morning?.length || 0) +
+      (TIME_SLOTS?.Afternoon?.length || 0) +
+      (TIME_SLOTS?.Evening?.length || 0);
+
+    return bookedForDate.length >= totalSlotsCount;
+  };
+
+  const currentBookedSlots = useMemo(() => {
+    if (!newSelectedDate) return [];
+    const doctorId = currentAppt?.doctorId || docInfo?.docObj?.id;
+    const doctorName = docInfo?.name || currentAppt?.doctorName || currentAppt?.doctor;
+    const currentId = currentAppt?.id;
+
+    const booked = [];
+    const allSlots = [
+      ...(TIME_SLOTS?.Morning || []),
+      ...(TIME_SLOTS?.Afternoon || []),
+      ...(TIME_SLOTS?.Evening || [])
+    ];
+
+    allSlots.forEach((slot) => {
+      if (isSlotBooked(doctorId, newSelectedDate, slot)) {
+        booked.push(slot);
+      }
+    });
+
+    return booked;
+  }, [newSelectedDate, appointments, currentAppt, docInfo]);
+
+  const currentDisabledSlots = useMemo(() => {
+    if (!newSelectedDate) return [];
+    return disabledSlotsMap[newSelectedDate] || [];
+  }, [newSelectedDate, disabledSlotsMap]);
+
+  // If appointment not found or unauthorized, show clean Error state
+  if (!currentAppt || !isAccessAllowed) {
+    return (
+      <div className="appointment-details-page">
+        <div className="details-not-found-card">
+          <div className="not-found-icon-wrap">
+            <XCircle size={36} />
+          </div>
+          <h2 className="not-found-title">Appointment Not Found</h2>
+          <p className="not-found-desc">
+            The appointment you're looking for could not be found or you do not have permission to view it.
+          </p>
+          <Button variant="primary" onClick={() => navigate("/my-appointments")}>
+            <ArrowLeft size={16} style={{ marginRight: "6px" }} />
+            Back to My Appointments
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const statusNorm = getNormalizedStatus(currentAppt.status);
+  const displayDate = formatDisplayDate(currentAppt.date, currentAppt.formattedDate);
+
+  // Reschedule Handlers
+  const handleStartReschedule = () => {
+    setNewSelectedDate(currentAppt.date || upcomingDates[0]?.dateString || "");
+    setNewSelectedSlot(currentAppt.time || "10:30 AM");
+    setIsRescheduling(true);
+  };
+
+  const handleConfirmRescheduleSubmit = async () => {
+    if (!newSelectedDate || !newSelectedSlot) return;
+
+    let formattedNewDate = newSelectedDate;
+    try {
+      const [y, m, d] = newSelectedDate.split("-");
+      if (y && m && d) {
+        const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+        formattedNewDate = dateObj.toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric"
+        });
+      }
+    } catch (e) {}
+
+    const result = await rescheduleAppointment(currentAppt.id, newSelectedDate, newSelectedSlot, formattedNewDate);
+    if (!result.success) {
+      showNotification("Reschedule Failed", result.message, "error");
+      return;
+    }
+
+    setShowRescheduleConfirmModal(false);
+    setIsRescheduling(false);
+
+    const pId = currentAppt.patientId || getCurrentPatient()?.id || getCurrentUser()?.refId || getCurrentUser()?.id || "P1";
+    const uId = getCurrentUser()?.id || "U_P1";
+
+    await addNotification({
+      type: "appointment",
+      subType: "rescheduled",
+      title: "Appointment Rescheduled",
+      message: `Your appointment with ${docInfo.name} has been rescheduled to ${formattedNewDate} at ${newSelectedSlot}.`,
+      appointmentId: currentAppt.id,
+      patientId: pId,
+      userId: uId
+    });
+
+    showNotification(
+      "Appointment Rescheduled",
+      `Your appointment has been rescheduled to ${formattedNewDate} at ${newSelectedSlot}.`,
+      "success"
+    );
+  };
+
+  // Cancel Handlers
+  const handleConfirmCancelSubmit = async () => {
+    await cancelAppointment(currentAppt.id);
+    setShowCancelModal(false);
+
+    const pId = currentAppt.patientId || getCurrentPatient()?.id || getCurrentUser()?.refId || getCurrentUser()?.id || "P1";
+    const uId = getCurrentUser()?.id || "U_P1";
+
+    await addNotification({
+      type: "appointment",
+      subType: "cancelled",
+      title: "Appointment Cancelled",
+      message: `Your appointment with ${docInfo.name} has been cancelled.`,
+      appointmentId: currentAppt.id,
+      patientId: pId,
+      userId: uId
+    });
+
+    showNotification(
+      "Appointment Cancelled",
+      "Your appointment has been successfully cancelled.",
+      "error"
+    );
+  };
+
+  return (
+    <div className="appointment-details-page">
+      {/* Page Header Component */}
+      <PageHeader
+        title="Appointment Details"
+        subtitle="View and manage your appointment details."
+        onBack={() => navigate("/my-appointments")}
+        backLabel="Back to My Appointments"
+      />
+
+      {!isRescheduling ? (
+        /* Main View Record Card */
+        <div className="details-main-card">
+          {/* Status Header */}
+          <div className="details-status-row">
+            <div className="appt-id-badge">
+              <span className="appt-id-label">Appointment ID</span>
+              <span className="appt-id-value">{currentAppt.id}</span>
+            </div>
+
+            <StatusBadge status={currentAppt.status} />
+          </div>
+
+          {/* Doctor Information Card */}
+          <div className="details-doctor-section">
+            <div className="details-doc-avatar">{docInfo.initials}</div>
+            <div className="details-doc-info">
+              <h2 className="details-doc-name">{docInfo.name}</h2>
+              <span className="details-doc-specialty">{docInfo.specialty}</span>
+              <div className="details-doc-meta">
+                <span className="meta-item">
+                  <Building2 size={14} />
+                  {docInfo.hospital}
+                </span>
+                <span className="meta-item">
+                  <MapPin size={14} />
+                  {docInfo.location}
+                </span>
+                <span className="meta-item">
+                  <Briefcase size={14} />
+                  {docInfo.experience} years exp.
+                </span>
+                <span className="meta-item">
+                  <Star size={14} className="rating-star-icon" />
+                  <strong>{docInfo.rating}</strong> ({docInfo.reviewCount} reviews)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Appointment Summary Section */}
+          <div className="details-summary-section">
+            <h3 className="summary-section-title">Appointment Summary</h3>
+
+            <div className="details-summary-grid">
+              <div className="summary-card-item">
+                <div className="summary-icon-wrapper">
+                  <Calendar size={20} />
+                </div>
+                <div className="summary-item-content">
+                  <span className="summary-item-label">Date</span>
+                  <span className="summary-item-value">{displayDate}</span>
+                </div>
+              </div>
+
+              <div className="summary-card-item">
+                <div className="summary-icon-wrapper">
+                  <Clock size={20} />
+                </div>
+                <div className="summary-item-content">
+                  <span className="summary-item-label">Time</span>
+                  <span className="summary-item-value">{currentAppt.time || "10:30 AM"}</span>
+                </div>
+              </div>
+
+              <div className="summary-card-item">
+                <div className="summary-icon-wrapper">
+                  <Receipt size={20} />
+                </div>
+                <div className="summary-item-content">
+                  <span className="summary-item-label">Consultation Fee</span>
+                  <span className="summary-item-value">₹{docInfo.fee}</span>
+                </div>
+              </div>
+
+              <div className="summary-card-item">
+                <div className="summary-icon-wrapper">
+                  <Building2 size={20} />
+                </div>
+                <div className="summary-item-content">
+                  <span className="summary-item-label">Hospital</span>
+                  <span className="summary-item-value">{docInfo.hospital}</span>
+                </div>
+              </div>
+
+              <div className="summary-card-item">
+                <div className="summary-icon-wrapper">
+                  <MapPin size={20} />
+                </div>
+                <div className="summary-item-content">
+                  <span className="summary-item-label">Location</span>
+                  <span className="summary-item-value">{docInfo.location}</span>
+                </div>
+              </div>
+
+              <div className="summary-card-item">
+                <div className="summary-icon-wrapper">
+                  <CheckCircle2 size={20} />
+                </div>
+                <div className="summary-item-content">
+                  <span className="summary-item-label">Status</span>
+                  <span className="summary-item-value" style={{ textTransform: "capitalize" }}>
+                    {statusNorm === "upcoming" ? "Confirmed" : statusNorm}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Hospital Visitor Card Section - MediBook Design System */}
+          <div className="details-visitor-card-section">
+            <div className="details-visitor-card-header">
+              <div className="details-visitor-card-title-group">
+                <div className="details-visitor-card-icon-wrap">
+                  <Building2 size={22} />
+                </div>
+                <div>
+                  <h3 className="details-visitor-card-title">Hospital Visitor Card</h3>
+                  <span className="details-visitor-card-subtitle">Permanent Patient ID</span>
+                </div>
+              </div>
+
+              <Button
+                variant="primary"
+                size="sm"
+                className="btn-view-visitor-card"
+                onClick={() => setShowVisitorCardModal(true)}
+              >
+                <Eye size={16} style={{ marginRight: "6px" }} />
+                View Visitor Card
+              </Button>
+            </div>
+
+            <div className="details-visitor-card-grid">
+              <div className="details-visitor-grid-item">
+                <span className="details-visitor-grid-label">Hospital Name</span>
+                <span className="details-visitor-grid-value">{displayHospitalName}</span>
+              </div>
+
+              <div className="details-visitor-grid-item">
+                <span className="details-visitor-grid-label">Visitor Card Number</span>
+                <span className="details-visitor-card-number">{displayCardNumber}</span>
+              </div>
+
+              <div className="details-visitor-grid-item">
+                <span className="details-visitor-grid-label">Status</span>
+                <div className="details-visitor-status-wrap">
+                  <span className="status-pill confirmed">
+                    <CheckCircle2 size={13} style={{ marginRight: "4px" }} />
+                    Active
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="details-visitor-card-footer">
+              <ShieldCheck size={15} className="details-visitor-footer-icon" />
+              <span>Valid for visits to {displayHospitalName}</span>
+            </div>
+          </div>
+
+          {/* Medical Records / Prescription Section */}
+          {(() => {
+              if (statusNorm !== "completed") return null;
+              
+              const notes = currentAppt.notes;
+              
+              if (!notes) {
+                  return (
+                      <div className="details-summary-section" style={{ marginTop: '24px' }}>
+                        <h3 className="summary-section-title">Medical Records & Prescription</h3>
+                        <div style={{ padding: '24px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', textAlign: 'center', border: '1px solid var(--border)' }}>
+                            <p style={{ color: 'var(--text-secondary)' }}>The doctor hasn't added prescription notes for this consultation yet.</p>
+                        </div>
+                      </div>
+                  );
+              }
+
+              let parsedDetails = null;
+              try {
+                  parsedDetails = JSON.parse(notes);
+              } catch (e) {
+                  // Fallback to legacy plain text
+              }
+
+              return (
+                  <div className="details-summary-section" style={{ marginTop: '24px' }}>
+                    <h3 className="summary-section-title">Medical Records & Prescription</h3>
+                    
+                    {parsedDetails ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {parsedDetails.diagnosis && (
+                                <div style={{ padding: '16px', background: 'var(--primary-soft)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--primary-light)' }}>
+                                    <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--primary)' }}>Diagnosis / Clinical Details</h4>
+                                    <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{parsedDetails.diagnosis}</p>
+                                </div>
+                            )}
+                            {parsedDetails.prescription && (
+                                <div style={{ padding: '16px', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                                    <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--text-heading)' }}>Prescription / Treatment</h4>
+                                    <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{parsedDetails.prescription}</p>
+                                </div>
+                            )}
+                            {parsedDetails.advice && (
+                                <div style={{ padding: '16px', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                                    <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--text-heading)' }}>Doctor Notes / Advice</h4>
+                                    <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{parsedDetails.advice}</p>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div style={{ padding: '20px', background: 'var(--primary-soft)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--primary-light)' }}>
+                            <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: 'var(--primary)' }}>Consultation Notes / Diagnosis</h4>
+                            <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                                {notes}
+                            </p>
+                        </div>
+                    )}
+                  </div>
+              );
+          })()}
+
+          {/* Action Buttons Footer */}
+          <div className="details-actions-container no-print">
+            <Button
+              variant="outline"
+              className="btn-action-slip"
+              onClick={() => setShowSlipModal(true)}
+            >
+              <Printer size={16} style={{ marginRight: "6px" }} />
+              Print Appointment Slip
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => setShowVisitorCardModal(true)}
+            >
+              <CreditCard size={16} style={{ marginRight: "6px" }} />
+              Hospital Visitor Card
+            </Button>
+
+            {statusNorm === "upcoming" ? (
+              <>
+                <Button
+                  variant="primary"
+                  className="btn-action-reschedule"
+                  onClick={handleStartReschedule}
+                >
+                  <CalendarDays size={16} style={{ marginRight: "6px" }} />
+                  Reschedule Appointment
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="btn-action-cancel"
+                  onClick={() => setShowCancelModal(true)}
+                >
+                  <XCircle size={16} style={{ marginRight: "6px" }} />
+                  Cancel Appointment
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={() => navigate("/my-appointments")}>
+                <ArrowLeft size={16} style={{ marginRight: "6px" }} />
+                Back to My Appointments
+              </Button>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* Reschedule Appointment Interface */
+        <div className="reschedule-panel">
+          <div className="reschedule-header">
+            <h2 className="reschedule-title">Reschedule Appointment</h2>
+            <button className="btn-back-link" onClick={() => setIsRescheduling(false)}>
+              Cancel & Go Back
+            </button>
+          </div>
+
+          {/* Current Appointment Banner */}
+          <div className="current-appt-banner">
+            <div className="banner-left">
+              <span className="banner-label">Current Scheduled Appointment</span>
+              <span className="banner-info">
+                {docInfo.name} • {displayDate} at {currentAppt.time || "10:30 AM"}
+              </span>
+            </div>
+          </div>
+
+          {/* Date Selector */}
+          <div className="reschedule-section-block">
+            <h3 className="section-label-heading">Select New Date</h3>
+            <DateSelector
+              dates={upcomingDates}
+              selectedDate={newSelectedDate}
+              onDateSelect={(dateStr) => {
+                setNewSelectedDate(dateStr);
+                setNewSelectedSlot("");
+              }}
+              isDateBooked={isDateBooked}
+            />
+          </div>
+
+          {/* Time Slot Selector */}
+          {newSelectedDate && (
+            <div className="reschedule-section-block">
+              <h3 className="section-label-heading">Select New Time Slot</h3>
+
+              {/* Morning Slots */}
+              {TIME_SLOTS?.Morning && (
+                <TimeSlotGroup title="Morning Slots" icon={<Sunrise size={18} />}>
+                  {TIME_SLOTS.Morning.map((slot) => {
+                    const isBooked = currentBookedSlots.includes(slot);
+                    const isDisabled = currentDisabledSlots.includes(slot);
+                    const status = isBooked
+                      ? "booked"
+                      : isDisabled
+                      ? "disabled"
+                      : slot === newSelectedSlot
+                      ? "selected"
+                      : "available";
+
+                    return (
+                      <TimeSlot
+                        key={slot}
+                        time={slot}
+                        status={status}
+                        selected={slot === newSelectedSlot}
+                        disabled={isBooked || isDisabled}
+                        onClick={() => setNewSelectedSlot(slot)}
+                      />
+                    );
+                  })}
+                </TimeSlotGroup>
+              )}
+
+              {/* Afternoon Slots */}
+              {TIME_SLOTS?.Afternoon && (
+                <TimeSlotGroup title="Afternoon Slots" icon={<Sun size={18} />}>
+                  {TIME_SLOTS.Afternoon.map((slot) => {
+                    const isBooked = currentBookedSlots.includes(slot);
+                    const isDisabled = currentDisabledSlots.includes(slot);
+                    const status = isBooked
+                      ? "booked"
+                      : isDisabled
+                      ? "disabled"
+                      : slot === newSelectedSlot
+                      ? "selected"
+                      : "available";
+
+                    return (
+                      <TimeSlot
+                        key={slot}
+                        time={slot}
+                        status={status}
+                        selected={slot === newSelectedSlot}
+                        disabled={isBooked || isDisabled}
+                        onClick={() => setNewSelectedSlot(slot)}
+                      />
+                    );
+                  })}
+                </TimeSlotGroup>
+              )}
+
+              {/* Evening Slots */}
+              {TIME_SLOTS?.Evening && (
+                <TimeSlotGroup title="Evening Slots" icon={<Sunset size={18} />}>
+                  {TIME_SLOTS.Evening.map((slot) => {
+                    const isBooked = currentBookedSlots.includes(slot);
+                    const isDisabled = currentDisabledSlots.includes(slot);
+                    const status = isBooked
+                      ? "booked"
+                      : isDisabled
+                      ? "disabled"
+                      : slot === newSelectedSlot
+                      ? "selected"
+                      : "available";
+
+                    return (
+                      <TimeSlot
+                        key={slot}
+                        time={slot}
+                        status={status}
+                        selected={slot === newSelectedSlot}
+                        disabled={isBooked || isDisabled}
+                        onClick={() => setNewSelectedSlot(slot)}
+                      />
+                    );
+                  })}
+                </TimeSlotGroup>
+              )}
+            </div>
+          )}
+
+          {/* Reschedule Footer */}
+          <div className="reschedule-actions-footer">
+            <Button variant="outline" onClick={() => setIsRescheduling(false)}>
+              Cancel
+            </Button>
+
+            <Button
+              variant="primary"
+              disabled={!newSelectedDate || !newSelectedSlot}
+              onClick={() => setShowRescheduleConfirmModal(true)}
+            >
+              Confirm Reschedule
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 1. Reschedule Confirmation Modal */}
+      {showRescheduleConfirmModal && (
+        <Modal
+          isOpen={showRescheduleConfirmModal}
+          onClose={() => setShowRescheduleConfirmModal(false)}
+          title="Confirm Reschedule?"
+        >
+          {(() => {
+            let formattedNewDate = newSelectedDate;
+            try {
+              const [y, m, d] = newSelectedDate.split("-");
+              if (y && m && d) {
+                const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+                formattedNewDate = dateObj.toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric"
+                });
+              }
+            } catch (e) {}
+
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", fontFamily: "var(--font-body)" }}>
+                <p style={{ margin: 0, fontSize: "14.5px", color: "var(--text-primary)" }}>
+                  Your appointment with <strong>{docInfo.name}</strong> will be updated to:
+                </p>
+
+                <div
+                  style={{
+                    padding: "16px",
+                    background: "var(--primary-soft)",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--primary-light)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px"
+                  }}
+                >
+                  <div>
+                    <strong>New Date:</strong> {formattedNewDate}
+                  </div>
+                  <div>
+                    <strong>New Time Slot:</strong> {newSelectedSlot}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "12px" }}>
+                  <Button variant="outline" onClick={() => setShowRescheduleConfirmModal(false)}>
+                    Go Back
+                  </Button>
+
+                  <Button variant="primary" onClick={handleConfirmRescheduleSubmit}>
+                    Confirm Reschedule
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+        </Modal>
+      )}
+
+      {/* 2. Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <Modal
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          title="Cancel Appointment?"
+        >
+          <div className="cancel-modal-body">
+            <div className="cancel-warning-box">
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 600 }}>
+                <AlertTriangle size={18} />
+                <span>Are you sure you want to cancel this appointment?</span>
+              </div>
+            </div>
+
+            <div className="cancel-appt-summary">
+              <div>
+                <strong>Doctor:</strong> {docInfo.name}
+              </div>
+              <div>
+                <strong>Specialization:</strong> {docInfo.specialty}
+              </div>
+              <div>
+                <strong>Date & Time:</strong> {displayDate} at {currentAppt.time || "10:30 AM"}
+              </div>
+            </div>
+
+            <div className="cancel-actions-row">
+              <Button variant="outline" onClick={() => setShowCancelModal(false)}>
+                Keep Appointment
+              </Button>
+
+              <Button variant="primary" className="btn-destructive" onClick={handleConfirmCancelSubmit}>
+                Cancel Appointment
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Appointment Confirmation Pass Modal */}
+      {showSlipModal && (
+        <Modal
+          isOpen={showSlipModal}
+          onClose={() => setShowSlipModal(false)}
+          title="Appointment Confirmation Pass"
+          maxWidth="680px"
+        >
+          <div style={{ padding: "12px 0" }}>
+            <AppointmentSlip
+              appointment={{
+                ...currentAppt,
+                hospital: displayHospitalName,
+                hospitalName: displayHospitalName,
+                hospitalId: appointmentHospitalId || currentAppt?.hospitalId,
+                visitorCardNumber: displayCardNumber
+              }}
+              patient={patient}
+            />
+          </div>
+        </Modal>
+      )}
+
+      {/* Hospital Patient Visitor Card Modal */}
+      {showVisitorCardModal && (
+        <Modal
+          isOpen={showVisitorCardModal}
+          onClose={() => setShowVisitorCardModal(false)}
+          title="Hospital Patient Visitor Card"
+          size="md"
+          className="visitor-card-modal"
+        >
+          <div style={{ display: "flex", justifyContent: "center", padding: "8px 0" }}>
+            <PatientVisitorCard
+              visitorCard={{
+                ...(hospitalVisitorCard && (!appointmentHospitalId || Number(hospitalVisitorCard.hospitalId) === Number(appointmentHospitalId)) ? hospitalVisitorCard : {}),
+                patientId: appointmentPatientId || currentAppt?.patientId || 1,
+                patientName: currentAppt?.patientName || patient?.name || "Patient",
+                hospitalId: appointmentHospitalId || currentAppt?.hospitalId || 1,
+                hospitalName: displayHospitalName,
+                visitorCardNumber: displayCardNumber,
+                issuedDate: hospitalVisitorCard?.issuedDate || currentAppt?.createdAt || currentAppt?.date || new Date().toISOString(),
+                status: hospitalVisitorCard?.status || "Active"
+              }}
+              patient={{
+                name: currentAppt?.patientName || patient?.name || "Patient",
+                id: appointmentPatientId || currentAppt?.patientId || 1,
+                mobile: currentAppt?.patientMobile || currentAppt?.patientContact || patient?.mobile || patient?.phone || currentUser?.mobile || "9876543210",
+                email: currentAppt?.patientEmail || patient?.email || currentUser?.email || "patient@medibook.com"
+              }}
+              hospital={{
+                name: displayHospitalName,
+                id: appointmentHospitalId || currentAppt?.hospitalId || 1
+              }}
+              showPrintBtn={true}
+            />
+          </div>
+        </Modal>
+      )}
+
+      {/* Toast Overlay */}
+      {toast.show && (
+        <div className="toast-container">
+          <Toast
+            type={toast.type}
+            title={toast.title}
+            message={toast.message}
+            onClose={() => setToast((prev) => ({ ...prev, show: false }))}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default AppointmentDetails;

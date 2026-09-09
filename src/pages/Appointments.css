@@ -1,0 +1,319 @@
+
+.appointments-page {
+    padding: var(--space-xl);
+    max-width: 1200px;
+    margin: 0;
+}
+
+.page-header {
+    margin-bottom: var(--space-xl);
+}
+
+.page-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text-heading);
+    margin-bottom: var(--space-xs);
+    letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+    color: var(--text-muted);
+    font-size: 16px;
+}
+
+.appointment-tabs {
+    display: flex;
+    gap: var(--space-lg);
+    border-bottom: 2px solid var(--border);
+    margin-bottom: var(--space-xl);
+    padding-bottom: 0;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: var(--space-sm) 0 var(--space-md);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-muted);
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    transition: color 0.3s ease;
+}
+
+.tab-btn:hover {
+    color: var(--primary);
+}
+
+.tab-btn.active {
+    color: var(--text-heading);
+}
+
+.tab-btn.active::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--primary);
+    border-radius: 4px 4px 0 0;
+}
+
+.tab-badge {
+    background: var(--border);
+    color: var(--text-heading);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.tab-badge.blue {
+    background: var(--primary);
+    color: white;
+}
+.tab-badge.green {
+    background: var(--success);
+    color: white;
+}
+.tab-badge.red {
+    background: var(--error);
+    color: white;
+}
+
+.section-title {
+    font-size: 20px;
+    margin-bottom: var(--space-lg);
+    font-weight: 700;
+}
+
+.appointments-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.appointment-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.appointment-card:hover {
+    transform: translateY(-3px) scale(1.005);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-soft);
+}
+
+.card-section.left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    flex: 2;
+}
+
+.doc-img {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 2px solid var(--surface);
+}
+
+.doc-info h3 {
+    font-size: 18px;
+    margin-bottom: 2px;
+}
+
+.doc-spec {
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.doc-rating, .doc-hospital {
+    font-size: 13px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.card-section.middle {
+    flex: 1.5;
+    border-left: 1px solid var(--border);
+    padding-left: var(--space-lg);
+}
+
+.details-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.detail-icon {
+    font-size: 18px;
+    color: var(--primary);
+}
+
+.detail-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.detail-val {
+    font-weight: 700;
+    color: var(--text-heading);
+    font-size: 14px;
+}
+
+.card-section.right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-md);
+    flex: 1.2;
+}
+
+.status-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: capitalize;
+}
+
+.status-badge.confirmed {
+    background: var(--success-light);
+    color: var(--success);
+}
+.status-badge.confirmed::before {
+    content: "�";
+    font-size: 18px;
+    line-height: 0;
+}
+
+.status-badge.cancelled {
+    background: var(--error-light);
+    color: var(--error);
+}
+.status-badge.completed {
+    background: var(--border);
+    color: var(--text-primary);
+}
+
+.app-id {
+    text-align: right;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.app-id span {
+    display: block;
+    color: var(--text-heading);
+    font-weight: 700;
+    font-size: 14px;
+    font-family: monospace;
+}
+
+.action-buttons {
+    display: flex;
+    gap: var(--space-sm);
+    margin-top: auto;
+}
+
+.action-btn {
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    background: var(--surface);
+}
+
+.action-btn.view {
+    border: 1px solid var(--border);
+    color: var(--text-heading);
+}
+
+.action-btn.view:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-soft);
+    transform: translateY(-1px);
+}
+
+.action-btn.cancel {
+    border: 1px solid var(--error-light);
+    color: var(--error);
+}
+
+.action-btn.cancel:hover {
+    background: var(--error-light);
+    transform: translateY(-1px);
+}
+
+@media (max-width: 900px) {
+    .appointment-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .card-section.middle {
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid var(--border);
+        padding-top: var(--space-md);
+        flex-direction: row;
+        justify-content: space-between;
+    }
+    .card-section.right {
+        align-items: flex-start;
+        border-top: 1px solid var(--border);
+        padding-top: var(--space-md);
+    }
+    .app-id {
+        text-align: left;
+    }
+    .action-buttons {
+        width: 100%;
+    }
+    .action-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}

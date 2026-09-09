@@ -1,0 +1,378 @@
+/* ==================================================
+   Admin Shared Styles (Tables, Toolbars, Cards, Forms)
+   ================================================== */
+
+.admin-table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-toolbar {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--surface);
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-soft) transparent;
+}
+
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background-color: var(--primary-soft);
+  border-radius: 3px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  table-layout: auto;
+}
+
+.admin-table th {
+  padding: 12px 16px;
+  background-color: var(--background);
+  color: var(--text-muted);
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.admin-table td.nowrap {
+  white-space: nowrap;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table tr {
+  transition: background-color 0.2s ease;
+}
+
+.admin-table tr:hover {
+  background-color: var(--primary-soft);
+}
+
+/* Cell Layouts */
+.user-info-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--primary-soft);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid rgba(13, 110, 253, 0.15);
+  flex-shrink: 0;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.user-subtext {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.patient-name-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-heading);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s ease, text-decoration 0.15s ease;
+}
+
+.patient-name-link:hover {
+  color: var(--primary, #2f6fa3);
+  text-decoration: underline;
+}
+
+/* ==================================================
+   Compact Icon Actions & Dropdown Popover
+   ================================================== */
+
+.table-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.icon-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.icon-action-btn:hover,
+.icon-action-btn.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-color: var(--primary-light);
+}
+
+.more-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.more-menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  min-width: 140px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.more-menu-item {
+  width: 100%;
+  padding: 8px 14px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-heading);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.more-menu-item:hover {
+  background-color: var(--primary-soft);
+  color: var(--primary);
+}
+
+.more-menu-item.danger {
+  color: #ef4444;
+}
+
+.more-menu-item.danger:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+/* ==================================================
+   Spacious Hospital & Admin Modal Form Layout
+   ================================================== */
+
+.hospital-modal-container {
+  max-width: 580px;
+}
+
+.hospital-modal-container .modal-body {
+  padding: 28px 32px;
+}
+
+.hospital-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.form-label {
+  font-family: var(--font-heading);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin: 0;
+  display: block;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-heading);
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-input:hover:not(:disabled),
+.form-select:hover:not(:disabled) {
+  border-color: var(--primary-light);
+}
+
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(47, 111, 163, 0.15);
+}
+
+.form-error-banner {
+  padding: 12px 16px;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
+  .hospital-modal-container .modal-body {
+    padding: 20px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .hospital-form {
+    gap: 20px;
+  }
+}
+
+/* Modal Detail Rows */
+.detail-row {
+  display: flex;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+
+.detail-label {
+  width: 140px;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.detail-value {
+  flex: 1;
+  color: var(--text-heading);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.appointment-details-modal .detail-row:last-child {
+  border-bottom: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-container {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  .print-only-title {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 24px;
+    font-size: 24px;
+    font-weight: 700;
+  }
+  .admin-reports-page {
+    background: white !important;
+    padding: 0 !important;
+  }
+}

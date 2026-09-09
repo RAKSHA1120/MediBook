@@ -1,0 +1,150 @@
+.time-slots-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.time-slot-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.time-slot-group-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-xs);
+}
+
+.time-slot-group-title svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.time-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.time-slot-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 6px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-heading);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* 1. AVAILABLE STATE */
+.time-slot-btn.status-available:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-soft);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 2. SELECTED STATE */
+.time-slot-btn.status-selected {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(47, 111, 163, 0.25);
+}
+
+.time-slot-btn.status-selected .slot-time-text {
+  color: #ffffff;
+}
+
+/* 3. BOOKED STATE */
+.time-slot-btn.status-booked {
+  background: #fff5f5;
+  border-color: rgba(214, 69, 69, 0.3);
+  color: var(--error);
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+.time-slot-btn.status-booked .slot-time-text {
+  text-decoration: line-through;
+  color: var(--error);
+}
+
+/* 4. DISABLED STATE */
+.time-slot-btn.status-disabled {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.time-slot-btn.status-disabled .slot-time-text {
+  color: var(--text-muted);
+}
+
+/* Text and Status Badge */
+.slot-time-text {
+  line-height: 1.2;
+}
+
+.slot-status-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  margin-top: 3px;
+  line-height: 1;
+}
+
+.time-slot-btn.status-booked .slot-status-badge {
+  background: rgba(214, 69, 69, 0.12);
+  color: var(--error);
+}
+
+.time-slot-btn.status-disabled .slot-status-badge {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+@media (max-width: 480px) {
+  .time-slots-grid {
+    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+    gap: 8px;
+  }
+  .time-slot-btn {
+    font-size: 12px;
+    min-height: 40px;
+    padding: 4px 4px;
+  }
+}

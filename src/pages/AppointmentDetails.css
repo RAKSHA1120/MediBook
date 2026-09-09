@@ -1,0 +1,587 @@
+/* ==================================================
+   Appointment Details Page Styling - MediBook
+   ================================================== */
+
+.appointment-details-page {
+  /* Inherits master .patient-page-content layout specs */
+}
+
+/* Page Header & Navigation */
+.details-top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.btn-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.btn-back-link:hover {
+  background: var(--primary-soft);
+  text-decoration: underline;
+}
+
+.details-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.details-page-title {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+.details-page-subtitle {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Main Details Card */
+.details-main-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Status Header Row */
+.details-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.appt-id-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.appt-id-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.appt-id-value {
+  font-family: monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: 0.5px;
+}
+
+/* Status Badges */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 100px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.status-pill.upcoming,
+.status-pill.confirmed {
+  background: rgba(34, 160, 107, 0.1);
+  color: var(--success);
+}
+
+.status-pill.completed {
+  background: rgba(47, 111, 163, 0.1);
+  color: var(--primary);
+}
+
+.status-pill.cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Doctor Profile Section */
+.details-doctor-section {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  padding: 20px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.details-doc-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+}
+
+.details-doc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.details-doc-name {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+.details-doc-specialty {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.details-doc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.rating-star-icon {
+  color: var(--warning);
+}
+
+/* Summary Grid Section */
+.details-summary-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.summary-section-title {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+.details-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.summary-card-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.summary-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--primary-soft);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.summary-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summary-item-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.summary-item-value {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+/* Action Buttons Container */
+.details-actions-container {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-action-reschedule {
+  min-width: 180px;
+}
+
+.btn-action-cancel {
+  border-color: #fca5a5 !important;
+  color: #dc2626 !important;
+}
+
+.btn-action-cancel:hover {
+  background: #fef2f2 !important;
+}
+
+/* Reschedule UI Panel */
+.reschedule-panel {
+  background: var(--surface);
+  border: 1px solid var(--primary-light);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.reschedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+
+.reschedule-title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+.current-appt-banner {
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-light);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.banner-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.banner-label {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.banner-info {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.reschedule-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-label-heading {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+.reschedule-actions-footer {
+  display: flex;
+  gap: 14px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* Empty State / Invalid Appointment */
+.details-not-found-card {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 56px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 500px;
+  margin: 40px auto 0;
+}
+
+.not-found-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.not-found-title {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+.not-found-desc {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ==================================================
+   Responsive Styles
+   ================================================== */
+@media (max-width: 768px) {
+  .details-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .details-doctor-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .details-status-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .details-actions-container {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .details-actions-container button {
+    width: 100%;
+  }
+
+  .reschedule-actions-footer {
+    flex-direction: column-reverse;
+  }
+
+  .reschedule-actions-footer button {
+    width: 100%;
+  }
+}
+
+/* ==================================================
+   Redesigned Hospital Visitor Card Section - MediBook Design System
+   ================================================== */
+.details-visitor-card-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 16px);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+  position: relative;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.details-visitor-card-section:hover {
+  border-color: var(--primary-soft);
+  box-shadow: var(--shadow-md);
+}
+
+.details-visitor-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.details-visitor-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.details-visitor-card-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md, 12px);
+  background: var(--primary-soft, #abe1ff);
+  color: var(--primary, #2f6fa3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(47, 111, 163, 0.15);
+}
+
+.details-visitor-card-title {
+  font-family: var(--font-heading, "IBM Plex Serif", serif);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-heading, #172033);
+  margin: 0;
+}
+
+.details-visitor-card-subtitle {
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-top: 1px;
+}
+
+.btn-view-visitor-card {
+  height: 40px;
+  padding: 0 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.details-visitor-card-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.8fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.details-visitor-grid-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.details-visitor-grid-label {
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.details-visitor-grid-value {
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-heading, #172033);
+}
+
+.details-visitor-card-number {
+  font-family: monospace;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--primary, #2f6fa3);
+  letter-spacing: 0.8px;
+}
+
+.details-visitor-status-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.details-visitor-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border, #d9e7f0);
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: 12.5px;
+  color: var(--text-primary, #52657a);
+}
+
+.details-visitor-footer-icon {
+  color: var(--primary, #2f6fa3);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .details-visitor-card-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .details-visitor-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .btn-view-visitor-card {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

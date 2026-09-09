@@ -1,0 +1,318 @@
+/* ==================================================
+   MediBook Patient Sidebar Component Styles
+   ================================================== */
+
+:root {
+  --sidebar-expanded-width: 260px;
+  --sidebar-collapsed-width: 72px;
+}
+
+/* Sidebar Container Base */
+.patient-sidebar {
+  width: var(--sidebar-expanded-width);
+  min-width: var(--sidebar-expanded-width);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.25s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+/* Collapsed Sidebar State */
+.patient-sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+  min-width: var(--sidebar-collapsed-width);
+}
+
+/* Hover Expanded State (When collapsed and mouse enters sidebar) */
+.patient-sidebar.collapsed.hover-expanded {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--sidebar-expanded-width);
+  min-width: var(--sidebar-expanded-width);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+/* Sidebar Brand Header */
+.patient-sidebar-brand {
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  height: 70px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.brand-logo-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.brand-logo-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.brand-title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-heading);
+  white-space: nowrap;
+}
+
+/* Toggle Collapse Button */
+.sidebar-toggle-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-btn:hover {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-color: var(--primary-light);
+}
+
+/* Collapsed Header Adjustments */
+.patient-sidebar.collapsed:not(.hover-expanded) .patient-sidebar-brand {
+  padding: 18px 12px;
+  justify-content: center;
+}
+
+.patient-sidebar.collapsed:not(.hover-expanded) .sidebar-toggle-btn {
+  position: absolute;
+  right: -14px;
+  top: 22px;
+  background: var(--surface);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  z-index: 10;
+}
+
+/* Navigation Items */
+.patient-sidebar-nav {
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.patient-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.patient-sidebar.collapsed:not(.hover-expanded) .patient-sidebar-item {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.patient-sidebar-item:hover {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.patient-sidebar-item.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.sidebar-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar-label-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sidebar-item-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Badge Styles */
+.sidebar-badge-count {
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 100px;
+  margin-left: 8px;
+}
+
+.sidebar-badge-dot {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* Footer Section */
+.patient-sidebar-footer {
+  padding: 16px 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.support-card {
+  background: var(--primary-soft);
+  border: 1px solid rgba(13, 110, 253, 0.15);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.support-card-title {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.support-card-text {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.btn-support {
+  margin-top: 4px;
+  width: 100%;
+}
+
+.support-card-collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--primary-soft);
+  color: var(--primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.support-card-collapsed:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.logout-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.patient-sidebar-item.logout {
+  color: var(--text-muted);
+}
+
+.patient-sidebar-item.logout:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Mobile Responsive Drawer Overlay */
+@media (max-width: 1024px) {
+  .patient-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    z-index: 1000;
+    height: 100vh;
+  }
+
+  .patient-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 999;
+  }
+}

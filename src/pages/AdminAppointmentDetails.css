@@ -1,0 +1,219 @@
+/* ==================================================
+   Admin Appointment Details Page Styling - MediBook
+   ================================================== */
+
+.admin-details-wrapper {
+  width: 100%;
+  margin-top: 24px;
+  box-sizing: border-box;
+}
+
+/* Main Outer Container Card */
+.admin-details-outer-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 14px);
+  padding: 32px;
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Header Banner inside Outer Card */
+.admin-details-top-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 24px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.admin-details-id-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-details-id-label {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-details-id-value {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.admin-details-status-control {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-status-select {
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface);
+  color: var(--text-heading);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-status-select:hover {
+  border-color: var(--primary-light);
+}
+
+.admin-status-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(47, 111, 163, 0.15);
+}
+
+/* Balanced Two-Column Grid */
+.admin-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+}
+
+.admin-details-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+/* Inner Info Cards */
+.admin-info-card {
+  background: var(--background, #f8fafc);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 12px);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.admin-info-card:hover {
+  border-color: var(--primary-light);
+}
+
+.admin-info-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-info-card-title {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Key-Value Pair Row Lists */
+.admin-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-info-label {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.admin-info-val {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-heading);
+  text-align: right;
+  word-break: break-word;
+}
+
+/* Sub-grid inside Appointment Specifics Card */
+.admin-specifics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 24px;
+}
+
+.admin-specifics-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-specifics-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-specifics-val {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+/* Responsive Rules */
+@media (max-width: 900px) {
+  .admin-details-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-details-outer-card {
+    padding: 20px 16px;
+  }
+
+  .admin-details-top-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-details-status-control {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .admin-specifics-grid {
+    grid-template-columns: 1fr;
+  }
+}

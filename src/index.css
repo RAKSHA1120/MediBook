@@ -43,8 +43,9 @@ p {
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  padding: var(--space-xl);
-  max-width: 600px;
+  border-radius: var(--card-radius, 16px);
+  box-shadow: var(--card-shadow, 0 2px 8px rgba(23, 32, 51, 0.04));
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
 }

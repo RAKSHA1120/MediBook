@@ -11,6 +11,9 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +25,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# .NET backend files
+MediBook.Api/.vs/
+MediBook.Api/bin/
+MediBook.Api/obj/
+MediBook.Api/*.csproj.user
+.vs/
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal

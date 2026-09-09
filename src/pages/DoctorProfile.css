@@ -1,0 +1,13 @@
+/* ==================================================
+   Doctor Profile Page Styling - MediBook
+   Matches PatientProfile.css UI/UX structure exactly.
+   ================================================== */
+
+@import "./PatientProfile.css";
+
+/* Doctor Profile specific container extensions if needed */
+.doctor-profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}

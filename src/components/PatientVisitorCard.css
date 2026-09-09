@@ -1,0 +1,504 @@
+/* ==================================================
+   PatientVisitorCard.css - MediBook Design System
+   ================================================== */
+
+.visitor-card-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+}
+
+/* Main Visitor Card Badge */
+.visitor-card-badge {
+  width: 100%;
+  max-width: 460px;
+  background: linear-gradient(135deg, #ffffff 0%, #f4fafd 100%);
+  border-radius: var(--radius-lg, 16px);
+  padding: 24px;
+  color: var(--text-primary, #52657a);
+  box-shadow: 0 10px 28px rgba(47, 111, 163, 0.1), 0 2px 6px rgba(23, 32, 51, 0.04);
+  border: 1px solid var(--border, #d9e7f0);
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-body, "Inter", sans-serif);
+  user-select: none;
+}
+
+/* Top decorative accent line */
+.visitor-card-badge::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary, #2f6fa3) 0%, var(--primary-light, #6ec0ff) 100%);
+}
+
+/* Card Header */
+.visitor-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border, #d9e7f0);
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+.visitor-card-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.visitor-card-brand-icon {
+  color: var(--primary, #2f6fa3);
+}
+
+.visitor-card-brand-title {
+  font-family: var(--font-heading, "IBM Plex Serif", serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--primary, #2f6fa3);
+}
+
+.visitor-card-tag {
+  background: var(--primary-soft, #abe1ff);
+  border: 1px solid rgba(47, 111, 163, 0.2);
+  color: var(--primary, #2f6fa3);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+/* Hospital Section */
+.visitor-card-hospital-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #d9e7f0);
+  border-radius: var(--radius-md, 12px);
+  position: relative;
+  z-index: 2;
+}
+
+.visitor-card-hospital-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--primary-soft, #abe1ff);
+  border: 1px solid rgba(47, 111, 163, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary, #2f6fa3);
+  flex-shrink: 0;
+}
+
+.visitor-card-hospital-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.visitor-card-hospital-name {
+  font-family: var(--font-heading, "IBM Plex Serif", serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-heading, #172033);
+  line-height: 1.3;
+}
+
+.visitor-card-validity-text {
+  font-size: 0.78rem;
+  color: var(--primary, #2f6fa3);
+  font-weight: 500;
+}
+
+/* Patient & QR Main Layout */
+.visitor-card-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 14px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #d9e7f0);
+  border-radius: var(--radius-md, 12px);
+  position: relative;
+  z-index: 2;
+}
+
+.visitor-card-patient-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.visitor-card-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.visitor-card-patient-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-heading, #172033);
+  line-height: 1.2;
+}
+
+.visitor-card-patient-id-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-primary, #52657a);
+  font-weight: 600;
+  background: var(--background, #f4fafd);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border, #d9e7f0);
+  width: fit-content;
+  margin-top: 2px;
+}
+
+.visitor-card-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-primary, #52657a);
+}
+
+/* QR Code */
+.visitor-card-qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.visitor-card-qr-image {
+  width: 82px;
+  height: 82px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #d9e7f0);
+  background: #ffffff;
+  padding: 4px;
+}
+
+.visitor-card-qr-placeholder {
+  width: 82px;
+  height: 82px;
+  border-radius: 8px;
+  border: 1px dashed var(--border, #d9e7f0);
+  background: var(--background, #f4fafd);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.visitor-card-qr-label {
+  font-size: 0.65rem;
+  color: var(--text-muted, #94a3b8);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Reusable Card Number Section */
+.visitor-card-number-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, #f0f8ff 0%, #f4fafd 100%);
+  border: 1px solid var(--border, #d9e7f0);
+  border-radius: var(--radius-md, 12px);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 2;
+}
+
+.visitor-card-number-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.visitor-card-number-code {
+  font-family: monospace;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--primary, #2f6fa3);
+  letter-spacing: 1px;
+}
+
+.visitor-card-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(34, 160, 107, 0.1);
+  border: 1px solid rgba(34, 160, 107, 0.25);
+  color: var(--success, #22a06b);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Footer */
+.visitor-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid var(--border, #d9e7f0);
+  font-size: 0.75rem;
+  color: var(--text-muted, #94a3b8);
+  position: relative;
+  z-index: 2;
+}
+
+.visitor-card-security-note {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--primary, #2f6fa3);
+  font-weight: 600;
+}
+
+/* Action Buttons */
+.visitor-card-actions {
+  width: 100%;
+  max-width: 460px;
+}
+
+.btn-print-visitor-card {
+  width: 100%;
+  height: var(--button-height, 44px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--primary, #2f6fa3);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm, 8px);
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(47, 111, 163, 0.2);
+}
+
+.btn-print-visitor-card:hover {
+  background: var(--primary-hover, #275d89);
+  transform: translateY(-1px);
+}
+
+/* ==================================================
+   Print Styles
+   ================================================== */
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+@media print {
+  html,
+  body {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Universally hide non-printable UI elements across all print modes */
+  .no-print,
+  .modal-header,
+  .modal-footer,
+  .modal-close-btn,
+  .patient-sidebar,
+  .sidebar,
+  .patient-top-navbar,
+  .navbar,
+  .visitor-cards-header-section,
+  .visitor-cards-info-alert,
+  .visitor-cards-grid,
+  .visitor-cards-empty,
+  .details-main-card,
+  .details-visitor-card-section,
+  .page-header,
+  .toast-container,
+  .btn-print-visitor-card,
+  .visitor-card-actions,
+  .success-header,
+  .visitor-card-booking-banner,
+  .success-action-buttons {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    overflow: hidden !important;
+  }
+
+  /* ----------------------------------------------------
+     VISITOR CARD PRINT MODE ONLY
+     Applied when user clicks "Print Visitor Card"
+     ---------------------------------------------------- */
+
+  /* Hide background elements only during visitor card print */
+  body.printing-visitor-card *,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) * {
+    visibility: hidden !important;
+  }
+
+  /* Completely collapse appointment slip during visitor card print */
+  body.printing-visitor-card .appointment-slip-card,
+  body.printing-visitor-card .printable-appointment-slip,
+  body.printing-visitor-card .booking-success-wrapper,
+  body.printing-visitor-card .booking-success-card,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .appointment-slip-card,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .printable-appointment-slip,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .booking-success-wrapper,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .booking-success-card {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    overflow: hidden !important;
+  }
+
+  /* Unconstrain modal & layout ancestors only during visitor card print */
+  body.printing-visitor-card #root,
+  body.printing-visitor-card .patient-layout,
+  body.printing-visitor-card .patient-main-content,
+  body.printing-visitor-card .patient-page-container,
+  body.printing-visitor-card .modal-overlay,
+  body.printing-visitor-card .modal-container,
+  body.printing-visitor-card .modal-body,
+  body.printing-visitor-card .visitor-card-container,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) #root,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .patient-layout,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .patient-main-content,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .patient-page-container,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .modal-overlay,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .modal-container,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .modal-body,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .visitor-card-container {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+    animation: none !important;
+    backdrop-filter: none !important;
+    z-index: auto !important;
+  }
+
+  /* Expose only visitor card badge in visitor card print mode */
+  body.printing-visitor-card .printable-visitor-card,
+  body.printing-visitor-card .printable-visitor-card *,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .printable-visitor-card,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .printable-visitor-card * {
+    visibility: visible !important;
+  }
+
+  /* Centered, professional medical badge dimensions on A4 portrait */
+  body.printing-visitor-card .printable-visitor-card,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .printable-visitor-card {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    display: block !important;
+    width: 460px !important;
+    max-width: 180mm !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 24px !important;
+    background: linear-gradient(135deg, #ffffff 0%, #f4fafd 100%) !important;
+    border: 1.5px solid var(--border, #d9e7f0) !important;
+    border-radius: 16px !important;
+    box-shadow: none !important;
+    color: var(--text-primary, #52657a) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  body.printing-visitor-card .printable-visitor-card::before,
+  body:has(.visitor-card-modal):not(.printing-appointment-slip) .printable-visitor-card::before {
+    content: "" !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 4px !important;
+    background: linear-gradient(90deg, #2f6fa3 0%, #6ec0ff 100%) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    visibility: visible !important;
+  }
+
+  /* ----------------------------------------------------
+     WHEN NOT IN VISITOR CARD PRINT MODE
+     (e.g. Printing Appointment Slip)
+     Completely suppress visitor card & modal
+     ---------------------------------------------------- */
+  body.printing-appointment-slip .printable-visitor-card,
+  body.printing-appointment-slip .visitor-card-modal,
+  body.printing-appointment-slip .modal-overlay,
+  body.printing-appointment-slip .modal-container,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .printable-visitor-card,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .visitor-card-modal,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .modal-overlay,
+  body:not(.printing-visitor-card):not(:has(.visitor-card-modal)) .modal-container {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    overflow: hidden !important;
+  }
+}

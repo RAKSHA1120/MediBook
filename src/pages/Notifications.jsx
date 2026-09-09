@@ -1,74 +1,207 @@
-import { useState } from "react";
-import Card from "../components/Card";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { CheckCheck, Bell, Calendar, Info, BellOff } from "lucide-react";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
+import NotificationCard from "../components/NotificationCard";
+import { getCurrentUser } from "../utils/auth";
+
+import { api } from "../utils/api";
+import "./Notifications.css";
 
 function Notifications() {
-    const [notifications, setNotifications] = useState([
-        {
-            id: 1,
-            title: "Appointment Reminder",
-            message: "Your appointment with Dr. Priya Sharma is tomorrow at 10:00 AM.",
-            time: "2 hours ago",
-            read: false
-        },
-        {
-            id: 2,
-            title: "Appointment Confirmed",
-            message: "Your appointment has been confirmed successfully.",
-            time: "Yesterday",
-            read: false
-        },
-        {
-            id: 3,
-            title: "Appointment Completed",
-            message: "Your appointment with Dr. Arun Kumar has been completed.",
-            time: "2 days ago",
-            read: true
-        }
-    ]);
+  const navigate = useNavigate();
+  const [notifications, setNotifications] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [activeTab, setActiveTab] = useState("all");
 
-    const markAsRead = (id) => {
-        setNotifications(
-            notifications.map((notification) =>
-                notification.id === id
-                    ? { ...notification, read: true }
-                    : notification
-            )
-        );
+  const fetchApiNotifications = async () => {
+    const u = getCurrentUser();
+    if (u?.id) {
+      const res = await api.get(`/Notifications/user/${u.id}`);
+      if (res.success && Array.isArray(res.data)) {
+        setNotifications(res.data.map(n => ({
+          id: n.id,
+          userId: n.userId,
+          title: n.title,
+          message: n.message,
+          type: n.type || "appointment",
+          read: n.isRead,
+          isRead: n.isRead,
+          createdAt: n.createdAt,
+          timestamp: n.createdAt
+        })));
+        return;
+      }
+    }
+    const p = getCurrentPatient();
+    setNotifications(await getPatientNotifications(p?.id, u?.id));
+  };
+
+  useEffect(() => {
+    fetchApiNotifications();
+    
+    const handleUpdate = () => {
+      fetchApiNotifications();
     };
+    
+    window.addEventListener("medibook_notifications_updated", handleUpdate);
+    return () => {
+      window.removeEventListener("medibook_notifications_updated", handleUpdate);
+    };
+  }, []);
 
-    return (
-        <div>
-            <h1>Notifications</h1>
+  // Filter Counts
+  const counts = useMemo(() => {
+    const all = notifications.length;
+    const appointments = notifications.filter((n) => n.type === "appointment").length;
+    const reminders = notifications.filter((n) => n.type === "reminder").length;
+    const system = notifications.filter((n) => n.type === "system").length;
+    const unread = notifications.filter((n) => !n.read && !n.isRead).length;
+    return { all, appointments, reminders, system, unread };
+  }, [notifications]);
 
-            {notifications.length === 0 ? (
-                <p>No notifications available.</p>
-            ) : (
-                notifications.map((notification) => (
-                    <Card key={notification.id}>
-                        <h2>{notification.title}</h2>
+  // Filtered Notifications list
+  const filteredNotifications = useMemo(() => {
+    if (activeTab === "appointments") {
+      return notifications.filter((n) => n.type === "appointment");
+    }
+    if (activeTab === "reminders") {
+      return notifications.filter((n) => n.type === "reminder");
+    }
+    if (activeTab === "system") {
+      return notifications.filter((n) => n.type === "system");
+    }
+    return notifications;
+  }, [notifications, activeTab]);
 
-                        <p>{notification.message}</p>
+  // Handle Mark All As Read
+  const handleMarkAll = async () => {
+    // Ideally we should call a backend endpoint for mark-all-read.
+    // For now we'll just update local state if there's no bulk API.
+    const p = getCurrentPatient();
+    const u = getCurrentUser();
+    markAllNotificationsAsRead(p?.id, u?.id);
+    await fetchApiNotifications();
+  };
 
-                        <p>{notification.time}</p>
+  // Handle Notification Click
+  const handleCardClick = async (notif) => {
+    if (!notif.read && !notif.isRead) {
+      await api.put(`/Notifications/${notif.id}/read`);
+      markNotificationAsRead(notif.id);
+      await fetchApiNotifications();
+    }
+    if (notif.appointmentId) {
+      navigate(`/appointments/${notif.appointmentId}`);
+    }
+  };
 
-                        {!notification.read && (
-                            <button
-                                onClick={() =>
-                                    markAsRead(notification.id)
-                                }
-                            >
-                                Mark as Read
-                            </button>
-                        )}
+  // Get Empty state copy per tab
+  const getEmptyStateProps = () => {
+    if (activeTab === "appointments") {
+      return {
+        icon: Calendar,
+        title: "No Appointment Notifications",
+        description: "You don't have any appointment confirmations, rescheduling or cancellation updates."
+      };
+    }
+    if (activeTab === "reminders") {
+      return {
+        icon: Bell,
+        title: "No Upcoming Reminders",
+        description: "You have no active appointment reminders at this moment."
+      };
+    }
+    if (activeTab === "system") {
+      return {
+        icon: Info,
+        title: "No System Notifications",
+        description: "There are no system updates or general alerts available."
+      };
+    }
+    return {
+      icon: BellOff,
+      title: "No Notifications Found",
+      description: "You're all caught up! Important updates and reminders will appear here."
+    };
+  };
 
-                        {notification.read && (
-                            <p>Read</p>
-                        )}
-                    </Card>
-                ))
-            )}
+  return (
+    <div className="notifications-page">
+      {/* Page Header */}
+      <PageHeader
+        title="Notifications"
+        subtitle="Stay updated with your appointments and important alerts."
+        action={
+          counts.unread > 0 ? (
+            <button className="btn-mark-all-read" onClick={handleMarkAll}>
+              <CheckCheck size={16} />
+              <span>Mark all as read</span>
+            </button>
+          ) : null
+        }
+      />
+
+      {/* Filter Tabs Bar */}
+      <div className="notifications-tabs-bar" role="tablist">
+        <button
+          className={`notifications-tab-btn ${activeTab === "all" ? "active" : ""}`}
+          onClick={() => setActiveTab("all")}
+          role="tab"
+          aria-selected={activeTab === "all"}
+        >
+          <span>All</span>
+          <span className="notifications-tab-count">{counts.all}</span>
+        </button>
+
+        <button
+          className={`notifications-tab-btn ${activeTab === "appointments" ? "active" : ""}`}
+          onClick={() => setActiveTab("appointments")}
+          role="tab"
+          aria-selected={activeTab === "appointments"}
+        >
+          <span>Appointments</span>
+          <span className="notifications-tab-count">{counts.appointments}</span>
+        </button>
+
+        <button
+          className={`notifications-tab-btn ${activeTab === "reminders" ? "active" : ""}`}
+          onClick={() => setActiveTab("reminders")}
+          role="tab"
+          aria-selected={activeTab === "reminders"}
+        >
+          <span>Reminders</span>
+          <span className="notifications-tab-count">{counts.reminders}</span>
+        </button>
+
+        <button
+          className={`notifications-tab-btn ${activeTab === "system" ? "active" : ""}`}
+          onClick={() => setActiveTab("system")}
+          role="tab"
+          aria-selected={activeTab === "system"}
+        >
+          <span>System</span>
+          <span className="notifications-tab-count">{counts.system}</span>
+        </button>
+      </div>
+
+      {/* Notification Cards List */}
+      {filteredNotifications.length > 0 ? (
+        <div className="notifications-list">
+          {filteredNotifications.map((notif) => (
+            <NotificationCard
+              key={notif.id}
+              notification={notif}
+              onClick={handleCardClick}
+            />
+          ))}
         </div>
-    );
+      ) : (
+        <EmptyState {...getEmptyStateProps()} />
+      )}
+    </div>
+  );
 }
 
 export default Notifications;
