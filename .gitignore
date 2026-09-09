@@ -37,3 +37,9 @@ MediBook.Api/*.csproj.user
 *.db
 *.db-shm
 *.db-wal
+
+# Sensitive .NET configuration
+MediBook.Api/appsettings.json
+
+# Database folder
+database/
