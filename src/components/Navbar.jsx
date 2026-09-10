@@ -15,6 +15,7 @@ import {
   clearCurrentUser,
 } from "../utils/auth";
 import { useNotification } from "../context/NotificationContext";
+import { BASE_URL } from "../utils/api";
 
 
 function Navbar({
@@ -185,7 +186,13 @@ function Navbar({
             onClick={toggleDropdown}
           >
             <span className="profile-avatar">
-              {avatarLetter}
+              {(() => {
+                const user = getCurrentUser();
+                if (user?.profileImageUrl) {
+                  return <img src={`${BASE_URL.replace('/api', '')}${user.profileImageUrl}`} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />;
+                }
+                return avatarLetter;
+              })()}
             </span>
 
             <span className="profile-info">

@@ -57,18 +57,26 @@ export const getStoredPatientProfile = () => {
 
   const phone = extraData.phone || patientRecord?.contact || patientRecord?.mobile || user.mobile || "";
   const gender = extraData.gender || patientRecord?.gender || user.gender || "Not specified";
-  const dob = extraData.dob || patientRecord?.dob || DEFAULT_PATIENT_PROFILE.dob;
+const dob = extraData.dob || patientRecord?.dob || DEFAULT_PATIENT_PROFILE.dob;
 
-  let calculatedAge = null;
-  if (dob) {
+let calculatedAge = null;
+
+if (dob) {
     const ageResult = calculateAgeFromDob(dob);
     if (ageResult.valid) {
-      calculatedAge = ageResult.age;
+        calculatedAge = ageResult.age;
     }
-  }
+}
 
-  const age = calculatedAge !== null ? calculatedAge : (extraData.age || patientRecord?.age || user.age || "N/A");
+const age = calculatedAge !== null
+    ? calculatedAge
+    : (extraData.age || patientRecord?.age || user.age || "N/A");
 
+const profileImageUrl =
+    extraData.profileImageUrl ||
+    patientRecord?.profileImageUrl ||
+    user.profileImageUrl ||
+    null;
   return { 
      ...DEFAULT_PATIENT_PROFILE, 
      ...patientRecord,
@@ -82,7 +90,8 @@ export const getStoredPatientProfile = () => {
      gender: gender,
      dob: dob,
      age: age,
-     role: "Patient" 
+     role: "Patient",
+     profileImageUrl: profileImageUrl
   };
 };
 
@@ -119,7 +128,8 @@ export const refreshPatientProfile = async () => {
       city: apiPatient.city,
       state: apiPatient.state,
       pincode: apiPatient.pincode,
-      status: apiPatient.isActive ? "Active" : "Inactive"
+      status: apiPatient.isActive ? "Active" : "Inactive",
+      profileImageUrl: apiPatient.profileImageUrl
     });
   }
 };
@@ -200,9 +210,12 @@ export const savePatientProfile = (profileData) => {
   // 1. Update active user session object
   const updatedUser = {
     ...user,
-    name: normalizedProfile.name,
-    mobile: normalizedProfile.phone || normalizedProfile.mobile || user.mobile,
-    email: normalizedProfile.email || user.email
+name: normalizedProfile.name,
+mobile: normalizedProfile.phone || normalizedProfile.mobile || user.mobile,
+email: normalizedProfile.email || user.email,
+profileImageUrl: profileData.profileImageUrl !== undefined
+    ? profileData.profileImageUrl
+    : user.profileImageUrl
   };
   setCurrentUser(updatedUser);
 

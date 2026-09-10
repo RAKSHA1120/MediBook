@@ -19,6 +19,7 @@ import Toast from "../components/Toast";
 import PageHeader from "../components/PageHeader";
 import PrimaryButton from "../components/PrimaryButton";
 import SecondaryButton from "../components/SecondaryButton";
+import ProfileImageUploader from "../components/ProfileImageUploader";
 import {
   getStoredPatientProfile,
   savePatientProfile,
@@ -272,6 +273,11 @@ function PatientProfile() {
     }
   };
 
+  const handleImageUpdated = (newImageUrl) => {
+    const updatedProfile = { ...profile, profileImageUrl: newImageUrl };
+    savePatientProfile(updatedProfile);
+  };
+
   const initials = getPatientInitials(profile.name);
 
   return (
@@ -285,8 +291,11 @@ function PatientProfile() {
       {/* Top Overview Card */}
       <div className="profile-overview-card">
         <div className="overview-left-block">
-          <div className="profile-avatar-circle">{initials}</div>
-          <div className="overview-details">
+          <ProfileImageUploader 
+            currentImageUrl={profile.profileImageUrl} 
+            onImageUpdated={handleImageUpdated} 
+          />
+          <div className="overview-details" style={{ marginLeft: '16px' }}>
             <div className="overview-name-row">
               <h2 className="overview-name">{profile.name}</h2>
               <span className="role-badge">{profile.role || "Patient"}</span>

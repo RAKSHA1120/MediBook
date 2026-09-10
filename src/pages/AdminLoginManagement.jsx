@@ -1,11 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
-import { Users, Shield, Stethoscope, UserCheck, User, Eye, Copy, Check, MoreVertical, AlertTriangle, KeyRound, Building2 } from "lucide-react";
+import { Users, Shield, Stethoscope, UserCheck, User, Eye, EyeOff, Copy, Check, MoreVertical, AlertTriangle, KeyRound, Building2, Sparkles } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import SearchBox from "../components/SearchBox";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import StatusBadge from "../components/StatusBadge";
 import { api } from "../utils/api";
+import {
+  getProvisionedCredential,
+  consumeProvisionedCredential,
+  generateStrongRolePassword
+} from "../utils/credentialStore";
 
 import "./AdminDashboard.css";
 import "./AdminShared.css";
@@ -24,11 +29,18 @@ function AdminLoginManagement() {
   const [actionUser, setActionUser] = useState(null);
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
 
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const [resetUser, setResetUser] = useState(null);
-  const [newPasswordInput, setNewPasswordInput] = useState("");
-  const [isResetting, setIsResetting] = useState(false);
-  const [resetFeedback, setResetFeedback] = useState(null);
+  // Login Credentials Modal State (Credential provisioning & safe reset workflow)
+  const [isCredModalOpen, setIsCredModalOpen] = useState(false);
+  const [credUser, setCredUser] = useState(null);
+  const [credStep, setCredStep] = useState("VIEW"); // "VIEW" | "PROVISIONED_VIEW" | "EDIT" | "SUCCESS"
+  const [credPasswordInput, setCredPasswordInput] = useState("");
+  const [showPasswordText, setShowPasswordText] = useState(false);
+  const [showConfirmPrompt, setShowConfirmPrompt] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [credError, setCredError] = useState(null);
+  const [newlySavedPassword, setNewlySavedPassword] = useState("");
+  const [copiedNewPass, setCopiedNewPass] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
 
   const [openMenuId, setOpenMenuId] = useState(null);
 
@@ -152,39 +164,184 @@ function AdminLoginManagement() {
     }
   };
 
-  // Reset Password Action
-  const handleOpenResetPassword = (user) => {
-    setResetUser(user);
-    setNewPasswordInput(user.role?.toLowerCase() === "doctor" ? "Doctor@123" : "MediBook@123");
-    setResetFeedback(null);
-    setIsResetModalOpen(true);
+  // ==========================================
+  // Login Credentials & Safe Reset Handlers
+  // ==========================================
+
+  // ==========================================
+  // Login Credentials & Provisioning Handlers
+  // ==========================================
+
+  // Opening "Login Credentials" strictly reads data; NEVER changes the password.
+  const handleOpenCredentials = (user) => {
+    setCredUser(user);
+    // Check if account has an initial password in transient memory (e.g. newly created Doctor/Hospital)
+    const provisioned = getProvisionedCredential(user.loginId || user.id);
+    if (provisioned && provisioned.password) {
+      setNewlySavedPassword(provisioned.password);
+      setCredStep("PROVISIONED_VIEW");
+    } else {
+      setCredStep("VIEW");
+      setNewlySavedPassword("");
+    }
+    setCredPasswordInput("");
+    setShowPasswordText(false);
+    setShowConfirmPrompt(false);
+    setIsUpdatingPassword(false);
+    setCredError(null);
+    setCopiedNewPass(false);
+    setCopiedAll(false);
+    setIsCredModalOpen(true);
   };
 
-  const handleConfirmResetPassword = async () => {
-    if (!resetUser) return;
-    setIsResetting(true);
-    setResetFeedback(null);
+  const handleCloseCredentials = () => {
+    if (credUser) {
+      // Consume the provisioned credential so it is only shown once in transient state as requested
+      consumeProvisionedCredential(credUser.loginId || credUser.id);
+    }
+    setIsCredModalOpen(false);
+    setCredUser(null);
+    setCredStep("VIEW");
+    setCredPasswordInput("");
+    setShowPasswordText(false);
+    setShowConfirmPrompt(false);
+    setIsUpdatingPassword(false);
+    setCredError(null);
+    setNewlySavedPassword("");
+    setCopiedNewPass(false);
+    setCopiedAll(false);
+  };
+
+  // Flow step: Set New Password (Admin explicitly initiates editing)
+  const handleStartSetNewPassword = () => {
+    setCredStep("EDIT");
+    // Generate initial strong password suggestion for convenience
+    const suggested = generateStrongRolePassword(credUser?.role);
+    setCredPasswordInput(suggested);
+    setShowPasswordText(true);
+    setShowConfirmPrompt(false);
+    setCredError(null);
+  };
+
+  // Helper to re-generate strong password
+  const handleGeneratePassword = () => {
+    const generated = generateStrongRolePassword(credUser?.role);
+    setCredPasswordInput(generated);
+    setShowPasswordText(true);
+    setCredError(null);
+  };
+
+  // Flow step: Cancel at any point leaves existing password completely unchanged
+  const handleCancelSetNewPassword = () => {
+    const provisioned = getProvisionedCredential(credUser?.loginId || credUser?.id);
+    if (provisioned && provisioned.password) {
+      setCredStep("PROVISIONED_VIEW");
+    } else {
+      setCredStep("VIEW");
+    }
+    setCredPasswordInput("");
+    setShowPasswordText(false);
+    setShowConfirmPrompt(false);
+    setCredError(null);
+  };
+
+  // Role-specific password validation:
+  // Patient: strict strong-password rules (8+ chars, upper, lower, number, special char)
+  // Admin, Doctor, Hospital: preserve existing rules (non-empty password)
+  const validatePasswordForRole = (password, role) => {
+    if (!password || !password.trim()) {
+      return "Password is required.";
+    }
+    const isPatient = (role || "").toLowerCase() === "patient";
+    if (isPatient) {
+      const trimmed = password.trim();
+      if (trimmed.length < 8) {
+        return "Password must be at least 8 characters long.";
+      }
+      if (!/[A-Z]/.test(trimmed)) {
+        return "Password must contain at least one uppercase letter (A-Z).";
+      }
+      if (!/[a-z]/.test(trimmed)) {
+        return "Password must contain at least one lowercase letter (a-z).";
+      }
+      if (!/[0-9]/.test(trimmed)) {
+        return "Password must contain at least one number (0-9).";
+      }
+      if (!/[^a-zA-Z0-9]/.test(trimmed)) {
+        return "Password must contain at least one special character.";
+      }
+    }
+    return null;
+  };
+
+  // Flow step: Save Password clicked -> validate then show confirmation prompt
+  const handlePromptSavePassword = () => {
+    setCredError(null);
+    const validationError = validatePasswordForRole(credPasswordInput, credUser?.role);
+    if (validationError) {
+      setCredError(validationError);
+      return;
+    }
+    setShowConfirmPrompt(true);
+  };
+
+  // Flow step: Cancel confirmation returns to editing without saving
+  const handleCancelConfirm = () => {
+    setShowConfirmPrompt(false);
+  };
+
+  // Flow step: "Yes, Update Password" -> calls backend API to update password
+  const handleConfirmSavePassword = async () => {
+    if (!credUser) return;
+    setIsUpdatingPassword(true);
+    setCredError(null);
+
     try {
-      const res = await api.post(`/Users/${resetUser.id}/reset-password`, {
-        newPassword: newPasswordInput.trim() || undefined
+      const targetPass = credPasswordInput.trim();
+      const res = await api.post(`/Users/${credUser.id}/reset-password`, {
+        newPassword: targetPass
       });
+
       if (res.success) {
-        setResetFeedback({ success: true, message: `Password for ${resetUser.name} reset successfully.` });
-        setTimeout(() => {
-          setIsResetModalOpen(false);
-          setResetUser(null);
-          setResetFeedback(null);
-        }, 1500);
+        setNewlySavedPassword(targetPass);
+        setCredStep("SUCCESS");
+        setShowConfirmPrompt(false);
       } else {
-        setResetFeedback({ success: false, message: res.error || "Failed to reset password." });
+        setCredError(res.error || "Failed to update password.");
+        setShowConfirmPrompt(false);
       }
     } catch (err) {
-      console.error("Failed to reset password", err);
-      setResetFeedback({ success: false, message: "An unexpected error occurred while resetting password." });
+      console.error("Failed to update password", err);
+      setCredError("An unexpected error occurred while updating the password.");
+      setShowConfirmPrompt(false);
     } finally {
-      setIsResetting(false);
+      setIsUpdatingPassword(false);
     }
   };
+
+  // Copy new password helper in success/provisioned state
+  const handleCopyNewPassword = (pass) => {
+    const passwordToCopy = pass || newlySavedPassword;
+    if (passwordToCopy) {
+      navigator.clipboard.writeText(passwordToCopy);
+      setCopiedNewPass(true);
+      setTimeout(() => setCopiedNewPass(false), 2500);
+    }
+  };
+
+  // Copy full credentials summary for easy sharing with newly registered Doctor/Hospital
+  const handleCopyAllCredentials = (pass) => {
+    const passwordToCopy = pass || newlySavedPassword;
+    if (credUser && passwordToCopy) {
+      const summary = `MediBook Login Credentials\n--------------------------\nName: ${credUser.name || "User"}\nRole: ${credUser.role}\nLogin ID / Username: ${credUser.loginId}\nPassword: ${passwordToCopy}`;
+      navigator.clipboard.writeText(summary);
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2500);
+    }
+  };
+
+  // Alias for backward compatibility if invoked anywhere
+  const handleOpenResetPassword = handleOpenCredentials;
 
   // Date Formatter Helper
   const formatDate = (dateStr) => {
@@ -419,10 +576,21 @@ function AdminLoginManagement() {
                     {/* ACTIONS */}
                     <td className="nowrap text-right" style={{ textAlign: "right" }}>
                       <div className="table-actions-cell">
+                        {/* Login Credentials Button */}
+                        <button
+                          className="icon-action-btn"
+                          title="Login Credentials"
+                          aria-label="Login Credentials"
+                          onClick={() => handleOpenCredentials(user)}
+                        >
+                          <KeyRound size={17} />
+                        </button>
+
                         {/* View Details Button */}
                         <button
                           className="icon-action-btn"
                           title="View Account Details"
+                          aria-label="View Account Details"
                           onClick={() => { setSelectedUser(user); setIsViewModalOpen(true); }}
                         >
                           <Eye size={17} />
@@ -446,21 +614,21 @@ function AdminLoginManagement() {
                               <button
                                 className="more-menu-item"
                                 onClick={() => {
+                                  handleOpenCredentials(user);
+                                  setOpenMenuId(null);
+                                }}
+                              >
+                                Login Credentials
+                              </button>
+                              <button
+                                className="more-menu-item"
+                                onClick={() => {
                                   setSelectedUser(user);
                                   setIsViewModalOpen(true);
                                   setOpenMenuId(null);
                                 }}
                               >
                                 View Account Details
-                              </button>
-                              <button
-                                className="more-menu-item"
-                                onClick={() => {
-                                  handleOpenResetPassword(user);
-                                  setOpenMenuId(null);
-                                }}
-                              >
-                                Reset Password
                               </button>
                               <button
                                 className={`more-menu-item ${(user.status || "Active") === "Active" ? "danger" : ""}`}
@@ -599,10 +767,10 @@ function AdminLoginManagement() {
                 onClick={() => {
                   const u = selectedUser;
                   setIsViewModalOpen(false);
-                  handleOpenResetPassword(u);
+                  handleOpenCredentials(u);
                 }}
               >
-                <KeyRound size={15} /> Reset Password
+                <KeyRound size={15} /> Login Credentials
               </button>
               <Button variant="primary" onClick={() => setIsViewModalOpen(false)}>Close</Button>
             </div>
@@ -657,67 +825,586 @@ function AdminLoginManagement() {
         )}
       </Modal>
 
-      {/* Admin Reset Password Modal */}
+      {/* Login Credentials Modal */}
       <Modal
-        isOpen={isResetModalOpen}
-        onClose={() => { setIsResetModalOpen(false); setResetUser(null); setResetFeedback(null); }}
-        title="Reset Account Password"
+        isOpen={isCredModalOpen}
+        onClose={handleCloseCredentials}
+        title="Login Credentials"
         className="hospital-modal-container"
       >
-        {resetUser && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "var(--primary-soft)", color: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <KeyRound size={20} />
-              </div>
-              <div>
-                <h4 style={{ margin: 0, fontSize: "15px", color: "var(--text-heading)" }}>
-                  Reset password for {resetUser.name}
-                </h4>
-                <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                  {resetUser.loginId} ({resetUser.role})
-                </span>
-              </div>
-            </div>
+        {credUser && (
+          <div>
+            {/* Step 1A: PROVISIONED_VIEW - Newly Provisioned Account with Initial Password in Transient Memory */}
+            {credStep === "PROVISIONED_VIEW" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                <div style={{
+                  background: "var(--background)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "12px",
+                  padding: "18px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "14px"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                        ACCOUNT CREDENTIALS PROVISIONED
+                      </div>
+                      <div style={{ fontSize: "17px", fontWeight: "700", color: "var(--text-heading)", marginTop: "2px" }}>
+                        {credUser.name || "User"}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                      <span style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "3px 10px",
+                        borderRadius: "12px",
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        background: "#ecfdf5",
+                        color: "#059669",
+                        border: "1px solid #a7f3d0"
+                      }}>
+                        Initial Credentials
+                      </span>
+                      <span style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "4px 12px",
+                        borderRadius: "20px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        textTransform: "capitalize",
+                        ...getRoleBadgeStyle(credUser.role)
+                      }}>
+                        {credUser.role}
+                      </span>
+                    </div>
+                  </div>
 
-            {resetFeedback && (
-              <div style={{
-                padding: "10px 14px",
-                borderRadius: "8px",
-                fontSize: "13px",
-                backgroundColor: resetFeedback.success ? "#ecfdf5" : "#fef2f2",
-                color: resetFeedback.success ? "#065f46" : "#b91c1c",
-                border: resetFeedback.success ? "1px solid #a7f3d0" : "1px solid #fecaca"
-              }}>
-                {resetFeedback.message}
+                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      LOGIN ID / USERNAME
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+                      <span style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-heading)", fontFamily: "monospace" }}>
+                        {credUser.loginId}
+                      </span>
+                      <button
+                        type="button"
+                        title="Copy Login ID"
+                        onClick={() => handleCopy(credUser.loginId, "credLoginId")}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: copiedField === "credLoginId" ? "#10b981" : "var(--text-muted)",
+                          padding: "3px",
+                          display: "inline-flex",
+                          alignItems: "center"
+                        }}
+                      >
+                        {copiedField === "credLoginId" ? <Check size={16} /> : <Copy size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      INITIAL PASSWORD
+                    </div>
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginTop: "6px",
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "8px",
+                      padding: "8px 12px"
+                    }}>
+                      <span style={{ fontSize: "15.5px", fontWeight: "700", color: "var(--text-heading)", fontFamily: "monospace", letterSpacing: "0.5px" }}>
+                        {showPasswordText ? newlySavedPassword : "••••••••••••••••"}
+                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowPasswordText(!showPasswordText)}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "var(--text-muted)",
+                            padding: "4px"
+                          }}
+                          title={showPasswordText ? "Hide password" : "Show password"}
+                        >
+                          {showPasswordText ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyNewPassword(newlySavedPassword)}
+                          className="btn btn-outline"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            padding: "4px 10px",
+                            fontSize: "12px",
+                            height: "auto",
+                            borderColor: copiedNewPass ? "#10b981" : "var(--border)",
+                            color: copiedNewPass ? "#10b981" : "var(--text-primary)"
+                          }}
+                        >
+                          {copiedNewPass ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{
+                  fontSize: "12.5px",
+                  color: "#065f46",
+                  lineHeight: "1.5",
+                  background: "#ecfdf5",
+                  borderLeft: "3px solid #10b981",
+                  padding: "10px 14px",
+                  borderRadius: "0 8px 8px 0"
+                }}>
+                  These initial login credentials were generated upon account creation. Copy and provide them to the newly registered <strong>{credUser.role}</strong>. Once this modal is closed, the plaintext password is discarded from memory.
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px", flexWrap: "wrap", gap: "10px" }}>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyAllCredentials(newlySavedPassword)}
+                    className="btn btn-outline"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      borderColor: copiedAll ? "#10b981" : "var(--border)",
+                      color: copiedAll ? "#10b981" : "var(--text-primary)"
+                    }}
+                  >
+                    {copiedAll ? <><Check size={15} /> Copied All Credentials</> : <><Copy size={15} /> Copy All Credentials</>}
+                  </button>
+
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <Button variant="outline" type="button" onClick={handleStartSetNewPassword}>
+                      Set New Password
+                    </Button>
+                    <Button variant="primary" type="button" onClick={handleCloseCredentials}>
+                      Done
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
 
-            <div>
-              <label className="form-label" style={{ fontSize: "13px", fontWeight: "600", marginBottom: "6px", display: "block" }}>
-                New Temporary Password
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "14px" }}
-                value={newPasswordInput}
-                onChange={(e) => setNewPasswordInput(e.target.value)}
-                placeholder="Enter new password"
-              />
-              <span style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px", display: "block" }}>
-                Standard default: {resetUser.role?.toLowerCase() === "doctor" ? "Doctor@123" : "MediBook@123"}
-              </span>
-            </div>
+            {/* Step 1B: VIEW Credentials - Existing Account (Original password hashed and unknown) */}
+            {credStep === "VIEW" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                <div style={{
+                  background: "var(--background)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "12px",
+                  padding: "18px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "14px"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                        USER
+                      </div>
+                      <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-heading)", marginTop: "2px" }}>
+                        {credUser.name || "User"}
+                      </div>
+                    </div>
+                    <div>
+                      <span style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "4px 12px",
+                        borderRadius: "20px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        textTransform: "capitalize",
+                        ...getRoleBadgeStyle(credUser.role)
+                      }}>
+                        {credUser.role}
+                      </span>
+                    </div>
+                  </div>
 
-            <div className="form-actions" style={{ marginTop: "8px" }}>
-              <Button variant="outline" type="button" disabled={isResetting} onClick={() => setIsResetModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" type="button" disabled={isResetting} onClick={handleConfirmResetPassword}>
-                {isResetting ? "Resetting..." : "Confirm Password Reset"}
-              </Button>
-            </div>
+                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      LOGIN ID / USERNAME
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+                      <span style={{ fontSize: "14.5px", fontWeight: "600", color: "var(--text-heading)", fontFamily: "monospace" }}>
+                        {credUser.loginId}
+                      </span>
+                      <button
+                        type="button"
+                        title="Copy Login ID"
+                        onClick={() => handleCopy(credUser.loginId, "credLoginId")}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: copiedField === "credLoginId" ? "#10b981" : "var(--text-muted)",
+                          padding: "3px",
+                          display: "inline-flex",
+                          alignItems: "center"
+                        }}
+                      >
+                        {copiedField === "credLoginId" ? <Check size={16} /> : <Copy size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      PASSWORD
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
+                      <span style={{ fontSize: "18px", letterSpacing: "3px", color: "var(--text-muted)", fontFamily: "monospace" }}>
+                        ••••••••••••••••
+                      </span>
+                      <span style={{
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        padding: "3px 8px",
+                        borderRadius: "6px",
+                        background: "var(--primary-soft)",
+                        color: "var(--primary)"
+                      }}>
+                        Hashed &amp; Protected
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{
+                  fontSize: "12.5px",
+                  color: "var(--text-muted)",
+                  lineHeight: "1.5",
+                  background: "rgba(47, 111, 163, 0.05)",
+                  borderLeft: "3px solid var(--primary)",
+                  padding: "10px 14px",
+                  borderRadius: "0 8px 8px 0"
+                }}>
+                  Existing passwords are saved as secure irreversible hashes and cannot be retrieved. To provision credentials for this account, you can explicitly set a new password below.
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px" }}>
+                  <Button variant="outline" type="button" onClick={handleCloseCredentials}>
+                    Close
+                  </Button>
+                  <Button
+                    variant="primary"
+                    type="button"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+                    onClick={handleStartSetNewPassword}
+                  >
+                    <KeyRound size={16} /> Set New Password
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: EDIT / Set New Password */}
+            {credStep === "EDIT" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{
+                  background: "var(--background)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "10px",
+                  padding: "10px 14px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}>
+                  <div>
+                    <span style={{ fontSize: "13.5px", fontWeight: "600", color: "var(--text-heading)" }}>
+                      {credUser.name}
+                    </span>
+                    <span style={{ fontSize: "12px", color: "var(--text-muted)", marginLeft: "6px" }}>
+                      ({credUser.loginId})
+                    </span>
+                  </div>
+                  <span style={{
+                    padding: "2px 8px",
+                    borderRadius: "12px",
+                    fontSize: "11px",
+                    fontWeight: "600",
+                    ...getRoleBadgeStyle(credUser.role)
+                  }}>
+                    {credUser.role}
+                  </span>
+                </div>
+
+                {credError && (
+                  <div style={{
+                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    backgroundColor: "#fef2f2",
+                    color: "#b91c1c",
+                    border: "1px solid #fecaca",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px"
+                  }}>
+                    <AlertTriangle size={16} style={{ flexShrink: 0 }} />
+                    <span>{credError}</span>
+                  </div>
+                )}
+
+                {!showConfirmPrompt ? (
+                  <>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                        <label className="form-label" style={{ fontSize: "13px", fontWeight: "600", margin: 0 }}>
+                          New Password
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleGeneratePassword}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "var(--primary)",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            padding: "2px 4px"
+                          }}
+                          title="Generate a secure random password"
+                        >
+                          <Sparkles size={14} /> Generate Strong Password
+                        </button>
+                      </div>
+
+                      <div style={{ position: "relative" }}>
+                        <input
+                          type={showPasswordText ? "text" : "password"}
+                          className="form-control"
+                          style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "14px", fontFamily: showPasswordText ? "monospace" : "inherit" }}
+                          value={credPasswordInput}
+                          onChange={(e) => { setCredPasswordInput(e.target.value); setCredError(null); }}
+                          placeholder={(credUser.role || "").toLowerCase() === "patient" ? "e.g. MediBook@123" : "Enter new password"}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPasswordText(!showPasswordText)}
+                          style={{
+                            position: "absolute",
+                            right: "10px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "var(--text-muted)",
+                            padding: "4px"
+                          }}
+                          title={showPasswordText ? "Hide password" : "Show password"}
+                        >
+                          {showPasswordText ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "6px", lineHeight: "1.4" }}>
+                        {(credUser.role || "").toLowerCase() === "patient" ? (
+                          <span>
+                            <strong>Patient Requirements:</strong> Minimum 8 characters, with at least one uppercase letter, one lowercase letter, one number, and one special character.
+                          </span>
+                        ) : (
+                          <span>
+                            Enter a new password or use <strong>Generate Strong Password</strong> above for this {credUser.role} account.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px" }}>
+                      <Button variant="outline" type="button" onClick={handleCancelSetNewPassword}>
+                        Cancel
+                      </Button>
+                      <Button variant="primary" type="button" onClick={handlePromptSavePassword}>
+                        Save Password
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  /* Exact Confirmation Dialog Before Saving */
+                  <div style={{
+                    background: "#fffbeb",
+                    border: "1px solid #fde68a",
+                    borderRadius: "10px",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                      <AlertTriangle size={20} style={{ color: "#d97706", flexShrink: 0, marginTop: "2px" }} />
+                      <div>
+                        <div style={{ fontSize: "14.5px", fontWeight: "700", color: "#92400e" }}>
+                          Are you sure you want to set a new password for this account?
+                        </div>
+                        <p style={{ fontSize: "13px", color: "#b45309", margin: "4px 0 0 0", lineHeight: "1.4" }}>
+                          This will immediately update the login password for <strong>{credUser.name}</strong> ({credUser.loginId}).
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "6px" }}>
+                      <Button
+                        variant="outline"
+                        type="button"
+                        disabled={isUpdatingPassword}
+                        onClick={handleCancelConfirm}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="primary"
+                        type="button"
+                        disabled={isUpdatingPassword}
+                        onClick={handleConfirmSavePassword}
+                        style={{ backgroundColor: "#d97706", borderColor: "#d97706", color: "#ffffff" }}
+                      >
+                        {isUpdatingPassword ? "Updating..." : "Yes, Update Password"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 3: SUCCESS Display */}
+            {credStep === "SUCCESS" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                <div style={{
+                  background: "#ecfdf5",
+                  border: "1px solid #a7f3d0",
+                  borderRadius: "10px",
+                  padding: "14px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px"
+                }}>
+                  <div style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "50%",
+                    background: "#10b981",
+                    color: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0
+                  }}>
+                    <Check size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "15px", fontWeight: "700", color: "#065f46" }}>
+                      Password updated successfully.
+                    </div>
+                    <div style={{ fontSize: "12.5px", color: "#047857", marginTop: "2px" }}>
+                      Account: <strong>{credUser.name}</strong> ({credUser.loginId})
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{
+                  background: "var(--background)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "10px",
+                  padding: "16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px"
+                }}>
+                  <div style={{ fontSize: "12px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    NEW PASSWORD:
+                  </div>
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "8px",
+                    padding: "10px 14px"
+                  }}>
+                    <span style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-heading)", fontFamily: "monospace", letterSpacing: "0.5px" }}>
+                      {newlySavedPassword}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyNewPassword(newlySavedPassword)}
+                      className="btn btn-outline"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "6px 14px",
+                        fontSize: "13px",
+                        height: "auto",
+                        borderColor: copiedNewPass ? "#10b981" : "var(--border)",
+                        color: copiedNewPass ? "#10b981" : "var(--text-primary)"
+                      }}
+                    >
+                      {copiedNewPass ? (
+                        <>
+                          <Check size={15} /> Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={15} /> Copy
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
+                    This newly set password is shown once so you can provide it to the user. The database stores only the secure hash.
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyAllCredentials(newlySavedPassword)}
+                    className="btn btn-outline"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      borderColor: copiedAll ? "#10b981" : "var(--border)",
+                      color: copiedAll ? "#10b981" : "var(--text-primary)"
+                    }}
+                  >
+                    {copiedAll ? <><Check size={15} /> Copied All Credentials</> : <><Copy size={15} /> Copy All Credentials</>}
+                  </button>
+                  <Button variant="primary" type="button" onClick={handleCloseCredentials}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Modal>

@@ -44,7 +44,7 @@ export const getCurrentPatient = () => {
 export const getCurrentDoctor = () => {
   const user = getCurrentUser();
   if (user && user.role?.toLowerCase() === "doctor") {
-    return user;
+    return user.doctor ? { ...user, ...user.doctor } : user;
   }
   return null;
 };

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Stethoscope, Plus, Search, Eye, Edit, KeyRound, CheckCircle2, ShieldCheck } from "lucide-react";
 import { getCurrentUser } from "../utils/auth";
 import { api } from "../utils/api";
+import ProfileModalTrigger from "../components/ProfileModalTrigger";
 
 import { generateLoginId, generatePassword } from "../utils/idGenerator";
 import PageHeader from "../components/PageHeader";
@@ -219,22 +220,24 @@ function HospitalDoctors() {
               {filteredDoctors.map((doc) => (
                 <tr key={doc.id}>
                   <td>
-                    <div className="user-info-cell">
-                      <div
-                        className="user-avatar"
-                        style={{ backgroundColor: "var(--primary-soft)", color: "var(--primary)" }}
-                      >
-                        {getInitials(doc.name)}
+                    <ProfileModalTrigger type="doctor" id={doc.id}>
+                      <div className="user-info-cell">
+                        <div
+                          className="user-avatar"
+                          style={{ backgroundColor: "var(--primary-soft)", color: "var(--primary)" }}
+                        >
+                          {getInitials(doc.name)}
+                        </div>
+                        <div className="user-details">
+                          <span className="user-name" style={{ fontSize: "14px" }}>
+                            {doc.name}
+                          </span>
+                          <span className="user-subtext" style={{ fontSize: "12px" }}>
+                            {doc.id} • {doc.loginId || "login: " + doc.name.toLowerCase().replace(/\s+/g, "")}
+                          </span>
+                        </div>
                       </div>
-                      <div className="user-details">
-                        <span className="user-name" style={{ fontSize: "14px" }}>
-                          {doc.name}
-                        </span>
-                        <span className="user-subtext" style={{ fontSize: "12px" }}>
-                          {doc.id} • {doc.loginId || "login: " + doc.name.toLowerCase().replace(/\s+/g, "")}
-                        </span>
-                      </div>
-                    </div>
+                    </ProfileModalTrigger>
                   </td>
                   <td>
                     <div className="user-details">

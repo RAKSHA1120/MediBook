@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { CalendarDays, Search, Eye, Filter, Loader2, AlertCircle } from "lucide-react";
 import { getCurrentUser } from "../utils/auth";
 import { api } from "../utils/api";
+import ProfileModalTrigger from "../components/ProfileModalTrigger";
 
 import PageHeader from "../components/PageHeader";
 import SearchBox from "../components/SearchBox";
@@ -226,18 +227,22 @@ function HospitalAppointments() {
                 {filteredAppointments.map((apt) => (
                   <tr key={apt.id}>
                     <td>
-                      <div className="user-info-cell">
-                        <div className="user-avatar">{getInitials(apt.patientName || "P")}</div>
-                        <div className="user-details">
-                          <span className="user-name">{apt.patientName || "Patient"}</span>
-                          <span className="user-subtext">{apt.patientId || apt.id}</span>
+                      <ProfileModalTrigger type="patient" id={apt.patientId}>
+                        <div className="user-info-cell">
+                          <div className="user-avatar">{getInitials(apt.patientName || "P")}</div>
+                          <div className="user-details">
+                            <span className="user-name">{apt.patientName || "Patient"}</span>
+                            <span className="user-subtext">{apt.patientId || apt.id}</span>
+                          </div>
                         </div>
-                      </div>
+                      </ProfileModalTrigger>
                     </td>
                     <td>
-                      <span style={{ fontWeight: "600", color: "var(--text-heading)" }}>
-                        {apt.doctorName || "Doctor"}
-                      </span>
+                      <ProfileModalTrigger type="doctor" id={apt.doctorId}>
+                        <span style={{ fontWeight: "600", color: "var(--text-heading)", cursor: "default" }}>
+                          {apt.doctorName || "Doctor"}
+                        </span>
+                      </ProfileModalTrigger>
                     </td>
                     <td>
                       <div style={{ display: "flex", flexDirection: "column" }}>
