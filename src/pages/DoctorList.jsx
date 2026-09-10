@@ -73,8 +73,8 @@ const normalizeDoctor = (doc) => {
     experience: typeof doc.experience === "number" ? doc.experience : (parseInt(doc.experience) || 0),
     email: doc.email || "",
     mobile: doc.mobile || "",
-    consultationFee: doc.consultationFee ?? doc.fee ?? 500,
-    fee: doc.consultationFee ?? doc.fee ?? 500,
+    consultationFee: doc.consultationFee ?? doc.fee,
+    fee: doc.consultationFee ?? doc.fee,
     profileImage: doc.profileImage ?? null,
     location: doc.location || (typeof doc.hospital === "object" && doc.hospital !== null ? doc.hospital.location : "Chennai"),
     status: doc.status || "Active",
@@ -660,7 +660,7 @@ function DoctorList() {
               <div>
                 <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>CONSULTATION FEE</label>
                 <div style={{ fontSize: "14.5px", fontWeight: "700", color: "var(--primary)", marginTop: "4px" }}>
-                  ₹{selectedProfileDoctor.consultationFee ?? selectedProfileDoctor.fee ?? 800}
+                  ₹{selectedProfileDoctor.consultationFee ?? selectedProfileDoctor.fee}
                 </div>
               </div>
 

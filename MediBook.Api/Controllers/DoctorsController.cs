@@ -32,6 +32,7 @@ namespace MediBook.Api.Controllers
                     email = d.Email,
                     mobile = d.Phone, // frontend might expect mobile
                     status = d.IsActive ? "Active" : "Inactive",
+                    consultationFee = d.ConsultationFee,
 
                     hospital = d.Hospital == null ? null : new
                     {
@@ -63,6 +64,7 @@ namespace MediBook.Api.Controllers
                     email = d.Email,
                     mobile = d.Phone,
                     status = d.IsActive ? "Active" : "Inactive",
+                    consultationFee = d.ConsultationFee,
 
                     hospital = d.Hospital == null ? null : new
                     {

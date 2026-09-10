@@ -6,7 +6,7 @@ import SearchBox from "../components/SearchBox";
 import Modal from "../components/Modal";
 import Input from "../components/Input";
 import StatusBadge from "../components/StatusBadge";
-import { api } from "../utils/api";
+import { api, BASE_URL } from "../utils/api";
 import { generateLoginId, generatePassword } from "../utils/idGenerator";
 import ProfileModalTrigger from "../components/ProfileModalTrigger";
 import "./AdminDoctors.css";
@@ -24,11 +24,13 @@ function AdminDoctors() {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [newCredentials, setNewCredentials] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [addError, setAddError] = useState("");
 
   const fetchDoctors = async () => {
     try {
@@ -125,41 +127,73 @@ function AdminDoctors() {
   // Handle Add Doctor
   const handleAddDoctor = async (e) => {
     e.preventDefault();
+    setAddError("");
     const dobYear = addFormData.dob ? addFormData.dob.split("-")[0] : "1985";
     const loginId = generateLoginId(addFormData.name, dobYear, doctors);
     const password = generatePassword(addFormData.name, dobYear);
 
-    // 1. Create User
-    const userRes = await api.post("/Users", {
-      name: addFormData.name.trim(),
-      email: addFormData.email.trim(),
-      password: password,
-      role: "doctor"
-    });
+    try {
+      // 1. Create User
+      const userPayload = {
+        name: addFormData.name.trim(),
+        email: loginId,
+        password: password,
+        role: "doctor"
+      };
 
-    if (!userRes.success) {
-      alert("Failed to create user account for doctor.");
-      return;
-    }
+      const userRes = await fetch(`${BASE_URL}/Users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userPayload)
+      });
 
-    // 2. Create Doctor
-    const newDoc = {
-      userId: userRes.data.id,
-      name: addFormData.name.trim(),
-      specialty: addFormData.specialization.trim() || "General Medicine",
-      experience: parseInt(addFormData.experience.trim()) || 5,
-      email: addFormData.email.trim(),
-      phone: addFormData.phone.trim(),
-      isActive: true,
-      hospitalId: parseInt(addFormData.hospitalId) || (hospitals.length > 0 ? hospitals[0].id : 1)
-    };
+      let userData = null;
+      try { userData = await userRes.json(); } catch(e) {}
 
-    const docRes = await api.post("/Doctors", newDoc);
-    if (docRes.success) {
+      if (!userRes.ok && userRes.status !== 200 && userRes.status !== 201) {
+        setAddError(userData?.message || "Failed to create user account for doctor.");
+        return;
+      }
+
+      const createdUserId = userData?.id || userData?.Id;
+      if (!createdUserId) {
+        setAddError("Failed to create user account for doctor. Missing user ID in response.");
+        return;
+      }
+
+      // 2. Create Doctor
+      const newDoc = {
+        userId: createdUserId,
+        name: addFormData.name.trim(),
+        specialty: addFormData.specialization.trim() || "General Medicine",
+        experience: parseInt(addFormData.experience.trim()) || 5,
+        email: addFormData.email.trim(),
+        phone: addFormData.phone.trim(),
+        isActive: true,
+        hospitalId: parseInt(addFormData.hospitalId) || (hospitals.length > 0 ? hospitals[0].id : 1)
+      };
+
+      const docRes = await fetch(`${BASE_URL}/Doctors`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newDoc)
+      });
+
+      let docData = null;
+      try { docData = await docRes.json(); } catch(e) {}
+
+      if (!docRes.ok && docRes.status !== 200 && docRes.status !== 201) {
+        setAddError(docData?.message || "Failed to create doctor profile.");
+        return;
+      }
+
+      // Success
       fetchDoctors();
-      setNewCredentials({ name: addFormData.name, loginId: addFormData.email.trim(), password });
+      setNewCredentials({ name: addFormData.name, loginId: loginId, password });
       setIsAddModalOpen(false);
       setIsSuccessModalOpen(true);
+      setSuccessMessage("Doctor added successfully!");
+      setTimeout(() => setSuccessMessage(""), 5000);
       setAddFormData({
         name: "",
         qualification: "MBBS, MD",
@@ -170,8 +204,9 @@ function AdminDoctors() {
         phone: "",
         dob: ""
       });
-    } else {
-      alert("Failed to create doctor profile.");
+    } catch (error) {
+      console.error("Error creating doctor:", error);
+      setAddError("A network error occurred while creating the doctor.");
     }
   };
 
@@ -297,6 +332,12 @@ function AdminDoctors() {
           Add New Doctor
         </Button>
       </PageHeader>
+
+      {successMessage && (
+        <div className="doctor-add-success-banner">
+          &#10003; {successMessage}
+        </div>
+      )}
 
       <div className="admin-table-card">
         {/* Compact Search & Filters Toolbar */}
@@ -495,11 +536,16 @@ function AdminDoctors() {
       {/* Add New Doctor Modal */}
       <Modal 
         isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => { setIsAddModalOpen(false); setAddError(""); }}
         title="Add New Doctor"
         className="hospital-modal-container"
       >
         <form onSubmit={handleAddDoctor} className="hospital-form">
+          {addError && (
+            <div style={{ backgroundColor: "#fee2e2", color: "#dc2626", padding: "12px", borderRadius: "8px", marginBottom: "16px", fontSize: "14px", fontWeight: "500", border: "1px solid #f87171" }}>
+              {addError}
+            </div>
+          )}
           <div className="form-group">
             <label className="form-label">Doctor Name *</label>
             <input

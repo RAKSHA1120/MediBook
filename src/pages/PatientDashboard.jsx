@@ -197,7 +197,7 @@ function PatientDashboard() {
       location: upcoming.location || doc.location || "Chennai",
       date: upcoming.formattedDate || upcoming.date || "Wed, Aug 26, 2026",
       time: upcoming.time || "09:00 AM",
-      consultationFee: upcoming.consultationFee ?? upcoming.fee ?? doc.consultationFee ?? doc.fee ?? 800,
+      consultationFee: upcoming.consultationFee ?? upcoming.fee ?? doc.consultationFee ?? doc.fee,
       status: upcoming.status || "Confirmed",
       initials
     };

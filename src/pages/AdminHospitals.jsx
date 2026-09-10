@@ -553,7 +553,6 @@ function AdminHospitals() {
                 style={{ width: "100%" }}
                 onClick={() => {
                   navigator.clipboard.writeText(`Hospital: ${newCredentials.hospitalName}\nLogin ID: ${newCredentials.loginId}\nPassword: ${newCredentials.temporaryPassword}`);
-                  alert("Credentials copied to clipboard!");
                 }}
               >
                 Copy Credentials

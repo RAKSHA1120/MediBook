@@ -253,7 +253,7 @@ function AppointmentBooking() {
       const hospitalId = Number(doctor?.hospitalId) ? Number(doctor?.hospitalId) : 1;
 
       const formattedTime = formatTimeToHHmmss(selectedSlot);
-      const feeVal = doctor?.consultationFee ?? doctor?.fee ?? 500;
+      const feeVal = doctor?.consultationFee ?? doctor?.fee;
 
       const payload = {
         patientId,
@@ -570,7 +570,7 @@ function AppointmentBooking() {
                   selectedDate={selectedDate}
                   formattedDate={formatReadableDate(selectedDate)}
                   selectedTime={selectedSlot}
-                  consultationFee={doctor?.consultationFee || 800}
+                  consultationFee={doctor?.consultationFee ?? doctor?.fee}
                   onConfirm={handleConfirmAppointment}
                   isConfirmed={isConfirmed}
                   isSubmitting={isSubmitting}

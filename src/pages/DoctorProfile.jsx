@@ -73,7 +73,7 @@ function DoctorProfile() {
       specialty: doc?.specialty || doc?.specialization || "Cardiology",
       qualification: doc?.qualification || "MD, DM",
       experience: doc?.experience || 12,
-      consultationFee: doc?.consultationFee || doc?.fee || 1000,
+      consultationFee: doc?.consultationFee ?? doc?.fee,
       registrationNumber: doc?.registrationNumber || "REG-2018-94821",
       hospital: doc?.hospital || "City Heart Center",
       department: doc?.department || doc?.specialty || "Cardiology",

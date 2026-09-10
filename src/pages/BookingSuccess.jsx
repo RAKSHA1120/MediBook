@@ -46,7 +46,7 @@ function BookingSuccess() {
   const hospital = bookingState?.hospital || doctor?.hospital || "MediCare Hospital";
   const displayDate = bookingState?.formattedDate || bookingState?.date;
   const displayTime = bookingState?.time;
-  const fee = bookingState?.fee ?? doctor?.consultationFee ?? 800;
+  const fee = bookingState?.fee ?? doctor?.consultationFee ?? doctor?.fee;
 
   const patientId = bookingState?.patientId || currentUser?.refId || currentPatient?.id || currentUser?.id || 1;
   const hospitalId = bookingState?.hospitalId || doctor?.hospitalId || 1;

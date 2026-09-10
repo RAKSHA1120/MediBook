@@ -69,6 +69,7 @@ namespace MediBook.Api.Controllers
                     a.DoctorId,
                     DoctorName = a.Doctor.Name,
                     DoctorSpecialty = a.Doctor.Specialty,
+                    consultationFee = a.Doctor.ConsultationFee,
                     a.HospitalId,
                     HospitalName = a.Hospital.Name,
                     VisitorCardNumber = _context.PatientHospitals
@@ -100,6 +101,7 @@ namespace MediBook.Api.Controllers
                     a.DoctorId,
                     DoctorName = a.Doctor.Name,
                     DoctorSpecialty = a.Doctor.Specialty,
+                    consultationFee = a.Doctor.ConsultationFee,
                     a.HospitalId,
                     HospitalName = a.Hospital.Name,
                     VisitorCardNumber = _context.PatientHospitals
@@ -133,6 +135,7 @@ namespace MediBook.Api.Controllers
                     a.DoctorId,
                     DoctorName = a.Doctor.Name,
                     DoctorSpecialty = a.Doctor.Specialty,
+                    consultationFee = a.Doctor.ConsultationFee,
                     a.HospitalId,
                     HospitalName = a.Hospital.Name,
                     VisitorCardNumber = _context.PatientHospitals
@@ -163,6 +166,7 @@ namespace MediBook.Api.Controllers
                     a.DoctorId,
                     DoctorName = a.Doctor.Name,
                     DoctorSpecialty = a.Doctor.Specialty,
+                    consultationFee = a.Doctor.ConsultationFee,
                     a.HospitalId,
                     HospitalName = a.Hospital.Name,
                     VisitorCardNumber = _context.PatientHospitals
@@ -193,6 +197,7 @@ namespace MediBook.Api.Controllers
                     a.DoctorId,
                     DoctorName = a.Doctor.Name,
                     DoctorSpecialty = a.Doctor.Specialty,
+                    consultationFee = a.Doctor.ConsultationFee,
                     a.HospitalId,
                     HospitalName = a.Hospital.Name,
                     VisitorCardNumber = _context.PatientHospitals
@@ -304,6 +309,7 @@ namespace MediBook.Api.Controllers
                     a.DoctorId,
                     DoctorName = a.Doctor.Name,
                     DoctorSpecialty = a.Doctor.Specialty,
+                    consultationFee = a.Doctor.ConsultationFee,
                     a.HospitalId,
                     HospitalName = a.Hospital.Name,
                     VisitorCardNumber = visitorCard.VisitorCardNumber,
@@ -475,6 +481,7 @@ namespace MediBook.Api.Controllers
                     a.DoctorId,
                     DoctorName = a.Doctor.Name,
                     DoctorSpecialty = a.Doctor.Specialty,
+                    consultationFee = a.Doctor.ConsultationFee,
                     a.HospitalId,
                     HospitalName = a.Hospital.Name,
                     a.AppointmentDate,
