@@ -48,3 +48,5 @@ database/
 
 # Local ASP.NET configuration
 MediBook.Api/appsettings.json
+
+Import-Module PSReadLine
