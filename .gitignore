@@ -28,7 +28,6 @@ dist-ssr
 
 # .NET backend files
 MediBook.Api/appsettings.json
-MediBook.Api/appsettings.Development.json
 MediBook.Api/.vs/
 MediBook.Api/bin/
 MediBook.Api/obj/
@@ -39,6 +38,9 @@ MediBook.Api/*.csproj.user
 *.db
 *.db-shm
 *.db-wal
+
+# Sensitive .NET configuration
+MediBook.Api/appsettings.json
 
 # Database folder
 database/
