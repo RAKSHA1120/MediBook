@@ -13,13 +13,7 @@ import {
 import {
   getCurrentUser,
   clearCurrentUser,
-  getCurrentDoctor,
-  getCurrentPatient
 } from "../utils/auth";
-import {
-  getPatientNotifications,
-  getDoctorNotifications
-} from "../data/notifications";
 import { useNotification } from "../context/NotificationContext";
 import { BASE_URL } from "../utils/api";
 
@@ -35,8 +29,7 @@ function Navbar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { unreadCount: contextUnreadCount } = useNotification();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadCount } = useNotification();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -46,39 +39,6 @@ function Navbar({
     setPrevPath(location.pathname);
     setIsDropdownOpen(false);
   }
-
-  useEffect(() => {
-    const handleNotifUpdate = async () => {
-      try {
-        const user = getCurrentUser();
-        let unread = 0;
-
-        if (user && user.role === "doctor") {
-          const doc = getCurrentDoctor();
-          const docId = doc?.id ?? user?.refId ?? user?.id;
-          const notifs = await getDoctorNotifications(docId, user?.id);
-          unread = notifs.filter((n) => !n.read).length;
-        } else if (user && user.role === "patient") {
-          const patient = getCurrentPatient();
-          const pId = patient?.id ?? user?.refId ?? user?.id;
-          const notifs = await getPatientNotifications(pId, user?.id);
-          unread = notifs.filter((n) => !n.read).length;
-        }
-
-        setUnreadCount(unread);
-      } catch {
-        setUnreadCount(0);
-      }
-    };
-
-    // Initial fetch
-    handleNotifUpdate();
-
-    window.addEventListener("medibook_notifications_updated", handleNotifUpdate);
-    return () => {
-      window.removeEventListener("medibook_notifications_updated", handleNotifUpdate);
-    };
-  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -200,24 +160,19 @@ function Navbar({
       {/* Right - Notifications & User Profile */}
       <div className="navbar-right">
         {/* Notification */}
-        {(() => {
-          const displayUnread = contextUnreadCount !== undefined ? contextUnreadCount : unreadCount;
-          return (
-            <button
-              className="navbar-icon-button"
-              title="Notifications"
-              onClick={handleBellClick}
-            >
-              <Bell size={20} />
+        <button
+          className="navbar-icon-button"
+          title="Notifications"
+          onClick={handleBellClick}
+        >
+          <Bell size={20} />
 
-              {displayUnread > 0 && (
-                <span className="notification-badge">
-                  {displayUnread}
-                </span>
-              )}
-            </button>
-          );
-        })()}
+          {unreadCount > 0 && (
+            <span className="notification-badge">
+              {unreadCount}
+            </span>
+          )}
+        </button>
 
         {/* Profile Dropdown */}
         <div className="navbar-profile-container" ref={dropdownRef}>

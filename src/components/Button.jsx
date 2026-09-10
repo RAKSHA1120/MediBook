@@ -7,13 +7,17 @@ function Button({
   disabled = false,
   loading = false,
   className = "",
+  id,
+  ...rest
 }) {
   return (
     <button
+      id={id}
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
       className={`btn btn-${variant} ${className}`}
+      {...rest}
     >
       {loading ? "Loading..." : children}
     </button>

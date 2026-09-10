@@ -1,13 +1,23 @@
-import { useState, useEffect, useMemo } from "react";
-import { Eye, EyeOff, Edit, MoreVertical, Building2 } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Eye, EyeOff, Edit, MoreVertical, Building2, Check } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import Button from "../components/Button";
 import SearchBox from "../components/SearchBox";
 import Modal from "../components/Modal";
 import Input from "../components/Input";
 import StatusBadge from "../components/StatusBadge";
+import Toast from "../components/Toast";
 import { api } from "../utils/api";
 import { generateLoginId, generatePassword } from "../utils/idGenerator";
+import {
+  isValidPhoneNumber,
+  filterPhoneInput,
+  handlePhoneKeyDown,
+  PHONE_ERROR_MESSAGE
+} from "../utils/phoneValidation";
+import { validateDoctorDob, getTodayDateString } from "../utils/ageCalculation";
+import { setProvisionedCredential } from "../utils/credentialStore";
+
 import ProfileModalTrigger from "../components/ProfileModalTrigger";
 import "./AdminDoctors.css";
 import "./AdminShared.css";
@@ -24,6 +34,79 @@ function AdminDoctors() {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [newCredentials, setNewCredentials] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Credentials Modal Independent Copy States & Timers
+  const [copiedId, setCopiedId] = useState(false);
+  const [copiedPassword, setCopiedPassword] = useState(false);
+  const copyIdTimerRef = useRef(null);
+  const copyPasswordTimerRef = useRef(null);
+
+  // Toast Notification State
+  const [toast, setToast] = useState({ show: false, type: "error", title: "", message: "" });
+  const toastTimerRef = useRef(null);
+
+  const showToast = (type, title, message) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ show: true, type, title, message });
+    toastTimerRef.current = setTimeout(() => {
+      setToast((prev) => ({ ...prev, show: false }));
+    }, 4000);
+  };
+
+  const handleCopyId = async () => {
+    if (!newCredentials?.loginId) return;
+    try {
+      if (!navigator?.clipboard?.writeText) {
+        throw new Error("Clipboard API not available");
+      }
+      await navigator.clipboard.writeText(newCredentials.loginId);
+
+      if (copyIdTimerRef.current) clearTimeout(copyIdTimerRef.current);
+      setCopiedId(true);
+      copyIdTimerRef.current = setTimeout(() => {
+        setCopiedId(false);
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy Login ID:", err);
+      showToast("error", "Copy Failed", "Unable to copy Login ID to clipboard.");
+    }
+  };
+
+  const handleCopyPassword = async () => {
+    if (!newCredentials?.password) return;
+    try {
+      if (!navigator?.clipboard?.writeText) {
+        throw new Error("Clipboard API not available");
+      }
+      await navigator.clipboard.writeText(newCredentials.password);
+
+      if (copyPasswordTimerRef.current) clearTimeout(copyPasswordTimerRef.current);
+      setCopiedPassword(true);
+      copyPasswordTimerRef.current = setTimeout(() => {
+        setCopiedPassword(false);
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy password:", err);
+      showToast("error", "Copy Failed", "Unable to copy temporary password to clipboard.");
+    }
+  };
+
+  const handleCloseSuccessModal = () => {
+    if (copyIdTimerRef.current) clearTimeout(copyIdTimerRef.current);
+    if (copyPasswordTimerRef.current) clearTimeout(copyPasswordTimerRef.current);
+    setCopiedId(false);
+    setCopiedPassword(false);
+    setIsSuccessModalOpen(false);
+  };
+
+  // Cleanup timers on component unmount
+  useEffect(() => {
+    return () => {
+      if (copyIdTimerRef.current) clearTimeout(copyIdTimerRef.current);
+      if (copyPasswordTimerRef.current) clearTimeout(copyPasswordTimerRef.current);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -71,14 +154,22 @@ function AdminDoctors() {
   // Form State for Adding Doctor
   const [addFormData, setAddFormData] = useState({
     name: "",
-    qualification: "MBBS, MD",
-    specialization: "Cardiology",
+    qualification: "",
+    specialization: "",
     hospitalId: "",
     experience: "",
     email: "",
     phone: "",
     dob: ""
   });
+  const [dobError, setDobError] = useState("");
+
+  const handleDobChange = (e) => {
+    const val = e.target.value;
+    setAddFormData(prev => ({ ...prev, dob: val }));
+    const result = validateDoctorDob(val);
+    setDobError(result.error || "");
+  };
 
   // Form State for Editing Doctor
   const [editFormData, setEditFormData] = useState({
@@ -125,11 +216,25 @@ function AdminDoctors() {
   // Handle Add Doctor
   const handleAddDoctor = async (e) => {
     e.preventDefault();
+
+    // 1. Validate DOB and Minimum Age (Must be at least 23 years old)
+    const dobValidation = validateDoctorDob(addFormData.dob);
+    if (!dobValidation.valid) {
+      setDobError(dobValidation.error || "Doctor must be at least 23 years old.");
+      return;
+    }
+    setDobError("");
+
+    if (!isValidPhoneNumber(addFormData.phone)) {
+      alert(PHONE_ERROR_MESSAGE);
+      return;
+    }
+
     const dobYear = addFormData.dob ? addFormData.dob.split("-")[0] : "1985";
     const loginId = generateLoginId(addFormData.name, dobYear, doctors);
     const password = generatePassword(addFormData.name, dobYear);
 
-    // 1. Create User
+    // 2. Create User
     const userRes = await api.post("/Users", {
       name: addFormData.name.trim(),
       email: addFormData.email.trim(),
@@ -138,18 +243,20 @@ function AdminDoctors() {
     });
 
     if (!userRes.success) {
-      alert("Failed to create user account for doctor.");
+      alert(userRes.message || "Failed to create user account for doctor.");
       return;
     }
 
-    // 2. Create Doctor
+    // 3. Create Doctor
     const newDoc = {
       userId: userRes.data.id,
       name: addFormData.name.trim(),
+      qualification: addFormData.qualification ? addFormData.qualification.trim() : "",
       specialty: addFormData.specialization.trim() || "General Medicine",
       experience: parseInt(addFormData.experience.trim()) || 5,
       email: addFormData.email.trim(),
       phone: addFormData.phone.trim(),
+      dob: addFormData.dob ? addFormData.dob.trim() : null,
       isActive: true,
       hospitalId: parseInt(addFormData.hospitalId) || (hospitals.length > 0 ? hospitals[0].id : 1)
     };
@@ -158,20 +265,35 @@ function AdminDoctors() {
     if (docRes.success) {
       fetchDoctors();
       setNewCredentials({ name: addFormData.name, loginId: addFormData.email.trim(), password });
+      setProvisionedCredential(addFormData.email.trim(), {
+        password: password,
+        name: addFormData.name.trim(),
+        role: "Doctor",
+        loginId: addFormData.email.trim()
+      });
+      if (copyIdTimerRef.current) clearTimeout(copyIdTimerRef.current);
+      if (copyPasswordTimerRef.current) clearTimeout(copyPasswordTimerRef.current);
+      setCopiedId(false);
+      setCopiedPassword(false);
       setIsAddModalOpen(false);
       setIsSuccessModalOpen(true);
       setAddFormData({
         name: "",
-        qualification: "MBBS, MD",
-        specialization: "Cardiology",
+        qualification: "",
+        specialization: "",
         hospitalId: "",
         experience: "",
         email: "",
         phone: "",
         dob: ""
       });
+      setDobError("");
     } else {
-      alert("Failed to create doctor profile.");
+      const errMsg = docRes.message || "Failed to create doctor profile.";
+      alert(errMsg);
+      if (errMsg.includes("23") || errMsg.includes("Birth") || errMsg.includes("DOB") || errMsg.includes("age")) {
+        setDobError(errMsg);
+      }
     }
   };
 
@@ -181,7 +303,7 @@ function AdminDoctors() {
     setEditFormData({
       id: doc.id,
       name: doc.name || "",
-      qualification: doc.qualification || "MBBS, MD",
+      qualification: doc.qualification || "",
       specialization: doc.specialization || doc.specialty || "General Medicine",
       hospitalId: doc.hospitalId || "",
       experience: doc.experience !== undefined && doc.experience !== null ? String(doc.experience).replace(/[^0-9]/g, "") : "",
@@ -197,11 +319,18 @@ function AdminDoctors() {
   // Handle Update Doctor
   const handleSaveEditDoctor = async (e) => {
     e.preventDefault();
+
+    if (!isValidPhoneNumber(editFormData.phone)) {
+      alert(PHONE_ERROR_MESSAGE);
+      return;
+    }
+
     const updates = {
       id: editFormData.id,
       userId: selectedDoctor.userId,
       hospitalId: parseInt(editFormData.hospitalId) || selectedDoctor.hospitalId || 1,
       name: editFormData.name.trim(),
+      qualification: editFormData.qualification ? editFormData.qualification.trim() : "",
       specialty: editFormData.specialization.trim(),
       experience: parseInt(editFormData.experience.trim()) || 0,
       email: editFormData.email.trim(),
@@ -293,7 +422,7 @@ function AdminDoctors() {
         title="Doctor Management" 
         subtitle="Manage registered medical practitioners, specializations, and account credentials"
       >
-        <Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
+        <Button variant="primary" onClick={() => { setDobError(""); setIsAddModalOpen(true); }}>
           Add New Doctor
         </Button>
       </PageHeader>
@@ -495,7 +624,7 @@ function AdminDoctors() {
       {/* Add New Doctor Modal */}
       <Modal 
         isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => { setIsAddModalOpen(false); setDobError(""); }}
         title="Add New Doctor"
         className="hospital-modal-container"
       >
@@ -580,28 +709,48 @@ function AdminDoctors() {
             <div className="form-group">
               <label className="form-label">Phone Number *</label>
               <input
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
                 className="form-input"
                 value={addFormData.phone}
-                onChange={(e) => setAddFormData({ ...addFormData, phone: e.target.value })}
-                placeholder="e.g. +91 9876543210"
+                onKeyDown={handlePhoneKeyDown}
+                onChange={(e) => setAddFormData({ ...addFormData, phone: filterPhoneInput(e.target.value) })}
+                placeholder="e.g. 9876543210"
                 required
               />
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Date of Birth</label>
+            <label className="form-label">Date of Birth *</label>
             <input
               type="date"
-              className="form-input"
+              className={`form-input ${dobError ? "input-error" : ""}`}
+              style={dobError ? { borderColor: "#ef4444" } : {}}
               value={addFormData.dob}
-              onChange={(e) => setAddFormData({ ...addFormData, dob: e.target.value })}
+              max={getTodayDateString()}
+              onChange={handleDobChange}
+              required
             />
+            {dobError && (
+              <span
+                className="form-error-message"
+                style={{
+                  color: "#ef4444",
+                  fontSize: "12px",
+                  marginTop: "4px",
+                  display: "block",
+                  fontWeight: "500"
+                }}
+              >
+                {dobError}
+              </span>
+            )}
           </div>
           
           <div className="form-actions">
-            <Button variant="outline" type="button" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+            <Button variant="outline" type="button" onClick={() => { setIsAddModalOpen(false); setDobError(""); }}>Cancel</Button>
             <Button variant="primary" type="submit">Create Doctor Account</Button>
           </div>
         </form>
@@ -632,7 +781,7 @@ function AdminDoctors() {
               <div>
                 <label className="form-label" style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>QUALIFICATION</label>
                 <div style={{ fontSize: "14.5px", fontWeight: "500", color: "var(--text-heading)", marginTop: "4px" }}>
-                  {selectedDoctor.qualification || "MBBS, MD"}
+                  {selectedDoctor.qualification || "Not provided"}
                 </div>
               </div>
               <div>
@@ -766,10 +915,14 @@ function AdminDoctors() {
             <div className="form-group">
               <label className="form-label">Phone Number *</label>
               <input
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
                 className="form-input"
                 value={editFormData.phone}
-                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                onKeyDown={handlePhoneKeyDown}
+                onChange={(e) => setEditFormData({ ...editFormData, phone: filterPhoneInput(e.target.value) })}
+                placeholder="e.g. 9876543210"
                 required
               />
             </div>
@@ -809,7 +962,7 @@ function AdminDoctors() {
       {/* Credentials Success Modal */}
       <Modal
         isOpen={isSuccessModalOpen}
-        onClose={() => setIsSuccessModalOpen(false)}
+        onClose={handleCloseSuccessModal}
         title="Doctor Account Created Successfully"
       >
         {newCredentials && (
@@ -822,25 +975,71 @@ function AdminDoctors() {
               <div className="credential-row">
                 <span className="credential-label">Login ID:</span>
                 <span className="credential-value">{newCredentials.loginId}</span>
-                <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(newCredentials.loginId)}>
-                  Copy ID
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleCopyId}
+                  style={{
+                    minWidth: "125px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    ...(copiedId ? { color: "#16a34a", borderColor: "#16a34a", fontWeight: "600" } : {})
+                  }}
+                >
+                  {copiedId ? (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                      <Check size={14} /> ✓ Copied!
+                    </span>
+                  ) : (
+                    "Copy ID"
+                  )}
                 </Button>
               </div>
               <div className="credential-row">
                 <span className="credential-label">Temporary Password:</span>
                 <span className="credential-value password-value">{newCredentials.password}</span>
-                <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(newCredentials.password)}>
-                  Copy Password
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleCopyPassword}
+                  style={{
+                    minWidth: "125px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    ...(copiedPassword ? { color: "#16a34a", borderColor: "#16a34a", fontWeight: "600" } : {})
+                  }}
+                >
+                  {copiedPassword ? (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                      <Check size={14} /> ✓ Copied!
+                    </span>
+                  ) : (
+                    "Copy Password"
+                  )}
                 </Button>
               </div>
             </div>
 
             <div className="modal-actions">
-              <Button variant="primary" onClick={() => setIsSuccessModalOpen(false)}>Done</Button>
+              <Button variant="primary" onClick={handleCloseSuccessModal}>Done</Button>
             </div>
           </div>
         )}
       </Modal>
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className="toast-container" style={{ position: "fixed", top: "24px", right: "24px", zIndex: 9999 }}>
+          <Toast
+            type={toast.type}
+            title={toast.title}
+            message={toast.message}
+            onClose={() => setToast((prev) => ({ ...prev, show: false }))}
+          />
+        </div>
+      )}
     </div>
   );
 }

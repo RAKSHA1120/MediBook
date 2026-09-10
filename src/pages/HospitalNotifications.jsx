@@ -93,6 +93,7 @@ function HospitalNotifications() {
       }
     }
     loadHospitalNotifications();
+    window.dispatchEvent(new Event("medibook_notifications_updated"));
   };
 
   const handleCardClick = async (notif) => {
@@ -100,6 +101,7 @@ function HospitalNotifications() {
       try {
         await api.put(`/Notifications/${notif.id}/read`);
         loadHospitalNotifications();
+        window.dispatchEvent(new Event("medibook_notifications_updated"));
       } catch (e) {
         console.error(e);
       }

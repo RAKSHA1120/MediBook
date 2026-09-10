@@ -7,6 +7,7 @@ function FormField({
     required = false,
     disabled = false,
     type = "text",
+    ...props
 }) {
     return (
         <div className="form-field">
@@ -25,6 +26,7 @@ function FormField({
                 value={value}
                 onChange={onChange}
                 disabled={disabled}
+                {...props}
             />
 
             {error && (

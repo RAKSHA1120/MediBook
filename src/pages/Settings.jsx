@@ -26,6 +26,12 @@ import {
   savePatientProfile,
   getPatientInitials
 } from "../data/patientProfile";
+import {
+  isValidPhoneNumber,
+  filterPhoneInput,
+  handlePhoneKeyDown,
+  PHONE_ERROR_MESSAGE
+} from "../utils/phoneValidation";
 import "./Settings.css";
 
 const SETTINGS_STORAGE_KEY = "medibook_settings";
@@ -133,7 +139,7 @@ function Settings() {
           setAccountFormData({
             name: updated.name || "Raksha",
             email: updated.email || "raksha@example.com",
-            phone: updated.phone || "+91 98765 43210"
+            phone: updated.phone || "9876543210"
           });
         }
       } catch (e) {}
@@ -146,6 +152,10 @@ function Settings() {
   const handleSaveAccount = () => {
     if (!accountFormData.name.trim() || !accountFormData.email.trim() || !accountFormData.phone.trim()) {
       showNotification("Validation Error", "All fields are required.", "error");
+      return;
+    }
+    if (!isValidPhoneNumber(accountFormData.phone)) {
+      showNotification("Validation Error", PHONE_ERROR_MESSAGE, "error");
       return;
     }
 
@@ -301,10 +311,19 @@ function Settings() {
               </label>
               <input
                 id="settings-phone"
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
                 className="settings-field-input"
                 value={accountFormData.phone}
-                onChange={(e) => setAccountFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                onKeyDown={handlePhoneKeyDown}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const text = (e.clipboardData || window.clipboardData)?.getData("text") || "";
+                  setAccountFormData((prev) => ({ ...prev, phone: filterPhoneInput(text) }));
+                }}
+                onChange={(e) => setAccountFormData((prev) => ({ ...prev, phone: filterPhoneInput(e.target.value) }))}
+                placeholder="Enter 10-digit mobile number"
               />
             </div>
 

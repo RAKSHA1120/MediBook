@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
+
 namespace MediBook.Api.Models
 {
     public class Doctor
@@ -27,6 +30,62 @@ namespace MediBook.Api.Models
         public bool IsActive { get; set; } = true;
 
         public string? ProfileImageUrl { get; set; }
+
+        // Transient DOB properties for creation validation (Not mapped to DB schema)
+        [NotMapped]
+        [JsonIgnore]
+        public DateTime? DOB { get; set; }
+
+        [NotMapped]
+        [JsonIgnore]
+        public bool IsDobProvided { get; set; }
+
+        [NotMapped]
+        [JsonIgnore]
+        public bool HasInvalidDobFormat { get; set; }
+
+        [NotMapped]
+        [JsonPropertyName("dob")]
+        public object? DobRaw
+        {
+            get => DOB?.ToString("yyyy-MM-dd");
+            set
+            {
+                if (value == null)
+                {
+                    DOB = null;
+                    IsDobProvided = false;
+                    return;
+                }
+
+                string str = value.ToString()?.Trim() ?? string.Empty;
+                if (string.IsNullOrEmpty(str))
+                {
+                    DOB = null;
+                    IsDobProvided = false;
+                    return;
+                }
+
+                IsDobProvided = true;
+                if (DateTime.TryParse(str, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var dt) ||
+                    DateTime.TryParse(str, out dt))
+                {
+                    DOB = dt;
+                }
+                else
+                {
+                    HasInvalidDobFormat = true;
+                }
+            }
+        }
+
+        [NotMapped]
+        [JsonPropertyName("dateOfBirth")]
+        public object? DateOfBirthRaw
+        {
+            get => DobRaw;
+            set => DobRaw = value;
+        }
 
         // Relationship with User
         public User? User { get; set; }

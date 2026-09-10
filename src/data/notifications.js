@@ -202,11 +202,8 @@ const mapApiNotification = (n) => ({
 export const markAllNotificationsAsRead = async (patientId, userId) => {
   try {
     const notifs = await getPatientNotifications(patientId, userId);
-    for (const n of notifs) {
-      if (!n.read) {
-         await api.put(`/Notifications/${n.id}/read`);
-      }
-    }
+    const unread = notifs.filter((n) => !n.read && !n.isRead);
+    await Promise.allSettled(unread.map((n) => api.put(`/Notifications/${n.id}/read`)));
     window.dispatchEvent(new Event("medibook_notifications_updated"));
     return [];
   } catch (e) {
@@ -217,11 +214,8 @@ export const markAllNotificationsAsRead = async (patientId, userId) => {
 export const markAllDoctorNotificationsAsRead = async (doctorId, userId) => {
   try {
     const notifs = await getDoctorNotifications(doctorId, userId);
-    for (const n of notifs) {
-      if (!n.read) {
-         await api.put(`/Notifications/${n.id}/read`);
-      }
-    }
+    const unread = notifs.filter((n) => !n.read && !n.isRead);
+    await Promise.allSettled(unread.map((n) => api.put(`/Notifications/${n.id}/read`)));
     window.dispatchEvent(new Event("medibook_notifications_updated"));
     return [];
   } catch (e) {

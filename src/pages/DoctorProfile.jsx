@@ -20,6 +20,13 @@ import SecondaryButton from "../components/SecondaryButton";
 import Toast from "../components/Toast";
 import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
 import { api } from "../utils/api";
+import {
+  isValidPhoneNumber,
+  filterPhoneInput,
+  handlePhoneKeyDown,
+  PHONE_ERROR_MESSAGE
+} from "../utils/phoneValidation";
+
 import ProfileImageUploader from "../components/ProfileImageUploader";
 import "./DoctorProfile.css";
 
@@ -38,8 +45,8 @@ function DoctorProfile() {
     const user = getCurrentUser();
 
     // Extract clean mobile (ensure NO email address is put into mobile field)
-    let phone = "9876543210";
-    const candidates = [doc?.phone, doc?.contact, user?.mobile];
+    let phone = "";
+    const candidates = [doc?.phone, doc?.mobile, doc?.contact, user?.phone, user?.mobile];
     for (const cand of candidates) {
       if (cand && typeof cand === "string" && !cand.includes("@")) {
         const trimmed = cand.trim();
@@ -51,36 +58,40 @@ function DoctorProfile() {
     }
 
     // Extract clean email
-    let email = `${user?.loginId || "doctor"}@medibook.com`;
+    let email = "";
     if (doc?.email && typeof doc.email === "string" && doc.email.includes("@")) {
       email = doc.email.trim();
     } else if (user?.loginId && typeof user.loginId === "string" && user.loginId.includes("@")) {
       email = user.loginId.trim();
+    } else if (user?.email && typeof user.email === "string" && user.email.includes("@")) {
+      email = user.email.trim();
     }
 
-    const name = doc?.name
-      ? (doc.name.toLowerCase().startsWith("dr.") ? doc.name : `Dr. ${doc.name}`)
-      : (user?.name
-        ? (user.name.toLowerCase().startsWith("dr.") ? user.name : `Dr. ${user.name}`)
-        : "Dr. Sarah Smith");
+    const rawName = doc?.name || user?.name || "";
+    const name = rawName
+      ? (rawName.toLowerCase().startsWith("dr.") ? rawName : `Dr. ${rawName}`)
+      : "";
+
+    const hospObj = (typeof doc?.hospital === "object" && doc?.hospital !== null) ? doc.hospital : null;
+    const hospName = hospObj ? (hospObj.name || "") : (typeof doc?.hospital === "string" ? doc.hospital : "");
 
     return {
-      id: doc?.id || user?.refId || "D1",
+      id: doc?.id || user?.doctorId || user?.refId || "",
       name: name,
       phone: phone,
       email: email,
       role: "DOCTOR",
-      specialty: doc?.specialty || doc?.specialization || "Cardiology",
-      qualification: doc?.qualification || "MD, DM",
-      experience: doc?.experience || 12,
-      consultationFee: doc?.consultationFee || doc?.fee || 1000,
-      registrationNumber: doc?.registrationNumber || "REG-2018-94821",
-      hospital: doc?.hospital || "City Heart Center",
-      department: doc?.department || doc?.specialty || "Cardiology",
-      hospitalAddress: doc?.address || doc?.hospitalAddress || "123 Healthcare Ave, Block B",
-      city: doc?.location || doc?.city || "Bangalore",
-      state: doc?.state || "Karnataka",
-      hospitalContact: doc?.hospitalContact || "+91 80 4123 4567",
+      specialty: doc?.specialty || doc?.specialization || "",
+      qualification: doc?.qualification || "",
+      experience: doc?.experience !== undefined && doc?.experience !== null ? doc.experience : "",
+      consultationFee: doc?.consultationFee !== undefined && doc?.consultationFee !== null ? doc.consultationFee : "",
+      registrationNumber: doc?.registrationNumber || "",
+      hospital: hospName,
+      department: doc?.department || doc?.specialty || doc?.specialization || "",
+      hospitalAddress: hospObj?.address || doc?.hospitalAddress || "",
+      city: hospObj?.city || doc?.city || "",
+      state: doc?.state || "",
+      hospitalContact: hospObj?.phone || doc?.hospitalContact || "",
       profileImageUrl: doc?.profileImageUrl || user?.profileImageUrl || null
     };
   }
@@ -91,6 +102,81 @@ function DoctorProfile() {
       setToast((prev) => ({ ...prev, show: false }));
     }, 4500);
   };
+
+  // Fetch real doctor profile from backend on mount
+  const fetchDoctorProfile = async () => {
+    try {
+      const user = getCurrentUser();
+      const doc = getCurrentDoctor();
+      const doctorId = user?.doctorId || user?.refId || doc?.doctorId || doc?.id;
+      const userId = user?.id;
+
+      let doctorData = null;
+
+      if (doctorId) {
+        const res = await api.get(`/Doctors/${doctorId}`);
+        if (res.success && res.data) {
+          doctorData = res.data;
+        }
+      }
+
+      if (!doctorData && userId) {
+        const resUser = await api.get(`/Doctors/user/${userId}`);
+        if (resUser.success && resUser.data) {
+          doctorData = resUser.data;
+        }
+      }
+
+      if (doctorData) {
+        const hospObj = (typeof doctorData.hospital === "object" && doctorData.hospital !== null) ? doctorData.hospital : null;
+        const hospName = hospObj ? (hospObj.name || "") : (typeof doctorData.hospital === "string" ? doctorData.hospital : "");
+
+        const rawName = doctorData.name || user?.name || "";
+        const formattedName = rawName
+          ? (rawName.toLowerCase().startsWith("dr.") ? rawName : `Dr. ${rawName}`)
+          : "";
+
+        const cleanPhone = doctorData.phone || doctorData.mobile || user?.mobile || "";
+        const cleanEmail = doctorData.email || user?.loginId || user?.email || "";
+
+        const mapped = {
+          id: doctorData.id,
+          name: formattedName,
+          phone: cleanPhone,
+          email: cleanEmail,
+          role: "DOCTOR",
+          specialty: doctorData.specialty || doctorData.specialization || "",
+          qualification: doctorData.qualification || "",
+          experience: doctorData.experience !== undefined && doctorData.experience !== null ? doctorData.experience : "",
+          consultationFee: doctorData.consultationFee !== undefined && doctorData.consultationFee !== null ? doctorData.consultationFee : "",
+          registrationNumber: doctorData.registrationNumber || "",
+          hospital: hospName,
+          department: doctorData.specialty || doctorData.specialization || "",
+          hospitalAddress: hospObj?.address || doctorData.hospitalAddress || "",
+          city: hospObj?.city || doctorData.city || "",
+          state: doctorData.state || "",
+          hospitalContact: hospObj?.phone || doctorData.hospitalContact || "",
+          profileImageUrl: doctorData.profileImageUrl || user?.profileImageUrl || null
+        };
+
+        setProfile(mapped);
+        setFormData(mapped);
+
+        if (user) {
+          user.doctorId = doctorData.id;
+          user.doctor = doctorData;
+          if (doctorData.profileImageUrl) user.profileImageUrl = doctorData.profileImageUrl;
+          sessionStorage.setItem("medibook_current_user", JSON.stringify(user));
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load doctor profile:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchDoctorProfile();
+  }, []);
 
   // Sync profile if external update occurs
   useEffect(() => {
@@ -125,10 +211,13 @@ function DoctorProfile() {
 
     if (!formData.phone || !formData.phone.trim()) {
       newErrors.phone = "Mobile number is required";
-    } else {
-      const cleanPhone = formData.phone.replace(/[^0-9]/g, "");
-      if (cleanPhone.length < 10) {
-        newErrors.phone = "Enter a valid 10-digit mobile number";
+    } else if (!isValidPhoneNumber(formData.phone)) {
+      newErrors.phone = PHONE_ERROR_MESSAGE;
+    }
+
+    if (formData.hospitalContact && formData.hospitalContact.trim()) {
+      if (!isValidPhoneNumber(formData.hospitalContact)) {
+        newErrors.hospitalContact = PHONE_ERROR_MESSAGE;
       }
     }
 
@@ -142,24 +231,16 @@ function DoctorProfile() {
       newErrors.specialty = "Specialization is required";
     }
 
-    if (!formData.qualification || !formData.qualification.trim()) {
-      newErrors.qualification = "Qualification is required";
+    if (formData.experience !== "" && formData.experience !== null && formData.experience !== undefined) {
+      if (Number(formData.experience) < 0 || isNaN(Number(formData.experience))) {
+        newErrors.experience = "Valid experience in years is required";
+      }
     }
 
-    if (!formData.experience || Number(formData.experience) < 0) {
-      newErrors.experience = "Valid experience in years is required";
-    }
-
-    if (!formData.consultationFee || Number(formData.consultationFee) < 0) {
-      newErrors.consultationFee = "Valid consultation fee is required";
-    }
-
-    if (!formData.hospital || !formData.hospital.trim()) {
-      newErrors.hospital = "Hospital name is required";
-    }
-
-    if (!formData.city || !formData.city.trim()) {
-      newErrors.city = "City is required";
+    if (formData.consultationFee !== "" && formData.consultationFee !== null && formData.consultationFee !== undefined) {
+      if (Number(formData.consultationFee) < 0 || isNaN(Number(formData.consultationFee))) {
+        newErrors.consultationFee = "Valid consultation fee is required";
+      }
     }
 
     setErrors(newErrors);
@@ -191,13 +272,12 @@ function DoctorProfile() {
     const updatedProfile = {
       ...formData,
       name: formattedName,
-      specialty: formData.specialty.trim(),
-      specialization: formData.specialty.trim(),
-      qualification: formData.qualification.trim(),
-      experience: Number(formData.experience),
-      consultationFee: Number(formData.consultationFee),
-      fee: Number(formData.consultationFee),
-      location: formData.city.trim(),
+      specialty: formData.specialty ? formData.specialty.trim() : "",
+      specialization: formData.specialty ? formData.specialty.trim() : "",
+      qualification: formData.qualification ? formData.qualification.trim() : "",
+      experience: formData.experience !== "" && formData.experience !== null ? Number(formData.experience) : null,
+      consultationFee: formData.consultationFee !== "" && formData.consultationFee !== null ? Number(formData.consultationFee) : null,
+      fee: formData.consultationFee !== "" && formData.consultationFee !== null ? Number(formData.consultationFee) : null,
       phone: formData.phone.trim(),
       contact: formData.phone.trim(),
       email: formData.email.trim()
@@ -207,23 +287,28 @@ function DoctorProfile() {
     try {
       const user = getCurrentUser();
       const doc = getCurrentDoctor();
-      const doctorId = user?.doctorId || doc?.id || profile?.id;
+      const doctorId = user?.doctorId || user?.refId || doc?.id || profile?.id;
       if (doctorId) {
         const getRes = await api.get(`/Doctors/${doctorId}`);
-        if (getRes.success) {
-          const existing = getRes.data;
-          const putBody = {
-            ...existing,
-            name: formattedName,
-            phone: formData.phone.trim(),
-            email: formData.email.trim(),
-            specialty: formData.specialty.trim(),
-            experience: Number(formData.experience),
-            qualification: formData.qualification.trim(),
-            consultationFee: Number(formData.consultationFee),
-            registrationNumber: formData.registrationNumber?.trim() || ""
-          };
-          await api.put(`/Doctors/${doctorId}`, putBody);
+        const existing = getRes.success ? getRes.data : {};
+        const putBody = {
+          ...existing,
+          id: Number(doctorId),
+          name: formattedName,
+          phone: formData.phone.trim(),
+          email: formData.email.trim(),
+          specialty: formData.specialty ? formData.specialty.trim() : existing.specialty || "",
+          experience: formData.experience !== "" && formData.experience !== null ? Number(formData.experience) : existing.experience,
+          qualification: formData.qualification ? formData.qualification.trim() : existing.qualification,
+          consultationFee: formData.consultationFee !== "" && formData.consultationFee !== null ? Number(formData.consultationFee) : existing.consultationFee,
+          registrationNumber: formData.registrationNumber ? formData.registrationNumber.trim() : existing.registrationNumber
+        };
+        await api.put(`/Doctors/${doctorId}`, putBody);
+
+        if (user) {
+          user.name = formattedName;
+          user.doctor = { ...user.doctor, ...putBody };
+          sessionStorage.setItem("medibook_current_user", JSON.stringify(user));
         }
       }
     } catch (err) {
@@ -244,13 +329,13 @@ function DoctorProfile() {
   };
 
   // Derive initials for doctor avatar
-  const cleanName = profile.name.replace(/^dr\.\s+/i, "").trim();
+  const cleanName = (profile.name || "Doctor").replace(/^dr\.\s+/i, "").trim();
   const initials = cleanName
     .split(" ")
     .map((n) => n[0])
     .join("")
     .toUpperCase()
-    .slice(0, 2) || "SS";
+    .slice(0, 2) || "DR";
 
   const handleImageUpdated = (newImageUrl) => {
     setProfile(prev => ({ ...prev, profileImageUrl: newImageUrl }));
@@ -329,42 +414,50 @@ function DoctorProfile() {
           <div className="profile-grid-2col">
             <div className="profile-field-group">
               <span className="field-label">Full Name</span>
-              <div className="field-value-text">{profile.name}</div>
+              <div className="field-value-text">{profile.name || "Not provided"}</div>
             </div>
 
             <div className="profile-field-group">
               <span className="field-label">Mobile Number</span>
-              <div className="field-value-text">{profile.phone}</div>
+              <div className="field-value-text">{profile.phone || "Not provided"}</div>
             </div>
 
             <div className="profile-field-group">
               <span className="field-label">Email Address</span>
-              <div className="field-value-text">{profile.email}</div>
+              <div className="field-value-text">{profile.email || "Not provided"}</div>
             </div>
 
             <div className="profile-field-group">
               <span className="field-label">Specialization</span>
-              <div className="field-value-text">{profile.specialty}</div>
+              <div className="field-value-text">{profile.specialty || profile.specialization || "Not specified"}</div>
             </div>
 
             <div className="profile-field-group">
               <span className="field-label">Qualification</span>
-              <div className="field-value-text">{profile.qualification}</div>
+              <div className="field-value-text">{profile.qualification || "Not provided"}</div>
             </div>
 
             <div className="profile-field-group">
               <span className="field-label">Years of Experience</span>
-              <div className="field-value-text">{profile.experience} Years</div>
+              <div className="field-value-text">
+                {profile.experience !== "" && profile.experience !== null && profile.experience !== undefined
+                  ? `${profile.experience} Years`
+                  : "Not provided"}
+              </div>
             </div>
 
             <div className="profile-field-group">
               <span className="field-label">Consultation Fee</span>
-              <div className="field-value-text">₹{profile.consultationFee}</div>
+              <div className="field-value-text">
+                {profile.consultationFee !== "" && profile.consultationFee !== null && profile.consultationFee !== undefined
+                  ? `₹${profile.consultationFee}`
+                  : "Not set"}
+              </div>
             </div>
 
             <div className="profile-field-group">
               <span className="field-label">Medical Registration Number</span>
-              <div className="field-value-text">{profile.registrationNumber}</div>
+              <div className="field-value-text">{profile.registrationNumber || "Not provided"}</div>
             </div>
           </div>
         ) : (
@@ -380,7 +473,7 @@ function DoctorProfile() {
                 className={`field-input ${errors.name ? "has-error" : ""}`}
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
-                placeholder="Dr. Sarah Smith"
+                placeholder="e.g. Dr. John Doe"
               />
               {errors.name && <span className="field-error-text">{errors.name}</span>}
             </div>
@@ -391,11 +484,14 @@ function DoctorProfile() {
               </label>
               <input
                 id="input-doc-phone"
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
                 className={`field-input ${errors.phone ? "has-error" : ""}`}
                 value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                placeholder="+91 98765 43210"
+                onKeyDown={handlePhoneKeyDown}
+                onChange={(e) => handleInputChange("phone", filterPhoneInput(e.target.value))}
+                placeholder="Enter 10-digit mobile number"
               />
               {errors.phone && <span className="field-error-text">{errors.phone}</span>}
             </div>
@@ -425,7 +521,7 @@ function DoctorProfile() {
                 className={`field-input ${errors.specialty ? "has-error" : ""}`}
                 value={formData.specialty}
                 onChange={(e) => handleInputChange("specialty", e.target.value)}
-                placeholder="Cardiology"
+                placeholder="e.g. General Medicine, Cardiology"
               />
               {errors.specialty && <span className="field-error-text">{errors.specialty}</span>}
             </div>
@@ -440,7 +536,7 @@ function DoctorProfile() {
                 className={`field-input ${errors.qualification ? "has-error" : ""}`}
                 value={formData.qualification}
                 onChange={(e) => handleInputChange("qualification", e.target.value)}
-                placeholder="MD, DM"
+                placeholder="e.g. MBBS, MD"
               />
               {errors.qualification && <span className="field-error-text">{errors.qualification}</span>}
             </div>
@@ -455,7 +551,7 @@ function DoctorProfile() {
                 className={`field-input ${errors.experience ? "has-error" : ""}`}
                 value={formData.experience}
                 onChange={(e) => handleInputChange("experience", e.target.value)}
-                placeholder="12"
+                placeholder="e.g. 5"
               />
               {errors.experience && <span className="field-error-text">{errors.experience}</span>}
             </div>
@@ -470,7 +566,7 @@ function DoctorProfile() {
                 className={`field-input ${errors.consultationFee ? "has-error" : ""}`}
                 value={formData.consultationFee}
                 onChange={(e) => handleInputChange("consultationFee", e.target.value)}
-                placeholder="1000"
+                placeholder="e.g. 500"
               />
               {errors.consultationFee && <span className="field-error-text">{errors.consultationFee}</span>}
             </div>
@@ -485,7 +581,7 @@ function DoctorProfile() {
                 className="field-input"
                 value={formData.registrationNumber}
                 onChange={(e) => handleInputChange("registrationNumber", e.target.value)}
-                placeholder="REG-2018-94821"
+                placeholder="e.g. REG-12345"
               />
             </div>
           </div>
@@ -504,32 +600,32 @@ function DoctorProfile() {
           <div className="profile-grid-2col">
             <div className="profile-field-group">
               <span className="field-label">Hospital Name</span>
-              <div className="field-value-text">{profile.hospital}</div>
+              <div className="field-value-text">{profile.hospital || "Not assigned"}</div>
             </div>
 
             <div className="profile-field-group">
               <span className="field-label">Department / Specialization</span>
-              <div className="field-value-text">{profile.department}</div>
+              <div className="field-value-text">{profile.department || profile.specialty || "Not specified"}</div>
             </div>
 
             <div className="profile-field-group full-width">
               <span className="field-label">Hospital Address</span>
-              <div className="field-value-text">{profile.hospitalAddress}</div>
+              <div className="field-value-text">{profile.hospitalAddress || "Not provided"}</div>
             </div>
 
             <div className="profile-field-group">
               <span className="field-label">City</span>
-              <div className="field-value-text">{profile.city}</div>
+              <div className="field-value-text">{profile.city || "Not provided"}</div>
             </div>
 
             <div className="profile-field-group">
               <span className="field-label">State</span>
-              <div className="field-value-text">{profile.state}</div>
+              <div className="field-value-text">{profile.state || "Not provided"}</div>
             </div>
 
             <div className="profile-field-group full-width">
               <span className="field-label">Hospital Contact Information</span>
-              <div className="field-value-text">{profile.hospitalContact}</div>
+              <div className="field-value-text">{profile.hospitalContact || "Not provided"}</div>
             </div>
           </div>
         ) : (
@@ -537,7 +633,7 @@ function DoctorProfile() {
           <div className="profile-grid-2col">
             <div className="profile-field-group">
               <label className="field-label" htmlFor="input-hosp-name">
-                Hospital Name *
+                Hospital Name
               </label>
               <input
                 id="input-hosp-name"
@@ -545,7 +641,7 @@ function DoctorProfile() {
                 className={`field-input ${errors.hospital ? "has-error" : ""}`}
                 value={formData.hospital}
                 onChange={(e) => handleInputChange("hospital", e.target.value)}
-                placeholder="City Heart Center"
+                placeholder="e.g. MediCare Hospital"
               />
               {errors.hospital && <span className="field-error-text">{errors.hospital}</span>}
             </div>
@@ -560,7 +656,7 @@ function DoctorProfile() {
                 className="field-input"
                 value={formData.department}
                 onChange={(e) => handleInputChange("department", e.target.value)}
-                placeholder="Cardiology"
+                placeholder="e.g. General Medicine"
               />
             </div>
 
@@ -574,13 +670,13 @@ function DoctorProfile() {
                 className="field-input"
                 value={formData.hospitalAddress}
                 onChange={(e) => handleInputChange("hospitalAddress", e.target.value)}
-                placeholder="123 Healthcare Ave, Block B"
+                placeholder="e.g. 123 Healthcare Ave"
               />
             </div>
 
             <div className="profile-field-group">
               <label className="field-label" htmlFor="input-hosp-city">
-                City *
+                City
               </label>
               <input
                 id="input-hosp-city"
@@ -588,7 +684,7 @@ function DoctorProfile() {
                 className={`field-input ${errors.city ? "has-error" : ""}`}
                 value={formData.city}
                 onChange={(e) => handleInputChange("city", e.target.value)}
-                placeholder="Bangalore"
+                placeholder="e.g. Chennai"
               />
               {errors.city && <span className="field-error-text">{errors.city}</span>}
             </div>
@@ -603,7 +699,7 @@ function DoctorProfile() {
                 className="field-input"
                 value={formData.state}
                 onChange={(e) => handleInputChange("state", e.target.value)}
-                placeholder="Karnataka"
+                placeholder="e.g. Tamil Nadu"
               />
             </div>
 
@@ -613,12 +709,16 @@ function DoctorProfile() {
               </label>
               <input
                 id="input-hosp-contact"
-                type="text"
-                className="field-input"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                className={`field-input ${errors.hospitalContact ? "has-error" : ""}`}
                 value={formData.hospitalContact}
-                onChange={(e) => handleInputChange("hospitalContact", e.target.value)}
-                placeholder="+91 80 4123 4567"
+                onKeyDown={handlePhoneKeyDown}
+                onChange={(e) => handleInputChange("hospitalContact", filterPhoneInput(e.target.value))}
+                placeholder="Enter 10-digit contact number"
               />
+              {errors.hospitalContact && <span className="field-error-text">{errors.hospitalContact}</span>}
             </div>
           </div>
         )}

@@ -1,5 +1,6 @@
 using MediBook.Api.Data;
 using MediBook.Api.Models;
+using MediBook.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +35,11 @@ namespace MediBook.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateHospital(Hospital hospital)
         {
+            if (!string.IsNullOrEmpty(hospital.Phone) && !PhoneNumberValidator.IsValid(hospital.Phone))
+            {
+                return BadRequest(new { message = PhoneNumberValidator.ErrorMessage });
+            }
+
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -89,6 +95,12 @@ namespace MediBook.Api.Controllers
         public async Task<IActionResult> UpdateHospital(int id, Hospital hospital)
         {
             if (id != hospital.Id) return BadRequest();
+
+            if (!string.IsNullOrEmpty(hospital.Phone) && !PhoneNumberValidator.IsValid(hospital.Phone))
+            {
+                return BadRequest(new { message = PhoneNumberValidator.ErrorMessage });
+            }
+
             _context.Entry(hospital).State = EntityState.Modified;
             try
             {

@@ -7,6 +7,14 @@ import Modal from "../components/Modal";
 import StatusBadge from "../components/StatusBadge";
 import "./AdminShared.css";
 import { api } from "../utils/api";
+import {
+  isValidPhoneNumber,
+  filterPhoneInput,
+  handlePhoneKeyDown,
+  PHONE_ERROR_MESSAGE
+} from "../utils/phoneValidation";
+import { setProvisionedCredential } from "../utils/credentialStore";
+
 import ProfileModalTrigger from "../components/ProfileModalTrigger";
 
 function AdminHospitals() {
@@ -118,6 +126,10 @@ function AdminHospitals() {
       setErrorMessage("Contact Number is required.");
       return;
     }
+    if (!isValidPhoneNumber(formData.contact)) {
+      setErrorMessage(PHONE_ERROR_MESSAGE);
+      return;
+    }
     if (!formData.email.trim()) {
       setErrorMessage("Email Address is required.");
       return;
@@ -147,6 +159,14 @@ function AdminHospitals() {
       if (response.success) {
         fetchHospitals();
         setNewCredentials(response.data);
+        if (response.data && response.data.temporaryPassword && response.data.loginId) {
+          setProvisionedCredential(response.data.loginId, {
+            password: response.data.temporaryPassword,
+            name: response.data.hospitalName || payload.name,
+            role: "Hospital",
+            loginId: response.data.loginId
+          });
+        }
         setIsSuccessModalOpen(true);
       } else {
         alert("Failed to create hospital: " + (response.error || "Unknown error"));
@@ -428,11 +448,15 @@ function AdminHospitals() {
             <div className="form-group">
               <label className="form-label">Contact Number *</label>
               <input
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
                 className="form-input"
                 value={formData.contact}
-                onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                placeholder="e.g. +91 80 2345 6789"
+                onKeyDown={handlePhoneKeyDown}
+                onChange={(e) => setFormData({ ...formData, contact: filterPhoneInput(e.target.value) })}
+                placeholder="e.g. 9876543210"
+                required
               />
             </div>
 

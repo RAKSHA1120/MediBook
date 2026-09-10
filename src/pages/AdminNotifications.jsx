@@ -1,51 +1,28 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCheck, Bell, Calendar, Info, BellOff } from "lucide-react";
+import { CheckCheck, Bell, Calendar, Info, BellOff, Trash2 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import NotificationCard from "../components/NotificationCard";
-import { getCurrentUser } from "../utils/auth";
-import { api } from "../utils/api";
+import { useNotification } from "../context/NotificationContext";
 
 import "./Notifications.css";
 
 function AdminNotifications() {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState([]);
+  const {
+    notifications,
+    unreadCount,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+    clearAll,
+  } = useNotification();
   const [activeTab, setActiveTab] = useState("all");
 
   useEffect(() => {
-    loadAdminNotifications();
-
-    const handleUpdate = () => loadAdminNotifications();
-    window.addEventListener("medibook_notifications_updated", handleUpdate);
-    return () => window.removeEventListener("medibook_notifications_updated", handleUpdate);
-  }, []);
-
-  const loadAdminNotifications = async () => {
-    const user = getCurrentUser();
-    try {
-      const endpoint = user?.id ? `/Notifications/user/${user.id}` : "/Notifications";
-      const res = await api.get(endpoint);
-      if (res.success && Array.isArray(res.data)) {
-        setNotifications(
-          res.data.map((n) => ({
-            id: n.id,
-            title: n.title,
-            message: n.message,
-            type: n.type || "appointment",
-            read: n.isRead,
-            isRead: n.isRead,
-            appointmentId: n.appointmentId,
-            createdAt: n.createdAt,
-            timestamp: n.createdAt,
-          }))
-        );
-      }
-    } catch (e) {
-      console.warn("Failed to load admin notifications", e);
-    }
-  };
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   const counts = useMemo(() => {
     const all = notifications.length;
@@ -74,27 +51,20 @@ function AdminNotifications() {
   }, [notifications, activeTab]);
 
   const handleMarkAll = async () => {
-    const unreadItems = notifications.filter((n) => !n.read && !n.isRead);
-    for (const item of unreadItems) {
-      try {
-        await api.put(`/Notifications/${item.id}/read`);
-      } catch (e) {}
-    }
-    await loadAdminNotifications();
-    window.dispatchEvent(new Event("medibook_notifications_updated"));
+    await markAllAsRead();
   };
 
   const handleCardClick = async (notif) => {
     if (!notif.read && !notif.isRead) {
-      try {
-        await api.put(`/Notifications/${notif.id}/read`);
-        window.dispatchEvent(new Event("medibook_notifications_updated"));
-      } catch (e) {}
-      await loadAdminNotifications();
+      await markAsRead(notif.id);
     }
     if (notif.appointmentId) {
       navigate(`/admin/appointments/${notif.appointmentId}`);
     }
+  };
+
+  const handleClearAll = async () => {
+    await clearAll();
   };
 
   const getEmptyStateProps = () => {
