@@ -17,8 +17,8 @@ import {
   CreditCard
 } from "lucide-react";
 import Button from "./Button";
-import { getStoredNotifications } from "../data/notifications";
 import { getCurrentUser, clearCurrentUser } from "../utils/auth";
+import { useNotification } from "../context/NotificationContext";
 
 import "./PatientSidebar.css";
 
@@ -26,34 +26,7 @@ function PatientSidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
   const navigate = useNavigate();
   const location = useLocation();
   const [isHovered, setIsHovered] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  // Sync notification unread count dynamically for current patient / doctor
-  useEffect(() => {
-    const updateUnread = async () => {
-      try {
-        const u = getCurrentUser();
-        if (u && u.role === "doctor") {
-          const doc = getCurrentDoctor();
-          const docId = doc?.id ?? u?.refId ?? u?.id;
-          const notifs = await getDoctorNotifications(docId, u?.id);
-          const unread = notifs.filter((n) => !n.read).length;
-          setUnreadCount(unread);
-        } else {
-          const p = getCurrentPatient();
-          const pId = p?.id ?? u?.refId ?? u?.id;
-          const notifs = await getPatientNotifications(pId, u?.id);
-          const unread = notifs.filter((n) => !n.read).length;
-          setUnreadCount(unread);
-        }
-      } catch (e) {
-        setUnreadCount(0);
-      }
-    };
-    updateUnread();
-    window.addEventListener("medibook_notifications_updated", updateUnread);
-    return () => window.removeEventListener("medibook_notifications_updated", updateUnread);
-  }, []);
+  const { unreadCount } = useNotification();
 
   // Determine if sidebar is currently in expanded visual mode
   const isExpanded = !isCollapsed || isHovered || isMobileOpen;

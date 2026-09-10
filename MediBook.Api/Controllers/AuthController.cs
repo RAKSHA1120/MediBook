@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MediBook.Api.Data;
 using MediBook.Api.Models;
+using MediBook.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace MediBook.Api.Controllers
@@ -22,6 +23,17 @@ namespace MediBook.Api.Controllers
             if (string.IsNullOrEmpty(request.LoginId) || string.IsNullOrEmpty(request.Password))
             {
                 return BadRequest(new { message = "Login ID and Password are required." });
+            }
+
+            string trimmedLoginId = request.LoginId.Trim();
+
+            // If login identifier is a mobile number (not email, starts with digit or '+'), validate 10 digits
+            if (!trimmedLoginId.Contains('@') && (char.IsDigit(trimmedLoginId[0]) || trimmedLoginId.StartsWith("+")))
+            {
+                if (!PhoneNumberValidator.IsValid(trimmedLoginId))
+                {
+                    return BadRequest(new { message = PhoneNumberValidator.ErrorMessage });
+                }
             }
 
             // 1. Find user by LoginId (email) first — single-column lookup is faster
@@ -112,6 +124,16 @@ namespace MediBook.Api.Controllers
             if (string.IsNullOrEmpty(request.Mobile) || string.IsNullOrEmpty(request.Password) || string.IsNullOrEmpty(request.Name))
             {
                 return BadRequest(new { message = "Name, Mobile, and Password are required." });
+            }
+
+            if (!PhoneNumberValidator.IsValid(request.Mobile, out string phoneError))
+            {
+                return BadRequest(new { message = phoneError });
+            }
+
+            if (!PasswordValidator.IsValid(request.Password, out string passwordError))
+            {
+                return BadRequest(new { message = passwordError });
             }
 
             var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Mobile);

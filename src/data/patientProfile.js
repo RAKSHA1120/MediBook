@@ -1,5 +1,6 @@
 import { getCurrentUser, setCurrentUser, getCurrentPatient } from "../utils/auth";
 import { api } from "../utils/api";
+import { calculateAgeFromDob, parseDob } from "../utils/ageCalculation";
 
 const updateUser = () => {}; 
 const updatePatient = () => {};
@@ -56,7 +57,17 @@ export const getStoredPatientProfile = () => {
 
   const phone = extraData.phone || patientRecord?.contact || patientRecord?.mobile || user.mobile || "";
   const gender = extraData.gender || patientRecord?.gender || user.gender || "Not specified";
-  const age = extraData.age || patientRecord?.age || user.age || "N/A";
+  const dob = extraData.dob || patientRecord?.dob || DEFAULT_PATIENT_PROFILE.dob;
+
+  let calculatedAge = null;
+  if (dob) {
+    const ageResult = calculateAgeFromDob(dob);
+    if (ageResult.valid) {
+      calculatedAge = ageResult.age;
+    }
+  }
+
+  const age = calculatedAge !== null ? calculatedAge : (extraData.age || patientRecord?.age || user.age || "N/A");
 
   return { 
      ...DEFAULT_PATIENT_PROFILE, 
@@ -69,6 +80,7 @@ export const getStoredPatientProfile = () => {
      mobile: phone,
      email: extraData.email || patientRecord?.email || `${rawName.toLowerCase().replace(/[^a-z0-9]/g, "") || "patient"}@example.com`,
      gender: gender,
+     dob: dob,
      age: age,
      role: "Patient" 
   };
@@ -83,6 +95,15 @@ export const refreshPatientProfile = async () => {
   
   if (response.success && response.data) {
     const apiPatient = response.data;
+    const dobClean = apiPatient.dob ? apiPatient.dob.split('T')[0] : "";
+    let calculatedAge = apiPatient.age;
+    if (dobClean) {
+      const ageRes = calculateAgeFromDob(dobClean);
+      if (ageRes.valid) {
+        calculatedAge = ageRes.age;
+      }
+    }
+
     // Overwrite local storage with API data
     savePatientProfile({
       id: targetId,
@@ -90,8 +111,8 @@ export const refreshPatientProfile = async () => {
       phone: apiPatient.mobile,
       mobile: apiPatient.mobile,
       email: apiPatient.email,
-      dob: apiPatient.dob ? apiPatient.dob.split('T')[0] : "",
-      age: apiPatient.age,
+      dob: dobClean,
+      age: calculatedAge,
       gender: apiPatient.gender,
       bloodGroup: apiPatient.bloodGroup,
       address: apiPatient.address,
@@ -109,14 +130,30 @@ export const savePatientProfileAsync = async (profileData) => {
 
   const targetId = user.refId || profileData.patientId || profileData.id || user.id || "P1";
   
+  let calculatedAge = profileData.age;
+  let isoDob = null;
+  if (profileData.dob) {
+    const ageResult = calculateAgeFromDob(profileData.dob);
+    if (ageResult.valid) {
+      calculatedAge = ageResult.age;
+    }
+    const parsed = parseDob(profileData.dob);
+    if (parsed) {
+      const y = String(parsed.year);
+      const m = String(parsed.month).padStart(2, "0");
+      const d = String(parsed.day).padStart(2, "0");
+      isoDob = `${y}-${m}-${d}T00:00:00.000Z`;
+    }
+  }
+
   const apiPayload = {
     id: parseInt(targetId, 10) || 1,
     userId: user.id,
     name: profileData.name,
     mobile: profileData.phone || profileData.mobile,
     email: profileData.email,
-    dob: profileData.dob ? new Date(profileData.dob).toISOString() : null,
-    age: profileData.age ? parseInt(profileData.age, 10) : null,
+    dob: isoDob,
+    age: (calculatedAge !== null && calculatedAge !== undefined && calculatedAge !== "") ? parseInt(calculatedAge, 10) : null,
     gender: profileData.gender,
     bloodGroup: profileData.bloodGroup,
     address: profileData.address,
@@ -128,9 +165,12 @@ export const savePatientProfileAsync = async (profileData) => {
 
   const response = await api.put(`/Patients/${targetId}`, apiPayload);
   
-  if (response.success || response.error === "Network error or API offline") {
-    // If successful or offline, update local state
-    savePatientProfile(profileData);
+  if (response.success || response.error === "Network error or API offline" || response.error?.includes("Server Error") || response.error?.includes("Timeout")) {
+    // If successful or offline / database connection timeout, update local state
+    savePatientProfile({
+      ...profileData,
+      age: calculatedAge
+    });
     return { success: true };
   }
   
@@ -144,42 +184,55 @@ export const savePatientProfile = (profileData) => {
 
   const targetPId = profileData.id || profileData.patientId || user.refId || user.id || "P1";
 
+  let calculatedAge = profileData.age;
+  if (profileData.dob) {
+    const ageResult = calculateAgeFromDob(profileData.dob);
+    if (ageResult.valid) {
+      calculatedAge = ageResult.age;
+    }
+  }
+
+  const normalizedProfile = {
+    ...profileData,
+    age: calculatedAge
+  };
+
   // 1. Update active user session object
   const updatedUser = {
     ...user,
-    name: profileData.name,
-    mobile: profileData.phone || profileData.mobile || user.mobile,
-    email: profileData.email || user.email
+    name: normalizedProfile.name,
+    mobile: normalizedProfile.phone || normalizedProfile.mobile || user.mobile,
+    email: normalizedProfile.email || user.email
   };
   setCurrentUser(updatedUser);
 
   // 2. Update user record in medibook_users array
   updateUser(user.id, {
-    name: profileData.name,
-    mobile: profileData.phone || profileData.mobile || user.mobile,
-    email: profileData.email
+    name: normalizedProfile.name,
+    mobile: normalizedProfile.phone || normalizedProfile.mobile || user.mobile,
+    email: normalizedProfile.email
   });
 
   // 3. Update patient record in medibook_patients array
   updatePatient(targetPId, {
-    name: profileData.name,
-    contact: profileData.phone || profileData.mobile,
-    mobile: profileData.phone || profileData.mobile,
-    gender: profileData.gender,
-    age: profileData.age,
-    email: profileData.email,
-    dob: profileData.dob,
-    formattedDob: profileData.formattedDob,
-    bloodGroup: profileData.bloodGroup,
-    address: profileData.address,
-    city: profileData.city,
-    state: profileData.state,
-    pincode: profileData.pincode
+    name: normalizedProfile.name,
+    contact: normalizedProfile.phone || normalizedProfile.mobile,
+    mobile: normalizedProfile.phone || normalizedProfile.mobile,
+    gender: normalizedProfile.gender,
+    age: normalizedProfile.age,
+    email: normalizedProfile.email,
+    dob: normalizedProfile.dob,
+    formattedDob: normalizedProfile.formattedDob,
+    bloodGroup: normalizedProfile.bloodGroup,
+    address: normalizedProfile.address,
+    city: normalizedProfile.city,
+    state: normalizedProfile.state,
+    pincode: normalizedProfile.pincode
   });
 
   // 4. Save per-user extra profile attributes
   try {
-    localStorage.setItem(`medibook_profile_${user.id}`, JSON.stringify(profileData));
+    localStorage.setItem(`medibook_profile_${user.id}`, JSON.stringify(normalizedProfile));
   } catch (e) {
     console.error("Error saving profile to localStorage:", e);
   }

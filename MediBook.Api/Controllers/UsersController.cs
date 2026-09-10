@@ -1,5 +1,6 @@
 using MediBook.Api.Data;
 using MediBook.Api.Models;
+using MediBook.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +13,8 @@ namespace MediBook.Api.Controllers
 
     public class ResetUserPasswordRequest
     {
+        public string? LoginId { get; set; }
+        public string? Mobile { get; set; }
         public string? NewPassword { get; set; }
     }
 
@@ -225,12 +228,73 @@ namespace MediBook.Api.Controllers
         [HttpPost("{id}/reset-password")]
         public async Task<IActionResult> ResetPassword(int id, [FromBody] ResetUserPasswordRequest? request)
         {
-            var user = await _context.Users.FindAsync(id);
+            return await HandleResetPassword(id, request);
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPasswordPublic([FromBody] ResetUserPasswordRequest? request)
+        {
+            return await HandleResetPassword(null, request);
+        }
+
+        private async Task<IActionResult> HandleResetPassword(int? id, ResetUserPasswordRequest? request)
+        {
+            User? user = null;
+            if (id.HasValue && id.Value > 0)
+            {
+                user = await _context.Users.FindAsync(id.Value);
+            }
+            else
+            {
+                string? identifier = !string.IsNullOrWhiteSpace(request?.Mobile)
+                    ? request.Mobile.Trim()
+                    : request?.LoginId?.Trim();
+
+                if (string.IsNullOrWhiteSpace(identifier))
+                {
+                    return BadRequest(new { message = "Mobile number or Login ID is required." });
+                }
+
+                if (!string.IsNullOrWhiteSpace(request?.Mobile) && !PhoneNumberValidator.IsValid(request.Mobile))
+                {
+                    return BadRequest(new { message = PhoneNumberValidator.ErrorMessage });
+                }
+
+                if (!identifier.Contains('@') && (char.IsDigit(identifier[0]) || identifier.StartsWith("+")))
+                {
+                    if (!PhoneNumberValidator.IsValid(identifier))
+                    {
+                        return BadRequest(new { message = PhoneNumberValidator.ErrorMessage });
+                    }
+                }
+
+                user = await _context.Users.FirstOrDefaultAsync(u => u.Email == identifier);
+                if (user == null)
+                {
+                    var patient = await _context.Patients.FirstOrDefaultAsync(p => p.Mobile == identifier);
+                    if (patient != null && patient.UserId > 0)
+                    {
+                        user = await _context.Users.FindAsync(patient.UserId);
+                    }
+                }
+            }
+
             if (user == null) return NotFound(new { message = "User not found." });
+
+            bool isPatient = string.Equals(user.Role, "Patient", StringComparison.OrdinalIgnoreCase);
 
             string targetPassword = !string.IsNullOrWhiteSpace(request?.NewPassword)
                 ? request.NewPassword.Trim()
-                : (user.Role?.ToLower() == "doctor" ? "Doctor@123" : "MediBook@123");
+                : (string.Equals(user.Role, "Doctor", StringComparison.OrdinalIgnoreCase) ? "Doctor@123" : "MediBook@123");
+
+            // Strong-password validation in password reset must apply ONLY when the target account is a Patient
+            if (isPatient)
+            {
+                if (!PasswordValidator.IsValid(targetPassword, out string errorMessage))
+                {
+                    return BadRequest(new { message = errorMessage });
+                }
+            }
 
             user.Password = targetPassword;
             await _context.SaveChangesAsync();

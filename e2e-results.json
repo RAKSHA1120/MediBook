@@ -1,0 +1,335 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\Users\\raksh\\Desktop\\Medibook\\hospital-booking-ui\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "e2e/age_calculation.spec.js"
+    ],
+    "configFile": "C:\\Users\\raksh\\Desktop\\Medibook\\hospital-booking-ui\\playwright.config.js",
+    "rootDir": "C:/Users/raksh/Desktop/Medibook/hospital-booking-ui/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/raksh/Desktop/Medibook/hospital-booking-ui/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/raksh/Desktop/Medibook/hospital-booking-ui/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "e2e-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 4,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "age_calculation.spec.js",
+      "file": "age_calculation.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Automatic Age Calculation from Date of Birth (Patient Profile)",
+          "file": "age_calculation.spec.js",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "AC01 — Existing patient: DOB display format and auto-calculated Age on load",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3794,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-09T10:26:01.710Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\raksh\\Desktop\\Medibook\\hospital-booking-ui\\test-results\\age_calculation-Automatic--90448-auto-calculated-Age-on-load-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac9b144458a082bf6e9-ca50a1323cb301aeda87",
+              "file": "age_calculation.spec.js",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "AC02 — Edit Profile: Age field is read-only / disabled and cannot be typed into",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3272,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-09T10:26:06.450Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\raksh\\Desktop\\Medibook\\hospital-booking-ui\\test-results\\age_calculation-Automatic--8b7ff-ed-and-cannot-be-typed-into-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac9b144458a082bf6e9-9ac18085d1ffae4f982a",
+              "file": "age_calculation.spec.js",
+              "line": 55,
+              "column": 3
+            },
+            {
+              "title": "AC03 — Real-time Age updates upon DOB change, birthday milestones, and leap years",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4131,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-09T10:26:09.805Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\raksh\\Desktop\\Medibook\\hospital-booking-ui\\test-results\\age_calculation-Automatic--251ba-y-milestones-and-leap-years-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac9b144458a082bf6e9-341852947f7b21454531",
+              "file": "age_calculation.spec.js",
+              "line": 74,
+              "column": 3
+            },
+            {
+              "title": "AC04 — Clearing DOB clears Age immediately and triggers required validation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4991,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-09T10:26:13.992Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\raksh\\Desktop\\Medibook\\hospital-booking-ui\\test-results\\age_calculation-Automatic--15ba4-riggers-required-validation-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac9b144458a082bf6e9-dc479be6ae55d58749b6",
+              "file": "age_calculation.spec.js",
+              "line": 127,
+              "column": 3
+            },
+            {
+              "title": "AC05 — Future DOB shows validation error and clears Age",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5450,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-09T10:26:19.044Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\raksh\\Desktop\\Medibook\\hospital-booking-ui\\test-results\\age_calculation-Automatic--79f41-dation-error-and-clears-Age-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac9b144458a082bf6e9-929d1e0c8cd34e5f7c42",
+              "file": "age_calculation.spec.js",
+              "line": 145,
+              "column": 3
+            },
+            {
+              "title": "AC06 — Saving profile persists DOB & calculated Age; refreshing retains consistent state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14095,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-09T10:26:24.568Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\raksh\\Desktop\\Medibook\\hospital-booking-ui\\test-results\\age_calculation-Automatic--c650b-ng-retains-consistent-state-chromium\\test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "1ac9b144458a082bf6e9-4da7d89a56c3127dc8e2",
+              "file": "age_calculation.spec.js",
+              "line": 166,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-09T10:26:00.667Z",
+    "duration": 39739.259999999995,
+    "expected": 6,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

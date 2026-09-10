@@ -8,17 +8,32 @@ import {
   Workflow,
   BarChart3,
   HeartPulse,
-  CheckCircle2,
-  Stethoscope
+  CheckCircle2
 } from "lucide-react";
 import Input from "../components/Input";
 import Button from "../components/Button";
+import SecondaryButton from "../components/SecondaryButton";
 import FormField from "../components/FormField";
 import Checkbox from "../components/Checkbox";
+import Modal from "../components/Modal";
+import PasswordStrengthIndicator, { checkPasswordRules } from "../components/PasswordStrengthIndicator";
 import hospitalIllustration from "../assets/hospital_appointment_illustration.png";
 import { setCurrentUser } from "../utils/auth";
 import { api } from "../utils/api";
+import {
+  isValidPhoneNumber,
+  filterPhoneInput,
+  handlePhoneKeyDown,
+  PHONE_ERROR_MESSAGE
+} from "../utils/phoneValidation";
 import "./Login.css";
+
+const ROLES = [
+  { id: "patient", label: "Patient" },
+  { id: "admin", label: "Admin" },
+  { id: "doctor", label: "Doctor" },
+  { id: "hospital", label: "Hospital" }
+];
 
 function Login({ initialTab = "signin" }) {
   const navigate = useNavigate();
@@ -37,14 +52,40 @@ function Login({ initialTab = "signin" }) {
   const [successMessage, setSuccessMessage] = useState("");
   const [activeTab, setActiveTab] = useState(initialTab);
 
+  // Patient Password Reset Modal State
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [resetMobile, setResetMobile] = useState("");
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetConfirmPassword, setResetConfirmPassword] = useState("");
+  const [resetShowNewPassword, setResetShowNewPassword] = useState(false);
+  const [resetShowConfirmPassword, setResetShowConfirmPassword] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetErrors, setResetErrors] = useState({});
+
   // Login Modes: "patient", "admin", "doctor", "hospital"
   const [loginMode, setLoginMode] = useState("patient");
   const isAdminMode = loginMode === "admin";
   const isDoctorMode = loginMode === "doctor";
   const isHospitalMode = loginMode === "hospital";
 
+  const handleRoleChange = (roleId) => {
+    if (loginMode === roleId) return;
+    setLoginMode(roleId);
+    setErrors({});
+    setSuccessMessage("");
+    setMobile("");
+    setPassword("");
+    setConfirmPassword("");
+    if (roleId !== "patient" && activeTab === "signup") {
+      setActiveTab("signin");
+    }
+  };
+
   const handleMobileChange = (e) => {
-    const val = e.target.value;
+    const raw = e.target.value;
+    const val = (loginMode === "patient" && activeTab === "signup")
+      ? filterPhoneInput(raw)
+      : raw;
     setMobile(val);
     if (errors.mobile) {
       setErrors((prev) => ({ ...prev, mobile: "" }));
@@ -87,16 +128,49 @@ function Login({ initialTab = "signin" }) {
       if (!gender) newErrors.gender = "Please select your gender.";
 
       const trimmedMobile = mobile.trim();
-      if (!trimmedMobile || !/^\d{10}$/.test(trimmedMobile)) {
-        newErrors.mobile = "Please enter a valid 10-digit mobile number.";
+      if (!trimmedMobile) {
+        newErrors.mobile = "Mobile number is required.";
+      } else if (!isValidPhoneNumber(trimmedMobile)) {
+        newErrors.mobile = PHONE_ERROR_MESSAGE;
       }
-      if (!password) newErrors.password = "Password is required.";
-      if (!confirmPassword) newErrors.confirmPassword = "Confirm Password is required.";
-      else if (password && password !== confirmPassword) newErrors.confirmPassword = "Passwords do not match.";
+      
+      const pwdRules = checkPasswordRules(password);
+      if (!password) {
+        newErrors.password = "Password is required.";
+      } else if (!pwdRules.isStrong) {
+        newErrors.password = "Password must meet all strong password requirements.";
+      }
+
+      if (!confirmPassword) {
+        newErrors.confirmPassword = "Confirm Password is required.";
+      } else if (password && password !== confirmPassword) {
+        newErrors.confirmPassword = "Passwords do not match.";
+      }
 
       if (!termsAccepted) newErrors.terms = "You must agree to the Terms of Service and Privacy Policy.";
     } else {
-      if (!mobile.trim()) newErrors.mobile = "ID / Email / Mobile is required.";
+      const trimmedId = mobile.trim();
+      if (!trimmedId) {
+        newErrors.mobile = isHospitalMode
+          ? "Hospital Email is required."
+          : isDoctorMode
+            ? "Doctor Email is required."
+            : isAdminMode
+              ? "Admin ID is required."
+              : "Mobile Number or Email is required.";
+      } else if (loginMode === "patient") {
+        if (trimmedId.includes("@")) {
+          // If email is entered, keep existing email behavior
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedId)) {
+            newErrors.mobile = "Please enter a valid email address.";
+          }
+        } else {
+          // If mobile number is entered, must be exactly 10 numeric digits
+          if (!isValidPhoneNumber(trimmedId)) {
+            newErrors.mobile = PHONE_ERROR_MESSAGE;
+          }
+        }
+      }
       if (!password) newErrors.password = "Password is required.";
     }
 
@@ -191,7 +265,69 @@ function Login({ initialTab = "signin" }) {
 
   const handleForgotPassword = (e) => {
     e.preventDefault();
-    alert("Forgot password clicked. Redirecting to recovery flow...");
+    if (loginMode !== "patient") {
+      alert(`${loginMode.toUpperCase()} account credentials are administered by your System Administrator. Please contact your administrator.`);
+      return;
+    }
+    setResetMobile(mobile || "");
+    setResetNewPassword("");
+    setResetConfirmPassword("");
+    setResetErrors({});
+    setIsResetModalOpen(true);
+  };
+
+  const handleResetPasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (resetLoading) return;
+
+    const newErrors = {};
+    const trimmedMobile = resetMobile.trim();
+    if (!trimmedMobile) {
+      newErrors.mobile = "Registered mobile number is required.";
+    } else if (!isValidPhoneNumber(trimmedMobile)) {
+      newErrors.mobile = PHONE_ERROR_MESSAGE;
+    }
+
+    const pwdRules = checkPasswordRules(resetNewPassword);
+    if (!resetNewPassword) {
+      newErrors.newPassword = "New password is required.";
+    } else if (!pwdRules.isStrong) {
+      newErrors.newPassword = "Password must meet all strong password requirements.";
+    }
+
+    if (!resetConfirmPassword) {
+      newErrors.confirmPassword = "Confirm password is required.";
+    } else if (resetNewPassword && resetNewPassword !== resetConfirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match.";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setResetErrors(newErrors);
+      return;
+    }
+
+    setResetErrors({});
+    setResetLoading(true);
+
+    try {
+      const response = await api.post("/Users/reset-password", {
+        mobile: trimmedMobile,
+        newPassword: resetNewPassword,
+      });
+
+      if (response.success) {
+        setIsResetModalOpen(false);
+        setSuccessMessage("Password has been reset successfully! You can now sign in with your new password.");
+        setPassword("");
+        setConfirmPassword("");
+      } else {
+        setResetErrors({ general: response.error || "Failed to reset password. Please verify the mobile number." });
+      }
+    } catch (err) {
+      setResetErrors({ general: "An unexpected error occurred during password reset." });
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   return (
@@ -231,26 +367,8 @@ function Login({ initialTab = "signin" }) {
         {/* AUTHENTICATION PANEL */}
         <div className="login-auth-panel">
           <div className="login-auth-header">
-            <div
-              className="login-auth-logo-mark"
-              onClick={() => {
-                setLoginMode(prev =>
-                  prev === "patient"
-                    ? "admin"
-                    : prev === "admin"
-                      ? "doctor"
-                      : prev === "doctor"
-                        ? "hospital"
-                        : "patient"
-                );
-                setErrors({});
-                setMobile("");
-                setPassword("");
-              }}
-              style={{ cursor: "pointer" }}
-              title="Toggle Login Mode"
-            >
-              {isDoctorMode ? <Stethoscope size={16} /> : <HeartPulse size={16} />}
+            <div className="login-auth-logo-mark" aria-hidden="true">
+              <HeartPulse size={16} />
             </div>
             <span className="login-auth-brand">MediBook</span>
           </div>
@@ -266,7 +384,7 @@ function Login({ initialTab = "signin" }) {
                       ? "Doctor Login"
                       : isAdminMode
                         ? "Admin Login"
-                        : "Welcome to MediBook"}
+                        : "Patient Login"}
               </h1>
               <p className="welcome-desc">
                 {activeTab === "signup"
@@ -279,6 +397,25 @@ function Login({ initialTab = "signin" }) {
                         ? "Sign in to access the system administration panel."
                         : "Sign in to access your healthcare management dashboard."}
               </p>
+            </div>
+
+            {/* Role Selector Segmented Control */}
+            <div className="role-selector-container">
+              <div className="role-selector" role="tablist" aria-label="Select Login Role">
+                {ROLES.map((role) => (
+                  <button
+                    key={role.id}
+                    type="button"
+                    role="tab"
+                    id={`role-tab-${role.id}`}
+                    aria-selected={loginMode === role.id}
+                    className={`role-tab-btn ${loginMode === role.id ? "active" : ""}`}
+                    onClick={() => handleRoleChange(role.id)}
+                  >
+                    {role.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {!isAdminMode && !isDoctorMode && !isHospitalMode && (
@@ -370,12 +507,27 @@ function Login({ initialTab = "signin" }) {
                       ? "e.g. sarah@medibook.com"
                       : isAdminMode
                         ? "Enter admin ID"
-                        : "Enter 10-digit mobile number"
+                        : activeTab === "signup"
+                          ? "Enter 10-digit mobile number"
+                          : "Enter 10-digit mobile or email"
                 }
                 value={mobile}
                 onChange={handleMobileChange}
                 error={errors.mobile}
                 required
+                {...(loginMode === "patient" && activeTab === "signup" ? {
+                  type: "tel",
+                  inputMode: "numeric",
+                  maxLength: 10,
+                  onKeyDown: handlePhoneKeyDown,
+                  onPaste: (e) => {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData)?.getData("text") || "";
+                    const filtered = filterPhoneInput(text);
+                    setMobile(filtered);
+                    if (errors.mobile) setErrors((prev) => ({ ...prev, mobile: "" }));
+                  }
+                } : {})}
               />
 
               <div className="form-field">
@@ -409,6 +561,10 @@ function Login({ initialTab = "signin" }) {
                   </button>
                 </div>
                 {errors.password && <span className="form-error">{errors.password}</span>}
+
+                {activeTab === "signup" && !isAdminMode && !isDoctorMode && !isHospitalMode && (
+                  <PasswordStrengthIndicator password={password} />
+                )}
               </div>
 
               {activeTab === "signup" && !isAdminMode && !isDoctorMode && (
@@ -496,48 +652,7 @@ function Login({ initialTab = "signin" }) {
                 </Button>
               </div>
 
-              {isAdminMode && (
-                <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                  <p style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>
-                    Are you a doctor?{' '}
-                    <button
-                      type="button"
-                      onClick={() => { setLoginMode("doctor"); setErrors({}); setMobile(""); setPassword(""); }}
-                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', cursor: 'pointer', padding: 0 }}
-                    >
-                      Doctor Login
-                    </button>
-                  </p>
-                </div>
-              )}
-              {isDoctorMode && (
-                <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                  <p style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>
-                    Not a doctor?{' '}
-                    <button
-                      type="button"
-                      onClick={() => { setLoginMode("patient"); setErrors({}); setMobile(""); setPassword(""); }}
-                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', cursor: 'pointer', padding: 0 }}
-                    >
-                      Patient Login
-                    </button>
-                  </p>
-                </div>
-              )}
-              {isHospitalMode && (
-                <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                  <p style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>
-                    Not a hospital?{' '}
-                    <button
-                      type="button"
-                      onClick={() => { setLoginMode("patient"); setErrors({}); setMobile(""); setPassword(""); }}
-                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', cursor: 'pointer', padding: 0 }}
-                    >
-                      Patient Login
-                    </button>
-                  </p>
-                </div>
-              )}
+
             </form>
 
             {!isAdminMode && !isDoctorMode && !isHospitalMode && activeTab === "signin" && (
@@ -606,6 +721,138 @@ function Login({ initialTab = "signin" }) {
           </div>
         </div>
       </div>
+
+      {/* Patient Password Reset Modal */}
+      <Modal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        title="Reset Patient Password"
+        className="reset-password-modal"
+      >
+        <form onSubmit={handleResetPasswordSubmit} className="reset-password-form" noValidate>
+          <p className="reset-password-description">
+            Enter your registered 10-digit mobile number and create a new strong password for your MediBook account.
+          </p>
+
+          {resetErrors.general && (
+            <div className="reset-general-error" role="alert">
+              {resetErrors.general}
+            </div>
+          )}
+
+          <div className="form-field">
+            <label className="form-label" htmlFor="reset-mobile-input">
+              Registered Mobile Number <span className="required-mark" style={{ color: "var(--error)" }}>*</span>
+            </label>
+            <Input
+              id="reset-mobile-input"
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              placeholder="e.g. 9876543210"
+              value={resetMobile}
+              onKeyDown={handlePhoneKeyDown}
+              onPaste={(e) => {
+                e.preventDefault();
+                const text = (e.clipboardData || window.clipboardData)?.getData("text") || "";
+                const filtered = filterPhoneInput(text);
+                setResetMobile(filtered);
+                if (resetErrors.mobile) setResetErrors((prev) => ({ ...prev, mobile: "" }));
+              }}
+              onChange={(e) => {
+                const val = filterPhoneInput(e.target.value);
+                setResetMobile(val);
+                if (resetErrors.mobile) setResetErrors((prev) => ({ ...prev, mobile: "" }));
+              }}
+              error={!!resetErrors.mobile}
+              required
+            />
+            {resetErrors.mobile && <span className="form-error">{resetErrors.mobile}</span>}
+          </div>
+
+          <div className="form-field">
+            <div className="password-label-row">
+              <label className="form-label" htmlFor="reset-new-password-input">
+                New Password <span className="required-mark" style={{ color: "var(--error)" }}>*</span>
+              </label>
+            </div>
+            <div className="password-wrapper">
+              <Input
+                id="reset-new-password-input"
+                type={resetShowNewPassword ? "text" : "password"}
+                placeholder="Enter new strong password"
+                value={resetNewPassword}
+                onChange={(e) => {
+                  setResetNewPassword(e.target.value);
+                  if (resetErrors.newPassword) setResetErrors((prev) => ({ ...prev, newPassword: "" }));
+                }}
+                icon={Lock}
+                error={!!resetErrors.newPassword}
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setResetShowNewPassword(!resetShowNewPassword)}
+              >
+                {resetShowNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {resetErrors.newPassword && <span className="form-error">{resetErrors.newPassword}</span>}
+
+            <PasswordStrengthIndicator password={resetNewPassword} />
+          </div>
+
+          <div className="form-field">
+            <div className="password-label-row">
+              <label className="form-label" htmlFor="reset-confirm-password-input">
+                Confirm New Password <span className="required-mark" style={{ color: "var(--error)" }}>*</span>
+              </label>
+            </div>
+            <div className="password-wrapper">
+              <Input
+                id="reset-confirm-password-input"
+                type={resetShowConfirmPassword ? "text" : "password"}
+                placeholder="Re-enter new strong password"
+                value={resetConfirmPassword}
+                onChange={(e) => {
+                  setResetConfirmPassword(e.target.value);
+                  if (resetErrors.confirmPassword) setResetErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                }}
+                icon={Lock}
+                error={!!resetErrors.confirmPassword}
+                required
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setResetShowConfirmPassword(!resetShowConfirmPassword)}
+              >
+                {resetShowConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {resetErrors.confirmPassword && <span className="form-error">{resetErrors.confirmPassword}</span>}
+          </div>
+
+          <div className="reset-modal-actions">
+            <SecondaryButton
+              type="button"
+              onClick={() => setIsResetModalOpen(false)}
+              disabled={resetLoading}
+            >
+              Cancel
+            </SecondaryButton>
+            <Button
+              type="submit"
+              loading={resetLoading}
+              disabled={resetLoading}
+              id="confirm-reset-btn"
+            >
+              Reset Password
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
