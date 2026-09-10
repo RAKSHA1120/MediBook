@@ -220,9 +220,20 @@ function Login({ initialTab = "signin" }) {
         } else if (isDoctorMode) {
           if (user.role.toLowerCase() === "doctor") {
             try {
+              let docData = null;
               const docRes = await api.get(`/Doctors/user/${user.id}`);
               if (docRes.success && docRes.data) {
-                user.doctorId = docRes.data.id;
+                docData = docRes.data;
+              } else if (user.refId) {
+                const refRes = await api.get(`/Doctors/${user.refId}`);
+                if (refRes.success && refRes.data) {
+                  docData = refRes.data;
+                }
+              }
+
+              if (docData) {
+                user.doctorId = docData.id;
+                user.doctor = docData;
                 setCurrentUser(user);
                 navigate("/doctor/dashboard");
               } else {
@@ -237,15 +248,24 @@ function Login({ initialTab = "signin" }) {
         } else {
           const role = user.role.toLowerCase();
           if (role === "doctor" && !user.doctorId) {
-            if (user.refId) {
-              user.doctorId = user.refId;
-            } else {
-              try {
+            try {
+              let docData = null;
+              if (user.refId) {
+                const refRes = await api.get(`/Doctors/${user.refId}`);
+                if (refRes.success && refRes.data) docData = refRes.data;
+              }
+              if (!docData) {
                 const docRes = await api.get(`/Doctors/user/${user.id}`);
-                if (docRes.success && docRes.data) {
-                  user.doctorId = docRes.data.id;
-                }
-              } catch (e) {}
+                if (docRes.success && docRes.data) docData = docRes.data;
+              }
+              if (docData) {
+                user.doctorId = docData.id;
+                user.doctor = docData;
+              } else if (user.refId) {
+                user.doctorId = user.refId;
+              }
+            } catch (e) {
+              if (user.refId) user.doctorId = user.refId;
             }
           }
           setCurrentUser(user);

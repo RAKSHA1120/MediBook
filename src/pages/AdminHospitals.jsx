@@ -13,6 +13,7 @@ import {
   handlePhoneKeyDown,
   PHONE_ERROR_MESSAGE
 } from "../utils/phoneValidation";
+import { setProvisionedCredential } from "../utils/credentialStore";
 
 import ProfileModalTrigger from "../components/ProfileModalTrigger";
 
@@ -158,6 +159,14 @@ function AdminHospitals() {
       if (response.success) {
         fetchHospitals();
         setNewCredentials(response.data);
+        if (response.data && response.data.temporaryPassword && response.data.loginId) {
+          setProvisionedCredential(response.data.loginId, {
+            password: response.data.temporaryPassword,
+            name: response.data.hospitalName || payload.name,
+            role: "Hospital",
+            loginId: response.data.loginId
+          });
+        }
         setIsSuccessModalOpen(true);
       } else {
         alert("Failed to create hospital: " + (response.error || "Unknown error"));

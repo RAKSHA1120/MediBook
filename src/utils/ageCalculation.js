@@ -121,3 +121,44 @@ export function formatDobForDisplay(dobStr) {
   const y = String(parsed.year);
   return `${d}-${m}-${y}`;
 }
+
+/**
+ * Validates a Doctor's Date of Birth according to MediBook business rules:
+ * 1. DOB is mandatory for new Doctor creation.
+ * 2. If empty: "Date of Birth is required."
+ * 3. If invalid format: "Invalid Date of Birth format."
+ * 4. If future date: "Date of Birth cannot be in the future."
+ * 5. Minimum completed age must be at least 23: "Doctor must be at least 23 years old."
+ * 
+ * @param {string} dobStr 
+ * @param {Date} [referenceDate=new Date()] 
+ * @returns {{ valid: boolean, age: number | null, error: string | null }}
+ */
+export function validateDoctorDob(dobStr, referenceDate = new Date()) {
+  if (!dobStr || (typeof dobStr === "string" && !dobStr.trim())) {
+    return { valid: false, age: null, error: "Date of Birth is required." };
+  }
+
+  const result = calculateAgeFromDob(dobStr, referenceDate);
+  if (result.error) {
+    return { valid: false, age: null, error: result.error };
+  }
+
+  if (result.age !== null && result.age < 23) {
+    return { valid: false, age: result.age, error: "Doctor must be at least 23 years old." };
+  }
+
+  return { valid: true, age: result.age, error: null };
+}
+
+/**
+ * Returns today's date in local 'YYYY-MM-DD' format for date picker max attribute.
+ * @param {Date} [d=new Date()]
+ * @returns {string}
+ */
+export function getTodayDateString(d = new Date()) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
