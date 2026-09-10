@@ -1,5 +1,6 @@
 using MediBook.Api.Data;
 using MediBook.Api.Models;
+using MediBook.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -90,6 +91,11 @@ namespace MediBook.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateDoctor(Doctor doctor)
         {
+            if (!string.IsNullOrEmpty(doctor.Phone) && !PhoneNumberValidator.IsValid(doctor.Phone))
+            {
+                return BadRequest(new { message = PhoneNumberValidator.ErrorMessage });
+            }
+
             _context.Doctors.Add(doctor);
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetDoctor), new { id = doctor.Id }, doctor);
@@ -99,6 +105,11 @@ namespace MediBook.Api.Controllers
         public async Task<IActionResult> UpdateDoctor(int id, Doctor doctor)
         {
             if (id != doctor.Id) return BadRequest();
+
+            if (!string.IsNullOrEmpty(doctor.Phone) && !PhoneNumberValidator.IsValid(doctor.Phone))
+            {
+                return BadRequest(new { message = PhoneNumberValidator.ErrorMessage });
+            }
             
             var existingDoctor = await _context.Doctors.FindAsync(id);
             if (existingDoctor == null) return NotFound();

@@ -4,51 +4,25 @@ import { CheckCheck, Bell, Calendar, Info, BellOff } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import NotificationCard from "../components/NotificationCard";
-import { getCurrentUser } from "../utils/auth";
-
-import { api } from "../utils/api";
+import { useNotification } from "../context/NotificationContext";
 import "./Notifications.css";
 
 function Notifications() {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("all");
+  const {
+    notifications,
+    markAsRead,
+    markAllAsRead,
+    fetchNotifications,
+  } = useNotification();
 
-  const fetchApiNotifications = async () => {
-    const u = getCurrentUser();
-    if (u?.id) {
-      const res = await api.get(`/Notifications/user/${u.id}`);
-      if (res.success && Array.isArray(res.data)) {
-        setNotifications(res.data.map(n => ({
-          id: n.id,
-          userId: n.userId,
-          title: n.title,
-          message: n.message,
-          type: n.type || "appointment",
-          read: n.isRead,
-          isRead: n.isRead,
-          createdAt: n.createdAt,
-          timestamp: n.createdAt
-        })));
-        return;
-      }
-    }
-    const p = getCurrentPatient();
-    setNotifications(await getPatientNotifications(p?.id, u?.id));
-  };
+  const [activeTab, setActiveTab] = useState("all");
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
 
   useEffect(() => {
-    fetchApiNotifications();
-    
-    const handleUpdate = () => {
-      fetchApiNotifications();
-    };
-    
-    window.addEventListener("medibook_notifications_updated", handleUpdate);
-    return () => {
-      window.removeEventListener("medibook_notifications_updated", handleUpdate);
-    };
+    fetchNotifications();
+    // Mount only - fetch fresh notifications when user navigates to the page
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Filter Counts
@@ -77,20 +51,19 @@ function Notifications() {
 
   // Handle Mark All As Read
   const handleMarkAll = async () => {
-    // Ideally we should call a backend endpoint for mark-all-read.
-    // For now we'll just update local state if there's no bulk API.
-    const p = getCurrentPatient();
-    const u = getCurrentUser();
-    markAllNotificationsAsRead(p?.id, u?.id);
-    await fetchApiNotifications();
+    if (isMarkingAll) return;
+    setIsMarkingAll(true);
+    try {
+      await markAllAsRead();
+    } finally {
+      setIsMarkingAll(false);
+    }
   };
 
   // Handle Notification Click
   const handleCardClick = async (notif) => {
     if (!notif.read && !notif.isRead) {
-      await api.put(`/Notifications/${notif.id}/read`);
-      markNotificationAsRead(notif.id);
-      await fetchApiNotifications();
+      await markAsRead(notif.id);
     }
     if (notif.appointmentId) {
       navigate(`/appointments/${notif.appointmentId}`);
@@ -135,9 +108,14 @@ function Notifications() {
         subtitle="Stay updated with your appointments and important alerts."
         action={
           counts.unread > 0 ? (
-            <button className="btn-mark-all-read" onClick={handleMarkAll}>
+            <button
+              className="btn-mark-all-read"
+              onClick={handleMarkAll}
+              disabled={isMarkingAll}
+              aria-label="Mark all as read"
+            >
               <CheckCheck size={16} />
-              <span>Mark all as read</span>
+              <span>{isMarkingAll ? "Marking..." : "Mark all as read"}</span>
             </button>
           ) : null
         }

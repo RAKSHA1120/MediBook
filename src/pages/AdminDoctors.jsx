@@ -8,6 +8,12 @@ import Input from "../components/Input";
 import StatusBadge from "../components/StatusBadge";
 import { api } from "../utils/api";
 import { generateLoginId, generatePassword } from "../utils/idGenerator";
+import {
+  isValidPhoneNumber,
+  filterPhoneInput,
+  handlePhoneKeyDown,
+  PHONE_ERROR_MESSAGE
+} from "../utils/phoneValidation";
 import "./AdminDoctors.css";
 import "./AdminShared.css";
 
@@ -124,6 +130,12 @@ function AdminDoctors() {
   // Handle Add Doctor
   const handleAddDoctor = async (e) => {
     e.preventDefault();
+
+    if (!isValidPhoneNumber(addFormData.phone)) {
+      alert(PHONE_ERROR_MESSAGE);
+      return;
+    }
+
     const dobYear = addFormData.dob ? addFormData.dob.split("-")[0] : "1985";
     const loginId = generateLoginId(addFormData.name, dobYear, doctors);
     const password = generatePassword(addFormData.name, dobYear);
@@ -196,6 +208,12 @@ function AdminDoctors() {
   // Handle Update Doctor
   const handleSaveEditDoctor = async (e) => {
     e.preventDefault();
+
+    if (!isValidPhoneNumber(editFormData.phone)) {
+      alert(PHONE_ERROR_MESSAGE);
+      return;
+    }
+
     const updates = {
       id: editFormData.id,
       userId: selectedDoctor.userId,
@@ -577,11 +595,14 @@ function AdminDoctors() {
             <div className="form-group">
               <label className="form-label">Phone Number *</label>
               <input
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
                 className="form-input"
                 value={addFormData.phone}
-                onChange={(e) => setAddFormData({ ...addFormData, phone: e.target.value })}
-                placeholder="e.g. +91 9876543210"
+                onKeyDown={handlePhoneKeyDown}
+                onChange={(e) => setAddFormData({ ...addFormData, phone: filterPhoneInput(e.target.value) })}
+                placeholder="e.g. 9876543210"
                 required
               />
             </div>
@@ -763,10 +784,14 @@ function AdminDoctors() {
             <div className="form-group">
               <label className="form-label">Phone Number *</label>
               <input
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
                 className="form-input"
                 value={editFormData.phone}
-                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                onKeyDown={handlePhoneKeyDown}
+                onChange={(e) => setEditFormData({ ...editFormData, phone: filterPhoneInput(e.target.value) })}
+                placeholder="e.g. 9876543210"
                 required
               />
             </div>

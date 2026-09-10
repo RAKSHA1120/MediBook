@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   User,
   Mail,
@@ -26,26 +26,65 @@ import {
   refreshPatientProfile,
   savePatientProfileAsync
 } from "../data/patientProfile";
+import {
+  isValidPhoneNumber,
+  filterPhoneInput,
+  handlePhoneKeyDown,
+  PHONE_ERROR_MESSAGE
+} from "../utils/phoneValidation";
+import {
+  calculateAgeFromDob,
+  formatDobForDisplay
+} from "../utils/ageCalculation";
 import "./PatientProfile.css";
 
 const GENDER_OPTIONS = ["Female", "Male", "Other", "Prefer not to say"];
 const BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
+const getTodayDateString = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
 function PatientProfile() {
-  const [profile, setProfile] = useState(() => getStoredPatientProfile());
+  const [profile, setProfile] = useState(() => {
+    const stored = getStoredPatientProfile();
+    if (stored.dob) {
+      const ageRes = calculateAgeFromDob(stored.dob);
+      if (ageRes.valid) {
+        stored.age = ageRes.age;
+      }
+    }
+    return stored;
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(profile);
   const [errors, setErrors] = useState({});
 
   // Toast State
   const [toast, setToast] = useState({ show: false, type: "success", title: "", message: "" });
+  const toastTimerRef = useRef(null);
 
   const showNotification = (title, message, type = "success") => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setToast({ show: true, type, title, message });
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToast((prev) => ({ ...prev, show: false }));
     }, 4500);
   };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   // Sync profile if external update occurs
   useEffect(() => {
@@ -54,6 +93,12 @@ function PatientProfile() {
 
     const handleUpdate = () => {
       const updated = getStoredPatientProfile();
+      if (updated.dob) {
+        const ageRes = calculateAgeFromDob(updated.dob);
+        if (ageRes.valid) {
+          updated.age = ageRes.age;
+        }
+      }
       setProfile(updated);
       if (!isEditing) {
         setFormData(updated);
@@ -63,7 +108,42 @@ function PatientProfile() {
     return () => window.removeEventListener("medibook_profile_updated", handleUpdate);
   }, [isEditing]);
 
+  const handleDobChange = (value) => {
+    let calculatedAge = "";
+    let dobError = null;
+
+    if (value && value.trim()) {
+      const ageRes = calculateAgeFromDob(value);
+      if (ageRes.valid) {
+        calculatedAge = ageRes.age;
+        dobError = null;
+      } else {
+        calculatedAge = "";
+        dobError = ageRes.error;
+      }
+    } else {
+      calculatedAge = "";
+      dobError = "Date of Birth is required";
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      dob: value,
+      age: calculatedAge
+    }));
+
+    setErrors((prev) => ({
+      ...prev,
+      dob: dobError,
+      age: null
+    }));
+  };
+
   const handleInputChange = (field, value) => {
+    if (field === "dob") {
+      handleDobChange(value);
+      return;
+    }
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error for field
     if (errors[field]) {
@@ -80,11 +160,8 @@ function PatientProfile() {
 
     if (!formData.phone || !formData.phone.trim()) {
       newErrors.phone = "Mobile number is required";
-    } else {
-      const cleanPhone = formData.phone.replace(/[^0-9]/g, "");
-      if (cleanPhone.length < 10) {
-        newErrors.phone = "Enter a valid 10-digit mobile number";
-      }
+    } else if (!isValidPhoneNumber(formData.phone)) {
+      newErrors.phone = PHONE_ERROR_MESSAGE;
     }
 
     if (!formData.email || !formData.email.trim()) {
@@ -95,6 +172,11 @@ function PatientProfile() {
 
     if (!formData.dob || !formData.dob.trim()) {
       newErrors.dob = "Date of Birth is required";
+    } else {
+      const ageRes = calculateAgeFromDob(formData.dob);
+      if (!ageRes.valid) {
+        newErrors.dob = ageRes.error || "Please enter a valid Date of Birth";
+      }
     }
 
     if (!formData.gender) {
@@ -126,7 +208,17 @@ function PatientProfile() {
   };
 
   const handleStartEdit = () => {
-    setFormData(profile);
+    let currentAge = profile.age;
+    if (profile.dob) {
+      const ageRes = calculateAgeFromDob(profile.dob);
+      if (ageRes.valid) {
+        currentAge = ageRes.age;
+      }
+    }
+    setFormData({
+      ...profile,
+      age: currentAge !== null && currentAge !== undefined ? currentAge : ""
+    });
     setErrors({});
     setIsEditing(true);
   };
@@ -143,20 +235,21 @@ function PatientProfile() {
       return;
     }
 
-    // Generate formatted DOB if yyyy-mm-dd (display as DD-MM-YYYY)
-    let formattedDob = formData.formattedDob || formData.dob;
-    if (formData.dob && formData.dob.includes("-")) {
-      const parts = formData.dob.split("-");
-      if (parts.length === 3 && parts[0].length === 4) {
-        const [y, m, d] = parts;
-        if (y && m && d) {
-          formattedDob = `${d}-${m}-${y}`;
-        }
+    // Ensure Age is strictly calculated from DOB as single source of truth
+    let finalAge = formData.age;
+    if (formData.dob) {
+      const ageRes = calculateAgeFromDob(formData.dob);
+      if (ageRes.valid) {
+        finalAge = ageRes.age;
       }
     }
 
+    // Generate formatted DOB for display (DD-MM-YYYY)
+    const formattedDob = formatDobForDisplay(formData.dob);
+
     const updatedProfile = {
       ...formData,
+      age: finalAge,
       formattedDob
     };
 
@@ -260,13 +353,13 @@ function PatientProfile() {
             <div className="profile-field-group">
               <span className="field-label">Date of Birth</span>
               <div className="field-value-text">
-                {profile.dob ? profile.dob.split("-").reverse().join("-") : "N/A"}
+                {formatDobForDisplay(profile.dob)}
               </div>
             </div>
 
             <div className="profile-field-group">
               <span className="field-label">Age</span>
-              <div className="field-value-text">{profile.age || "N/A"}</div>
+              <div className="field-value-text">{profile.age !== undefined && profile.age !== null && profile.age !== "" ? profile.age : "N/A"}</div>
             </div>
 
             <div className="profile-field-group">
@@ -303,11 +396,19 @@ function PatientProfile() {
               </label>
               <input
                 id="input-phone"
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
                 className={`field-input ${errors.phone ? "has-error" : ""}`}
                 value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                placeholder="+91 98765 43210"
+                onKeyDown={handlePhoneKeyDown}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const text = (e.clipboardData || window.clipboardData)?.getData("text") || "";
+                  handleInputChange("phone", filterPhoneInput(text));
+                }}
+                onChange={(e) => handleInputChange("phone", filterPhoneInput(e.target.value))}
+                placeholder="Enter 10-digit mobile number"
               />
               {errors.phone && <span className="field-error-text">{errors.phone}</span>}
             </div>
@@ -334,9 +435,10 @@ function PatientProfile() {
               <input
                 id="input-dob"
                 type="date"
+                max={getTodayDateString()}
                 className={`field-input ${errors.dob ? "has-error" : ""}`}
                 value={formData.dob || ""}
-                onChange={(e) => handleInputChange("dob", e.target.value)}
+                onChange={(e) => handleDobChange(e.target.value)}
               />
               {errors.dob && <span className="field-error-text">{errors.dob}</span>}
             </div>
@@ -347,13 +449,14 @@ function PatientProfile() {
               </label>
               <input
                 id="input-age"
-                type="number"
-                min="0"
-                max="120"
-                className={`field-input ${errors.age ? "has-error" : ""}`}
-                value={formData.age || ""}
-                onChange={(e) => handleInputChange("age", e.target.value)}
-                placeholder="Age in years"
+                type="text"
+                readOnly
+                disabled
+                className="field-input field-input-readonly"
+                value={formData.age !== undefined && formData.age !== null && formData.age !== "" ? formData.age : ""}
+                placeholder="Auto-calculated from DOB"
+                tabIndex={-1}
+                aria-readonly="true"
               />
               {errors.age && <span className="field-error-text">{errors.age}</span>}
             </div>
