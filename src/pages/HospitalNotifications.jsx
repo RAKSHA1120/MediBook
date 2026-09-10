@@ -20,7 +20,12 @@ function HospitalNotifications() {
 
     const handleUpdate = () => loadHospitalNotifications();
     window.addEventListener("medibook_notifications_updated", handleUpdate);
-    return () => window.removeEventListener("medibook_notifications_updated", handleUpdate);
+
+    return () =>
+      window.removeEventListener(
+        "medibook_notifications_updated",
+        handleUpdate
+      );
   }, []);
 
   const loadHospitalNotifications = async () => {
@@ -29,14 +34,17 @@ function HospitalNotifications() {
 
     const hosRecord = {
       id: user.refId || user.id || "HOS-008",
-      name: user.name || "MediCare Hospital"
+      name: user.name || "MediCare Hospital",
     };
+
     setHospital(hosRecord);
 
     try {
       const res = await api.get(`/Notifications/user/${user.id}`);
+
       if (res.success) {
         const data = res.data;
+
         const mapped = data.map((n) => ({
           id: n.id,
           title: n.title,
@@ -45,8 +53,9 @@ function HospitalNotifications() {
           subType: n.subType,
           appointmentId: n.appointmentId,
           read: n.isRead,
-          timestamp: n.createdAt
+          timestamp: n.createdAt,
         }));
+
         setNotifications(mapped);
       } else {
         setNotifications([]);
@@ -59,32 +68,59 @@ function HospitalNotifications() {
 
   const counts = useMemo(() => {
     const all = notifications.length;
+
     const appointments = notifications.filter(
-      (n) => n.type === "appointment" || (n.subType && n.subType.includes("apt")) || n.appointmentId
+      (n) =>
+        n.type === "appointment" ||
+        (n.subType && n.subType.includes("apt")) ||
+        n.appointmentId
     ).length;
-    const reminders = notifications.filter((n) => n.type === "reminder").length;
-    const system = notifications.filter((n) => n.type === "system" || !n.type).length;
+
+    const reminders = notifications.filter(
+      (n) => n.type === "reminder"
+    ).length;
+
+    const system = notifications.filter(
+      (n) => n.type === "system" || !n.type
+    ).length;
+
     const unread = notifications.filter((n) => !n.read).length;
-    return { all, appointments, reminders, system, unread };
+
+    return {
+      all,
+      appointments,
+      reminders,
+      system,
+      unread,
+    };
   }, [notifications]);
 
   const filteredNotifications = useMemo(() => {
     if (activeTab === "appointments") {
       return notifications.filter(
-        (n) => n.type === "appointment" || (n.subType && n.subType.includes("apt")) || n.appointmentId
+        (n) =>
+          n.type === "appointment" ||
+          (n.subType && n.subType.includes("apt")) ||
+          n.appointmentId
       );
     }
+
     if (activeTab === "reminders") {
       return notifications.filter((n) => n.type === "reminder");
     }
+
     if (activeTab === "system") {
-      return notifications.filter((n) => n.type === "system" || !n.type);
+      return notifications.filter(
+        (n) => n.type === "system" || !n.type
+      );
     }
+
     return notifications;
   }, [notifications, activeTab]);
 
   const handleMarkAll = async () => {
     const unread = notifications.filter((n) => !n.read);
+
     for (const notif of unread) {
       try {
         await api.put(`/Notifications/${notif.id}/read`);
@@ -92,20 +128,29 @@ function HospitalNotifications() {
         console.error(e);
       }
     }
+
     loadHospitalNotifications();
-    window.dispatchEvent(new Event("medibook_notifications_updated"));
+
+    window.dispatchEvent(
+      new Event("medibook_notifications_updated")
+    );
   };
 
   const handleCardClick = async (notif) => {
     if (!notif.read) {
       try {
         await api.put(`/Notifications/${notif.id}/read`);
+
         loadHospitalNotifications();
-        window.dispatchEvent(new Event("medibook_notifications_updated"));
+
+        window.dispatchEvent(
+          new Event("medibook_notifications_updated")
+        );
       } catch (e) {
         console.error(e);
       }
     }
+
     if (notif.appointmentId) {
       navigate("/hospital/appointments");
     }
@@ -116,27 +161,34 @@ function HospitalNotifications() {
       return {
         icon: Calendar,
         title: "No Appointment Notifications",
-        description: "Your hospital has no pending appointment confirmation or cancellation updates."
+        description:
+          "Your hospital has no pending appointment confirmation or cancellation updates.",
       };
     }
+
     if (activeTab === "reminders") {
       return {
         icon: Bell,
         title: "No Facility Reminders",
-        description: "There are no operational or schedule reminders for your hospital."
+        description:
+          "There are no operational or schedule reminders for your hospital.",
       };
     }
+
     if (activeTab === "system") {
       return {
         icon: Info,
         title: "No System Notifications",
-        description: "There are no system-wide updates or administrative notices."
+        description:
+          "There are no system-wide updates or administrative notices.",
       };
     }
+
     return {
       icon: BellOff,
       title: "No Notifications Found",
-      description: "You're all caught up! Facility alerts and updates will appear here."
+      description:
+        "You're all caught up! Facility alerts and updates will appear here.",
     };
   };
 
@@ -145,10 +197,14 @@ function HospitalNotifications() {
       {/* Page Header */}
       <PageHeader
         title="Hospital Notifications"
-        subtitle={`Stay updated with operational alerts and appointments for ${hospital?.name || "your hospital"}`}
+        subtitle={`Stay updated with operational alerts and appointments for ${hospital?.name || "your hospital"
+          }`}
         action={
           counts.unread > 0 ? (
-            <button className="btn-mark-all-read" onClick={handleMarkAll}>
+            <button
+              className="btn-mark-all-read"
+              onClick={handleMarkAll}
+            >
               <CheckCheck size={16} />
               <span>Mark all as read</span>
             </button>
@@ -157,45 +213,61 @@ function HospitalNotifications() {
       />
 
       {/* Filter Tabs Bar */}
-      <div className="notifications-tabs-bar" role="tablist" style={{ marginBottom: "24px" }}>
+      <div
+        className="notifications-tabs-bar"
+        role="tablist"
+        style={{ marginBottom: "24px" }}
+      >
         <button
-          className={`notifications-tab-btn ${activeTab === "all" ? "active" : ""}`}
+          className={`notifications-tab-btn ${activeTab === "all" ? "active" : ""
+            }`}
           onClick={() => setActiveTab("all")}
           role="tab"
           aria-selected={activeTab === "all"}
         >
           <span>All</span>
-          <span className="notifications-tab-count">{counts.all}</span>
+          <span className="notifications-tab-count">
+            {counts.all}
+          </span>
         </button>
 
         <button
-          className={`notifications-tab-btn ${activeTab === "appointments" ? "active" : ""}`}
+          className={`notifications-tab-btn ${activeTab === "appointments" ? "active" : ""
+            }`}
           onClick={() => setActiveTab("appointments")}
           role="tab"
           aria-selected={activeTab === "appointments"}
         >
           <span>Appointments</span>
-          <span className="notifications-tab-count">{counts.appointments}</span>
+          <span className="notifications-tab-count">
+            {counts.appointments}
+          </span>
         </button>
 
         <button
-          className={`notifications-tab-btn ${activeTab === "reminders" ? "active" : ""}`}
+          className={`notifications-tab-btn ${activeTab === "reminders" ? "active" : ""
+            }`}
           onClick={() => setActiveTab("reminders")}
           role="tab"
           aria-selected={activeTab === "reminders"}
         >
           <span>Reminders</span>
-          <span className="notifications-tab-count">{counts.reminders}</span>
+          <span className="notifications-tab-count">
+            {counts.reminders}
+          </span>
         </button>
 
         <button
-          className={`notifications-tab-btn ${activeTab === "system" ? "active" : ""}`}
+          className={`notifications-tab-btn ${activeTab === "system" ? "active" : ""
+            }`}
           onClick={() => setActiveTab("system")}
           role="tab"
           aria-selected={activeTab === "system"}
         >
           <span>System</span>
-          <span className="notifications-tab-count">{counts.system}</span>
+          <span className="notifications-tab-count">
+            {counts.system}
+          </span>
         </button>
       </div>
 
