@@ -99,7 +99,8 @@ namespace MediBook.Api.Controllers
                     mobile = user.Email,
                     role = user.Role,
                     name = user.Name,
-                    refId = refId
+                    refId = refId,
+                    profileImageUrl = user.ProfileImageUrl
                 });
             }
 

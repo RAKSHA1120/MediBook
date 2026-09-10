@@ -7,6 +7,7 @@ import Card from "../components/Card";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import StatusBadge from "../components/StatusBadge";
+import ProfileImageUploader from "../components/ProfileImageUploader";
 import "./AdminShared.css";
 
 function HospitalProfile() {
@@ -103,22 +104,18 @@ function HospitalProfile() {
       <Card style={{ marginBottom: "24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-            <div
-              style={{
-                width: "72px",
-                height: "72px",
-                borderRadius: "16px",
-                backgroundColor: "var(--primary-soft)",
-                color: "var(--primary)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                border: "1px solid var(--border)",
-                flexShrink: 0
-              }}
-            >
-              <Building2 size={36} />
-            </div>
+            <ProfileImageUploader 
+              currentImageUrl={hospital?.profileImageUrl} 
+              onImageUpdated={(newImageUrl) => {
+                setHospital(prev => ({ ...prev, profileImageUrl: newImageUrl }));
+                const user = getCurrentUser();
+                if (user) {
+                  user.profileImageUrl = newImageUrl;
+                  sessionStorage.setItem("medibook_current_user", JSON.stringify(user));
+                  window.dispatchEvent(new Event("medibook_current_user_updated"));
+                }
+              }} 
+            />
 
             <div>
               <h3 style={{ fontSize: "1.3rem", fontWeight: "700", margin: "0 0 4px 0", color: "var(--text-heading)" }}>

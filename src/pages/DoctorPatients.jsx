@@ -3,6 +3,7 @@ import { Search, Eye, Users, UserCheck, CalendarCheck, Clock, Loader2, AlertCirc
 import { Link, useNavigate } from "react-router-dom";
 import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
 import { api } from "../utils/api";
+import ProfileModalTrigger from "../components/ProfileModalTrigger";
 import StatusBadge from "../components/StatusBadge";
 import EmptyState from "../components/EmptyState";
 import "../pages/AdminShared.css";
@@ -311,6 +312,7 @@ function DoctorPatients() {
                   return (
                     <tr key={pt.id}>
                       <td>
+                      <ProfileModalTrigger type="patient" id={pt.id}>
                         <div className="user-info-cell">
                           <div className="user-avatar">{initials}</div>
                           <div className="user-details">
@@ -320,6 +322,7 @@ function DoctorPatients() {
                             )}
                           </div>
                         </div>
+                      </ProfileModalTrigger>
                       </td>
                       <td className="nowrap">
                         <span style={{ color: "var(--text-primary)", fontWeight: "500" }}>

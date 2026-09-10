@@ -13,5 +13,7 @@ namespace MediBook.Api.Models
         public string Role { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public string? ProfileImageUrl { get; set; }
     }
 }

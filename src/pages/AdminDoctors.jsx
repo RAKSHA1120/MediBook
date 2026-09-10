@@ -8,6 +8,7 @@ import Input from "../components/Input";
 import StatusBadge from "../components/StatusBadge";
 import { api } from "../utils/api";
 import { generateLoginId, generatePassword } from "../utils/idGenerator";
+import ProfileModalTrigger from "../components/ProfileModalTrigger";
 import "./AdminDoctors.css";
 import "./AdminShared.css";
 
@@ -371,19 +372,21 @@ function AdminDoctors() {
                   <tr key={doc.id}>
                     {/* DOCTOR: Avatar, Name, Qualification */}
                     <td>
-                      <div className="user-info-cell">
-                        <div className="user-avatar" style={{ background: "rgba(47, 111, 163, 0.1)", color: "var(--primary)" }}>
-                          {cleanName.charAt(0)}
+                      <ProfileModalTrigger type="doctor" id={doc.id}>
+                        <div className="user-info-cell">
+                          <div className="user-avatar" style={{ background: "rgba(47, 111, 163, 0.1)", color: "var(--primary)" }}>
+                            {cleanName.charAt(0)}
+                          </div>
+                          <div className="user-details">
+                            <span className="user-name" style={{ fontSize: "14px", fontWeight: "600" }}>
+                              Dr. {cleanName}
+                            </span>
+                            <span className="user-subtext" style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                              {qual}
+                            </span>
+                          </div>
                         </div>
-                        <div className="user-details">
-                          <span className="user-name" style={{ fontSize: "14px", fontWeight: "600" }}>
-                            Dr. {cleanName}
-                          </span>
-                          <span className="user-subtext" style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
-                            {qual}
-                          </span>
-                        </div>
-                      </div>
+                      </ProfileModalTrigger>
                     </td>
 
                     {/* SPECIALIZATION */}

@@ -8,6 +8,7 @@ import StatusBadge from "../components/StatusBadge";
 import Tabs from "../components/Tabs";
 import Modal from "../components/Modal";
 import { api } from "../utils/api";
+import ProfileModalTrigger from "../components/ProfileModalTrigger";
 import "./AdminDashboard.css";
 import "./AdminShared.css";
 
@@ -316,21 +317,25 @@ function AdminAppointments() {
 
                     {/* PATIENT */}
                     <td>
-                      <button
-                        type="button"
-                        className="patient-name-link"
-                        onClick={() => navigate(`/admin/appointments/${apt.id}`)}
-                        title={`View appointment details for ${patientName}`}
-                      >
-                        {patientName}
-                      </button>
+                      <ProfileModalTrigger type="patient" id={apt.patientId}>
+                        <button
+                          type="button"
+                          className="patient-name-link"
+                          onClick={() => navigate(`/admin/appointments/${apt.id}`)}
+                          title={`View appointment details for ${patientName}`}
+                        >
+                          {patientName}
+                        </button>
+                      </ProfileModalTrigger>
                     </td>
 
                     {/* DOCTOR (Name Only) */}
                     <td>
-                      <span style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-heading)" }}>
-                        {cleanDocName}
-                      </span>
+                      <ProfileModalTrigger type="doctor" id={apt.doctorId}>
+                        <span style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-heading)", cursor: "default" }}>
+                          {cleanDocName}
+                        </span>
+                      </ProfileModalTrigger>
                     </td>
 
                     {/* DATE & TIME (Clean Separate Lines) */}

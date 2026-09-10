@@ -59,6 +59,8 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
+app.UseStaticFiles();
+
 app.UseCors("AllowReactApp");
 if (!app.Environment.IsDevelopment())
 {
