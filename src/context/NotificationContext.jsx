@@ -26,6 +26,11 @@ export function NotificationProvider({ children }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [toasts, setToasts] = useState([]);
   const activeUserRef = useRef(null);
+  const notificationsRef = useRef([]);
+
+  useEffect(() => {
+    notificationsRef.current = notifications;
+  }, [notifications]);
 
   const removeToast = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -34,6 +39,7 @@ export function NotificationProvider({ children }) {
   const showToast = useCallback(
     ({ title, message, type = "info", duration = 5000 }) => {
       const id = Date.now() + Math.random();
+
       const newToast = {
         id,
         title,
@@ -199,7 +205,6 @@ export function NotificationProvider({ children }) {
 
     syncConnection();
 
-    // Re-sync on auth changes
     const handleAuthChange = () => syncConnection();
 
     window.addEventListener(
@@ -207,7 +212,6 @@ export function NotificationProvider({ children }) {
       handleAuthChange
     );
 
-    // Re-sync on global notification updates
     const handleNotifsUpdated = () => {
       fetchNotifications();
     };
@@ -254,7 +258,6 @@ export function NotificationProvider({ children }) {
             incoming.createdAt || new Date().toISOString(),
         };
 
-        // 1. Update notifications list
         setNotifications((prev) => {
           if (
             prev.some(
@@ -267,10 +270,8 @@ export function NotificationProvider({ children }) {
           return [normalized, ...prev];
         });
 
-        // 2. Increment unread count
         setUnreadCount((prev) => prev + 1);
 
-        // 3. Show in-app Toast notification
         let toastType = "info";
 
         const titleLower =
@@ -301,7 +302,6 @@ export function NotificationProvider({ children }) {
           duration: 5000,
         });
 
-        // 4. Refresh notification pages
         window.dispatchEvent(
           new Event("medibook_notifications_updated")
         );
@@ -327,7 +327,6 @@ export function NotificationProvider({ children }) {
     >
       {children}
 
-      {/* Global In-App Real-Time Toast Notifications */}
       {toasts.length > 0 && (
         <div
           className="toast-container"
@@ -344,9 +343,7 @@ export function NotificationProvider({ children }) {
               type={toast.type}
               title={toast.title}
               message={toast.message}
-              onClose={() =>
-                removeToast(toast.id)
-              }
+              onClose={() => removeToast(toast.id)}
             />
           ))}
         </div>

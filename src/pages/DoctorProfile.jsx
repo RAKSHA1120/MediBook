@@ -20,6 +20,13 @@ import SecondaryButton from "../components/SecondaryButton";
 import Toast from "../components/Toast";
 import { getCurrentUser, getCurrentDoctor } from "../utils/auth";
 import { api } from "../utils/api";
+import {
+  isValidPhoneNumber,
+  filterPhoneInput,
+  handlePhoneKeyDown,
+  PHONE_ERROR_MESSAGE
+} from "../utils/phoneValidation";
+
 import ProfileImageUploader from "../components/ProfileImageUploader";
 import "./DoctorProfile.css";
 
@@ -80,8 +87,8 @@ function DoctorProfile() {
       hospitalAddress: doc?.address || doc?.hospitalAddress || "123 Healthcare Ave, Block B",
       city: doc?.location || doc?.city || "Bangalore",
       state: doc?.state || "Karnataka",
-      hospitalContact: doc?.hospitalContact || "+91 80 4123 4567",
-      profileImageUrl: doc?.profileImageUrl || user?.profileImageUrl || null
+hospitalContact: doc?.hospitalContact || "8041234567",
+profileImageUrl: doc?.profileImageUrl || user?.profileImageUrl || null
     };
   }
 
@@ -125,10 +132,13 @@ function DoctorProfile() {
 
     if (!formData.phone || !formData.phone.trim()) {
       newErrors.phone = "Mobile number is required";
-    } else {
-      const cleanPhone = formData.phone.replace(/[^0-9]/g, "");
-      if (cleanPhone.length < 10) {
-        newErrors.phone = "Enter a valid 10-digit mobile number";
+    } else if (!isValidPhoneNumber(formData.phone)) {
+      newErrors.phone = PHONE_ERROR_MESSAGE;
+    }
+
+    if (formData.hospitalContact && formData.hospitalContact.trim()) {
+      if (!isValidPhoneNumber(formData.hospitalContact)) {
+        newErrors.hospitalContact = PHONE_ERROR_MESSAGE;
       }
     }
 
@@ -391,11 +401,14 @@ function DoctorProfile() {
               </label>
               <input
                 id="input-doc-phone"
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
                 className={`field-input ${errors.phone ? "has-error" : ""}`}
                 value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                placeholder="+91 98765 43210"
+                onKeyDown={handlePhoneKeyDown}
+                onChange={(e) => handleInputChange("phone", filterPhoneInput(e.target.value))}
+                placeholder="Enter 10-digit mobile number"
               />
               {errors.phone && <span className="field-error-text">{errors.phone}</span>}
             </div>
@@ -613,12 +626,16 @@ function DoctorProfile() {
               </label>
               <input
                 id="input-hosp-contact"
-                type="text"
-                className="field-input"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                className={`field-input ${errors.hospitalContact ? "has-error" : ""}`}
                 value={formData.hospitalContact}
-                onChange={(e) => handleInputChange("hospitalContact", e.target.value)}
-                placeholder="+91 80 4123 4567"
+                onKeyDown={handlePhoneKeyDown}
+                onChange={(e) => handleInputChange("hospitalContact", filterPhoneInput(e.target.value))}
+                placeholder="Enter 10-digit contact number"
               />
+              {errors.hospitalContact && <span className="field-error-text">{errors.hospitalContact}</span>}
             </div>
           </div>
         )}

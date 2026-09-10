@@ -7,6 +7,13 @@ import Modal from "../components/Modal";
 import StatusBadge from "../components/StatusBadge";
 import "./AdminShared.css";
 import { api } from "../utils/api";
+import {
+  isValidPhoneNumber,
+  filterPhoneInput,
+  handlePhoneKeyDown,
+  PHONE_ERROR_MESSAGE
+} from "../utils/phoneValidation";
+
 import ProfileModalTrigger from "../components/ProfileModalTrigger";
 
 function AdminHospitals() {
@@ -116,6 +123,10 @@ function AdminHospitals() {
     }
     if (!formData.contact.trim()) {
       setErrorMessage("Contact Number is required.");
+      return;
+    }
+    if (!isValidPhoneNumber(formData.contact)) {
+      setErrorMessage(PHONE_ERROR_MESSAGE);
       return;
     }
     if (!formData.email.trim()) {
@@ -428,11 +439,15 @@ function AdminHospitals() {
             <div className="form-group">
               <label className="form-label">Contact Number *</label>
               <input
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
                 className="form-input"
                 value={formData.contact}
-                onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                placeholder="e.g. +91 80 2345 6789"
+                onKeyDown={handlePhoneKeyDown}
+                onChange={(e) => setFormData({ ...formData, contact: filterPhoneInput(e.target.value) })}
+                placeholder="e.g. 9876543210"
+                required
               />
             </div>
 

@@ -7,6 +7,13 @@ import Card from "../components/Card";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import StatusBadge from "../components/StatusBadge";
+import {
+  isValidPhoneNumber,
+  filterPhoneInput,
+  handlePhoneKeyDown,
+  PHONE_ERROR_MESSAGE
+} from "../utils/phoneValidation";
+
 import ProfileImageUploader from "../components/ProfileImageUploader";
 import "./AdminShared.css";
 
@@ -15,6 +22,7 @@ function HospitalProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [successMessage, setSuccessMessage] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   useEffect(() => {
     loadHospitalProfile();
@@ -45,6 +53,12 @@ function HospitalProfile() {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!hospital?.id) return;
+
+    if (!formData.contact || !isValidPhoneNumber(formData.contact)) {
+      setPhoneError(PHONE_ERROR_MESSAGE);
+      return;
+    }
+    setPhoneError("");
 
     try {
       const putBody = {
@@ -237,8 +251,17 @@ function HospitalProfile() {
             />
             <Input
               label="Contact Phone"
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              placeholder="e.g. 9876543210"
               value={formData.contact || ""}
-              onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+              onKeyDown={handlePhoneKeyDown}
+              onChange={(e) => {
+                setFormData({ ...formData, contact: filterPhoneInput(e.target.value) });
+                if (phoneError) setPhoneError("");
+              }}
+              error={phoneError}
               disabled={!isEditing}
               required
             />

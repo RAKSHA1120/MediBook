@@ -6,8 +6,14 @@ import SearchBox from "../components/SearchBox";
 import StatusBadge from "../components/StatusBadge";
 import Modal from "../components/Modal";
 import { api } from "../utils/api";
-import ProfileModalTrigger from "../components/ProfileModalTrigger";
+import {
+  isValidPhoneNumber,
+  filterPhoneInput,
+  handlePhoneKeyDown,
+  PHONE_ERROR_MESSAGE
+} from "../utils/phoneValidation";
 
+import ProfileModalTrigger from "../components/ProfileModalTrigger";
 import "./AdminDashboard.css";
 import "./AdminShared.css";
 
@@ -23,6 +29,7 @@ function AdminPatients() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [editPhoneError, setEditPhoneError] = useState("");
 
   useEffect(() => {
     fetchPatients();
@@ -128,6 +135,13 @@ function AdminPatients() {
   // Save Edit Patient
   const handleSaveEditPatient = async (e) => {
     e.preventDefault();
+
+    if (!isValidPhoneNumber(editFormData.contact)) {
+      setEditPhoneError(PHONE_ERROR_MESSAGE);
+      return;
+    }
+    setEditPhoneError("");
+
     const updates = {
       id: editFormData.id,
       userId: editFormData.userId,
@@ -552,12 +566,20 @@ function AdminPatients() {
             <div className="form-group">
               <label className="form-label">Contact Phone *</label>
               <input
-                type="text"
-                className="form-input"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                className={`form-input ${editPhoneError ? "form-input-error" : ""}`}
                 value={editFormData.contact}
-                onChange={(e) => setEditFormData({ ...editFormData, contact: e.target.value })}
+                onKeyDown={handlePhoneKeyDown}
+                onChange={(e) => {
+                  setEditFormData({ ...editFormData, contact: filterPhoneInput(e.target.value) });
+                  if (editPhoneError) setEditPhoneError("");
+                }}
+                placeholder="Enter 10-digit mobile number"
                 required
               />
+              {editPhoneError && <span className="form-error" style={{ color: "var(--error)", fontSize: "12px", marginTop: "4px", display: "block" }}>{editPhoneError}</span>}
             </div>
             <div className="form-group">
               <label className="form-label">Email Address</label>

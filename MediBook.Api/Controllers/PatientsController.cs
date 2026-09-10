@@ -1,5 +1,6 @@
 using MediBook.Api.Data;
 using MediBook.Api.Models;
+using MediBook.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,6 +43,20 @@ namespace MediBook.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreatePatient(Patient patient)
         {
+            if (!string.IsNullOrEmpty(patient.Mobile) && !PhoneNumberValidator.IsValid(patient.Mobile))
+            {
+                return BadRequest(new { message = PhoneNumberValidator.ErrorMessage });
+            }
+
+            if (patient.DOB.HasValue)
+            {
+                if (!TryCalculateAge(patient.DOB.Value, out int calculatedAge, out string? dobError))
+                {
+                    return BadRequest(new { message = dobError });
+                }
+                patient.Age = calculatedAge;
+            }
+
             _context.Patients.Add(patient);
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetPatient), new { id = patient.Id }, patient);
@@ -51,6 +66,21 @@ namespace MediBook.Api.Controllers
         public async Task<IActionResult> UpdatePatient(int id, Patient patient)
         {
             if (id != patient.Id) return BadRequest();
+
+            if (!string.IsNullOrEmpty(patient.Mobile) && !PhoneNumberValidator.IsValid(patient.Mobile))
+            {
+                return BadRequest(new { message = PhoneNumberValidator.ErrorMessage });
+            }
+
+            if (patient.DOB.HasValue)
+            {
+                if (!TryCalculateAge(patient.DOB.Value, out int calculatedAge, out string? dobError))
+                {
+                    return BadRequest(new { message = dobError });
+                }
+                patient.Age = calculatedAge;
+            }
+
             _context.Entry(patient).State = EntityState.Modified;
             try
             {
@@ -62,6 +92,29 @@ namespace MediBook.Api.Controllers
                 else throw;
             }
             return NoContent();
+        }
+
+        private static bool TryCalculateAge(DateTime dob, out int age, out string? error)
+        {
+            var birthDate = dob.Date;
+            var today = DateTime.Today;
+
+            if (birthDate > today)
+            {
+                age = 0;
+                error = "Date of Birth cannot be in the future.";
+                return false;
+            }
+
+            int calculatedAge = today.Year - birthDate.Year;
+            if (today.Month < birthDate.Month || (today.Month == birthDate.Month && today.Day < birthDate.Day))
+            {
+                calculatedAge--;
+            }
+
+            age = calculatedAge;
+            error = null;
+            return true;
         }
 
         private bool PatientExists(int id)

@@ -109,3 +109,6 @@ class NotificationHubService {
 }
 
 export const notificationHub = new NotificationHubService();
+if (typeof window !== "undefined") {
+  window.__notificationHub = notificationHub;
+}
