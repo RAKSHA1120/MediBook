@@ -79,4 +79,30 @@ using (var scope = app.Services.CreateScope())
     await syncService.SyncDoctorAccountsAsync();
 }
 
+// Ensure the Admin user exists with the correct credentials
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<MediBookDbContext>();
+    var adminEmail = "admin@medibook.com";
+    var adminPassword = "Admin@123";
+    var existingAdmin = await db.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
+    if (existingAdmin == null)
+    {
+        db.Users.Add(new MediBook.Api.Models.User
+        {
+            Name = "Admin",
+            Email = adminEmail,
+            Password = adminPassword,
+            Role = "Admin",
+            CreatedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+    }
+    else if (existingAdmin.Password != adminPassword)
+    {
+        existingAdmin.Password = adminPassword;
+        await db.SaveChangesAsync();
+    }
+}
+
 app.Run();

@@ -39,6 +39,7 @@ namespace MediBook.Api.Controllers
                     registrationNumber = d.RegistrationNumber,
                     profileImageUrl = d.ProfileImageUrl,
                     status = d.IsActive ? "Active" : "Inactive",
+                    consultationFee = d.ConsultationFee,
 
                     hospital = d.Hospital == null ? null : new
                     {
@@ -79,6 +80,7 @@ namespace MediBook.Api.Controllers
                     registrationNumber = d.RegistrationNumber,
                     profileImageUrl = d.ProfileImageUrl,
                     status = d.IsActive ? "Active" : "Inactive",
+                    consultationFee = d.ConsultationFee,
 
                     hospital = d.Hospital == null ? null : new
                     {

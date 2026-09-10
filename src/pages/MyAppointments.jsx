@@ -109,8 +109,8 @@ function MyAppointments() {
       appointmentType: apt.appointmentType || "Consultation",
       specialty: apt.appointmentType || "Consultation",
       reason: apt.reason || "Regular consultation",
-      consultationFee: apt.consultationFee ?? 500,
-      fee: apt.consultationFee ?? 500,
+      consultationFee: apt.consultationFee,
+      fee: apt.consultationFee,
       visitorCardNumber: apt.visitorCardNumber,
       createdAt: apt.createdAt,
       updatedAt: apt.updatedAt

@@ -355,8 +355,7 @@ function AppointmentDetails() {
     const rawLoc = appt.location || doc?.location;
     const location = String(rawLoc ?? "").trim() !== "" ? String(rawLoc).trim() : "Chennai";
 
-    const feeVal = appt.consultationFee ?? appt.fee ?? doc?.consultationFee ?? doc?.fee;
-    const fee = feeVal !== null && feeVal !== undefined ? feeVal : 1000;
+    const fee = appt.consultationFee ?? appt.fee ?? doc?.consultationFee ?? doc?.fee;
 
     const experience = appt.experience || doc?.experience || 12;
     const rating = appt.rating || doc?.rating || 4.8;

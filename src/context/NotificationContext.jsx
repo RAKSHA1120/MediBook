@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { notificationHub } from "../services/notificationHub";
 import { getCurrentUser } from "../utils/auth";
 import { api } from "../utils/api";
@@ -7,11 +14,11 @@ import Toast from "../components/Toast";
 const NotificationContext = createContext({
   notifications: [],
   unreadCount: 0,
-  fetchNotifications: async () => {},
-  markAsRead: async () => {},
-  markAllAsRead: async () => {},
-  clearAll: async () => {},
-  showToast: () => {},
+  fetchNotifications: async () => { },
+  markAsRead: async () => { },
+  markAllAsRead: async () => { },
+  clearAll: async () => { },
+  showToast: () => { },
 });
 
 export function NotificationProvider({ children }) {
@@ -29,21 +36,31 @@ export function NotificationProvider({ children }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const showToast = useCallback(({ title, message, type = "info", duration = 5000 }) => {
-    const id = Date.now() + Math.random();
-    const newToast = { id, title, message, type };
+  const showToast = useCallback(
+    ({ title, message, type = "info", duration = 5000 }) => {
+      const id = Date.now() + Math.random();
 
-    setToasts((prev) => [...prev.slice(-4), newToast]); // keep at most 5 toasts
+      const newToast = {
+        id,
+        title,
+        message,
+        type,
+      };
 
-    if (duration > 0) {
-      setTimeout(() => {
-        removeToast(id);
-      }, duration);
-    }
-  }, [removeToast]);
+      setToasts((prev) => [...prev.slice(-4), newToast]);
+
+      if (duration > 0) {
+        setTimeout(() => {
+          removeToast(id);
+        }, duration);
+      }
+    },
+    [removeToast]
+  );
 
   const fetchNotifications = useCallback(async () => {
     const user = getCurrentUser();
+
     if (!user || !user.id) {
       setNotifications([]);
       setUnreadCount(0);
@@ -51,7 +68,11 @@ export function NotificationProvider({ children }) {
     }
 
     try {
-      const endpoint = `/Notifications/user/${user.id}`;
+      const endpoint =
+        user.role?.toLowerCase() === "admin"
+          ? "/Notifications"
+          : `/Notifications/user/${user.id}`;
+
       const res = await api.get(endpoint);
 
       if (res.success && Array.isArray(res.data)) {
@@ -70,114 +91,96 @@ export function NotificationProvider({ children }) {
         }));
 
         setNotifications(mapped);
-        const unread = Math.max(0, mapped.filter((n) => !n.isRead && !n.read).length);
+
+        const unread = mapped.filter(
+          (n) => !n.isRead && !n.read
+        ).length;
+
         setUnreadCount(unread);
       }
     } catch (err) {
-      console.warn("[NotificationContext] Failed to fetch notifications:", err);
+      console.warn(
+        "[NotificationContext] Failed to fetch notifications:",
+        err
+      );
     }
   }, []);
 
   const markAsRead = useCallback(async (id) => {
     try {
-      const res = await api.put(`/Notifications/${id}/read`);
-      if (!res.success) {
-        throw new Error(res.error || "Failed to mark notification as read");
-      }
-      setNotifications((prev) => {
-        const next = prev.map((n) =>
-          n.id === id ? { ...n, isRead: true, read: true } : n
-        );
-        const count = Math.max(0, next.filter((n) => !n.isRead && !n.read).length);
-        setUnreadCount(count);
-        return next;
-      });
-      window.dispatchEvent(new Event("medibook_notifications_updated"));
+      await api.put(`/Notifications/${id}/read`);
+
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === id
+            ? {
+              ...n,
+              isRead: true,
+              read: true,
+            }
+            : n
+        )
+      );
+
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+
+      window.dispatchEvent(
+        new Event("medibook_notifications_updated")
+      );
     } catch (err) {
-      console.warn("[NotificationContext] Failed to mark notification as read:", err);
-      showToast({
-        title: "Error",
-        message: "Failed to mark notification as read.",
-        type: "error",
-      });
+      console.warn(
+        "[NotificationContext] Failed to mark notification as read:",
+        err
+      );
     }
-  }, [showToast]);
+  }, []);
 
   const markAllAsRead = useCallback(async () => {
-    // 1. Snapshot currently unread IDs at the time action begins
-    const unreadSnapshot = notificationsRef.current.filter((n) => !n.isRead && !n.read);
-    const unreadIds = unreadSnapshot.map((n) => n.id);
-
-    if (unreadIds.length === 0) {
-      return { success: true, count: 0 };
-    }
-
-    // 2. Mark each unread notification using existing PUT /api/Notifications/{id}/read
-    const results = await Promise.allSettled(
-      unreadIds.map(async (id) => {
-        const res = await api.put(`/Notifications/${id}/read`);
-        if (!res.success) {
-          throw new Error(res.error || `Failed to mark notification ${id} as read`);
-        }
-        return id;
-      })
+    const unreadItems = notifications.filter(
+      (n) => !n.isRead && !n.read
     );
 
-    const succeededIds = new Set();
-    let failedCount = 0;
-
-    results.forEach((r, idx) => {
-      if (r.status === "fulfilled") {
-        succeededIds.add(unreadIds[idx]);
-      } else {
-        failedCount++;
-        console.error(`[NotificationContext] Failed to mark notification ${unreadIds[idx]} as read:`, r.reason);
+    for (const item of unreadItems) {
+      try {
+        await api.put(`/Notifications/${item.id}/read`);
+      } catch (e) {
+        // Ignore individual failures
       }
-    });
-
-    // 3. Functional state update based on latest state (prev)
-    // Any SignalR notification received while markAllAsRead was executing is in prev,
-    // and will NOT be in succeededIds, so it remains untouched and unread.
-    setNotifications((prev) => {
-      const next = prev.map((n) =>
-        succeededIds.has(n.id) ? { ...n, isRead: true, read: true } : n
-      );
-      // Derive unreadCount directly from the resulting state, ensuring it never goes negative
-      const newUnreadCount = Math.max(0, next.filter((n) => !n.isRead && !n.read).length);
-      setUnreadCount(newUnreadCount);
-      return next;
-    });
-
-    // 4. Dispatch event for any other external components
-    window.dispatchEvent(new Event("medibook_notifications_updated"));
-
-    // 5. Toast feedback
-    if (failedCount > 0) {
-      showToast({
-        title: "Error",
-        message: `Failed to mark ${failedCount} notification${failedCount > 1 ? "s" : ""} as read.`,
-        type: "error",
-      });
-      return { success: false, succeededCount: succeededIds.size, failedCount };
-    } else {
-      showToast({
-        title: "Success",
-        message: "All notifications marked as read.",
-        type: "success",
-      });
-      return { success: true, succeededCount: succeededIds.size, failedCount: 0 };
     }
-  }, [showToast]);
+
+    setNotifications((prev) =>
+      prev.map((n) => ({
+        ...n,
+        isRead: true,
+        read: true,
+      }))
+    );
+
+    setUnreadCount(0);
+
+    window.dispatchEvent(
+      new Event("medibook_notifications_updated")
+    );
+  }, [notifications]);
 
   const clearAll = useCallback(async () => {
-    const toDelete = [...notificationsRef.current];
+    const toDelete = [...notifications];
+
     setNotifications([]);
     setUnreadCount(0);
-    await Promise.allSettled(
-      toDelete.map((item) => api.delete(`/Notifications/${item.id}`))
+
+    for (const item of toDelete) {
+      try {
+        await api.delete(`/Notifications/${item.id}`);
+      } catch (e) {
+        // Ignore individual failures
+      }
+    }
+
+    window.dispatchEvent(
+      new Event("medibook_notifications_updated")
     );
-    window.dispatchEvent(new Event("medibook_notifications_updated"));
-  }, []);
+  }, [notifications]);
 
   // Connect to SignalR when logged in, disconnect on logout
   useEffect(() => {
@@ -187,11 +190,14 @@ export function NotificationProvider({ children }) {
 
       if (userId) {
         activeUserRef.current = userId;
+
         await notificationHub.startConnection(userId);
         await fetchNotifications();
       } else {
         activeUserRef.current = null;
+
         await notificationHub.stopConnection();
+
         setNotifications([]);
         setUnreadCount(0);
       }
@@ -199,67 +205,108 @@ export function NotificationProvider({ children }) {
 
     syncConnection();
 
-    // Re-sync on auth changes
     const handleAuthChange = () => syncConnection();
-    window.addEventListener("medibook_current_user_updated", handleAuthChange);
+
+    window.addEventListener(
+      "medibook_current_user_updated",
+      handleAuthChange
+    );
+
+    const handleNotifsUpdated = () => {
+      fetchNotifications();
+    };
+
+    window.addEventListener(
+      "medibook_notifications_updated",
+      handleNotifsUpdated
+    );
 
     return () => {
-      window.removeEventListener("medibook_current_user_updated", handleAuthChange);
+      window.removeEventListener(
+        "medibook_current_user_updated",
+        handleAuthChange
+      );
+
+      window.removeEventListener(
+        "medibook_notifications_updated",
+        handleNotifsUpdated
+      );
+
       notificationHub.stopConnection();
     };
   }, [fetchNotifications]);
 
   // Handle incoming real-time notifications via SignalR
   useEffect(() => {
-    const unsubscribe = notificationHub.onNotificationReceived((incoming) => {
-      if (!incoming) return;
+    const unsubscribe = notificationHub.onNotificationReceived(
+      (incoming) => {
+        if (!incoming) return;
 
-      const normalized = {
-        id: incoming.id || Date.now(),
-        userId: incoming.userId,
-        title: incoming.title || "New Notification",
-        message: incoming.message || "",
-        type: incoming.type || "appointment",
-        subType: incoming.subType,
-        appointmentId: incoming.appointmentId,
-        isRead: Boolean(incoming.isRead),
-        read: Boolean(incoming.isRead),
-        createdAt: incoming.createdAt || new Date().toISOString(),
-        timestamp: incoming.createdAt || new Date().toISOString(),
-      };
+        const normalized = {
+          id: incoming.id || Date.now(),
+          userId: incoming.userId,
+          title: incoming.title || "New Notification",
+          message: incoming.message || "",
+          type: incoming.type || "appointment",
+          subType: incoming.subType,
+          appointmentId: incoming.appointmentId,
+          isRead: incoming.isRead || false,
+          read: incoming.isRead || false,
+          createdAt:
+            incoming.createdAt || new Date().toISOString(),
+          timestamp:
+            incoming.createdAt || new Date().toISOString(),
+        };
 
-      // 1. Update notifications list functionally based on latest prev state
-      setNotifications((prev) => {
-        if (prev.some((n) => n.id === normalized.id)) {
-          return prev;
+        setNotifications((prev) => {
+          if (
+            prev.some(
+              (n) => n.id === normalized.id
+            )
+          ) {
+            return prev;
+          }
+
+          return [normalized, ...prev];
+        });
+
+        setUnreadCount((prev) => prev + 1);
+
+        let toastType = "info";
+
+        const titleLower =
+          normalized.title.toLowerCase();
+
+        if (
+          titleLower.includes("confirmed") ||
+          titleLower.includes("booked") ||
+          titleLower.includes("completed")
+        ) {
+          toastType = "success";
+        } else if (
+          titleLower.includes("cancelled") ||
+          titleLower.includes("error")
+        ) {
+          toastType = "error";
+        } else if (
+          titleLower.includes("reminder") ||
+          titleLower.includes("warning")
+        ) {
+          toastType = "warning";
         }
-        const next = [normalized, ...prev];
-        const newUnreadCount = Math.max(0, next.filter((n) => !n.isRead && !n.read).length);
-        setUnreadCount(newUnreadCount);
-        return next;
-      });
 
-      // 2. Show in-app Toast alert
-      let toastType = "info";
-      const titleLower = normalized.title.toLowerCase();
-      if (titleLower.includes("confirmed") || titleLower.includes("booked") || titleLower.includes("completed")) {
-        toastType = "success";
-      } else if (titleLower.includes("cancelled") || titleLower.includes("error")) {
-        toastType = "error";
-      } else if (titleLower.includes("reminder") || titleLower.includes("warning")) {
-        toastType = "warning";
+        showToast({
+          title: normalized.title,
+          message: normalized.message,
+          type: toastType,
+          duration: 5000,
+        });
+
+        window.dispatchEvent(
+          new Event("medibook_notifications_updated")
+        );
       }
-
-      showToast({
-        title: normalized.title,
-        message: normalized.message,
-        type: toastType,
-        duration: 5000,
-      });
-
-      // 3. Dispatch event so open notification pages immediately refresh
-      window.dispatchEvent(new Event("medibook_notifications_updated"));
-    });
+    );
 
     return () => {
       unsubscribe();
@@ -280,9 +327,16 @@ export function NotificationProvider({ children }) {
     >
       {children}
 
-      {/* Global In-App Real-Time Toast Notifications */}
       {toasts.length > 0 && (
-        <div className="toast-container" style={{ position: "fixed", top: "24px", right: "24px", zIndex: 9999 }}>
+        <div
+          className="toast-container"
+          style={{
+            position: "fixed",
+            top: "24px",
+            right: "24px",
+            zIndex: 9999,
+          }}
+        >
           {toasts.map((toast) => (
             <Toast
               key={toast.id}
