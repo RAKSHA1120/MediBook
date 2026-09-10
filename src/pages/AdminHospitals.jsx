@@ -6,7 +6,6 @@ import SearchBox from "../components/SearchBox";
 import Modal from "../components/Modal";
 import StatusBadge from "../components/StatusBadge";
 import "./AdminShared.css";
-
 import { api } from "../utils/api";
 import {
   isValidPhoneNumber,
@@ -14,6 +13,8 @@ import {
   handlePhoneKeyDown,
   PHONE_ERROR_MESSAGE
 } from "../utils/phoneValidation";
+
+import ProfileModalTrigger from "../components/ProfileModalTrigger";
 
 function AdminHospitals() {
   const [hospitals, setHospitals] = useState([]);
@@ -239,17 +240,19 @@ function AdminHospitals() {
                 <tr key={h.id}>
                   {/* Column 1: Hospital Name & ID */}
                   <td>
-                    <div className="user-info-cell">
-                      <div className="user-avatar" style={{ background: "rgba(47, 111, 163, 0.1)", color: "var(--primary)" }}>
-                        <Building2 size={18} />
+                    <ProfileModalTrigger type="hospital" id={h.id}>
+                      <div className="user-info-cell">
+                        <div className="user-avatar" style={{ background: "rgba(47, 111, 163, 0.1)", color: "var(--primary)" }}>
+                          <Building2 size={18} />
+                        </div>
+                        <div className="user-details">
+                          <span className="user-name" style={{ fontSize: "14px", lineHeight: "1.35", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                            {h.name}
+                          </span>
+                          <span className="user-subtext" style={{ fontSize: "12px", marginTop: "2px" }}>{h.id}</span>
+                        </div>
                       </div>
-                      <div className="user-details">
-                        <span className="user-name" style={{ fontSize: "14px", lineHeight: "1.35", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                          {h.name}
-                        </span>
-                        <span className="user-subtext" style={{ fontSize: "12px", marginTop: "2px" }}>{h.id}</span>
-                      </div>
-                    </div>
+                    </ProfileModalTrigger>
                   </td>
 
                   {/* Column 2: Type & Category */}

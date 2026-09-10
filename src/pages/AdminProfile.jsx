@@ -2,8 +2,16 @@ import PageHeader from "../components/PageHeader";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Input from "../components/Input";
+import ProfileImageUploader from "../components/ProfileImageUploader";
+import { getCurrentUser } from "../utils/auth";
+import { useState, useEffect } from "react";
 
 function AdminProfile() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    setUser(getCurrentUser());
+  }, []);
   return (
     <div className="patient-dashboard-content">
       <PageHeader 
@@ -13,9 +21,17 @@ function AdminProfile() {
 
       <Card style={{ marginTop: "var(--spacing-lg)", maxWidth: "600px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-lg)", marginBottom: "var(--spacing-xl)" }}>
-          <div style={{ width: "80px", height: "80px", borderRadius: "50%", backgroundColor: "var(--primary-color)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem", fontWeight: "bold" }}>
-            A
-          </div>
+          <ProfileImageUploader 
+            currentImageUrl={user?.profileImageUrl} 
+            onImageUpdated={(newImageUrl) => {
+              if (user) {
+                const updatedUser = { ...user, profileImageUrl: newImageUrl };
+                setUser(updatedUser);
+                sessionStorage.setItem("medibook_current_user", JSON.stringify(updatedUser));
+                window.dispatchEvent(new Event("medibook_current_user_updated"));
+              }
+            }} 
+          />
           <div>
             <h3 style={{ margin: 0 }}>System Admin</h3>
             <p style={{ margin: 0, color: "var(--text-secondary)" }}>Administrator Role</p>

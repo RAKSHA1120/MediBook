@@ -24,6 +24,8 @@ namespace MediBook.Api.Models
 
         public bool IsActive { get; set; } = true;
 
+        public string? ProfileImageUrl { get; set; }
+
         // Relationship with Doctors
         public ICollection<Doctor> Doctors { get; set; } = new List<Doctor>();
 

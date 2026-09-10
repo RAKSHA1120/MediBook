@@ -31,6 +31,19 @@ namespace MediBook.Api.Controllers
         public string Advice { get; set; } = string.Empty;
     }
 
+    public class ConfirmDto
+    {
+        public int DoctorId { get; set; }
+    }
+
+    public class RescheduleDto
+    {
+        public int DoctorId { get; set; }
+        public DateTime NewAppointmentDate { get; set; }
+        public TimeSpan NewAppointmentTime { get; set; }
+        public string? Reason { get; set; }
+    }
+
     [ApiController]
     [Route("api/[controller]")]
     public class AppointmentsController : ControllerBase
@@ -344,6 +357,86 @@ namespace MediBook.Api.Controllers
             return NoContent();
         }
 
+        [HttpPut("{id}/confirm")]
+        public async Task<IActionResult> ConfirmAppointment(int id, [FromBody] ConfirmDto dto)
+        {
+            var appointment = await _context.Appointments.FindAsync(id);
+            if (appointment == null) return NotFound(new { message = "Appointment not found." });
+
+            if (appointment.DoctorId != dto.DoctorId)
+                return Unauthorized(new { message = "You are not authorized to confirm this appointment." });
+
+            if (appointment.Status == "Completed" || appointment.Status == "Cancelled")
+                return BadRequest(new { message = "Appointment cannot be confirmed in its current state." });
+
+            var oldStatus = appointment.Status;
+            appointment.Status = "Confirmed";
+            await _context.SaveChangesAsync();
+
+            await _notificationService.NotifyAppointmentStatusChangedAsync(appointment, oldStatus, "Confirmed");
+
+            return NoContent();
+        }
+
+        [HttpPut("{id}/reschedule")]
+        public async Task<IActionResult> RescheduleAppointment(int id, [FromBody] RescheduleDto dto)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var appointment = await _context.Appointments.FindAsync(id);
+                if (appointment == null) return NotFound(new { message = "Appointment not found." });
+
+                if (appointment.DoctorId != dto.DoctorId)
+                    return Unauthorized(new { message = "You are not authorized to reschedule this appointment." });
+
+                if (appointment.Status == "Completed" || appointment.Status == "Cancelled")
+                    return BadRequest(new { message = "Appointment cannot be rescheduled in its current state." });
+
+                // Check for conflict
+                var hasConflict = await _context.Appointments
+                    .AnyAsync(a => a.DoctorId == dto.DoctorId
+                        && a.Id != appointment.Id
+                        && a.AppointmentDate.Date == dto.NewAppointmentDate.Date
+                        && a.AppointmentTime == dto.NewAppointmentTime
+                        && a.Status != "Cancelled");
+
+                if (hasConflict)
+                    return Conflict(new { message = "The doctor already has an appointment at the selected date and time." });
+
+                var reschedule = new AppointmentReschedule
+                {
+                    AppointmentId = appointment.Id,
+                    OldAppointmentDate = appointment.AppointmentDate,
+                    OldAppointmentTime = appointment.AppointmentTime,
+                    NewAppointmentDate = dto.NewAppointmentDate.Date,
+                    NewAppointmentTime = dto.NewAppointmentTime,
+                    Reason = dto.Reason,
+                    RescheduledByUserId = dto.DoctorId // Assuming DoctorId is a proxy for UserId for now or just logged
+                };
+
+                _context.AppointmentReschedules.Add(reschedule);
+
+                appointment.AppointmentDate = dto.NewAppointmentDate.Date;
+                appointment.AppointmentTime = dto.NewAppointmentTime;
+                
+                var oldStatus = appointment.Status;
+                appointment.Status = "Confirmed";
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                await _notificationService.NotifyAppointmentStatusChangedAsync(appointment, oldStatus, "Rescheduled");
+
+                return Ok(appointment);
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, new { message = "An error occurred while rescheduling the appointment." });
+            }
+        }
+
         [HttpPut("{id}/complete")]
         public async Task<IActionResult> CompleteAppointment(int id, [FromBody] CompleteVisitDto dto)
         {
@@ -353,8 +446,8 @@ namespace MediBook.Api.Controllers
             if (appointment.DoctorId != dto.DoctorId)
                 return Unauthorized(new { message = "You are not authorized to complete this appointment." });
 
-            if (appointment.Status == "Completed" || appointment.Status == "Cancelled")
-                return BadRequest(new { message = "Appointment cannot be completed in its current state." });
+            if (appointment.Status != "Confirmed")
+                return BadRequest(new { message = "Only confirmed appointments can be completed." });
 
             var details = new
             {
@@ -401,6 +494,9 @@ namespace MediBook.Api.Controllers
         {
             var appointment = await _context.Appointments.FindAsync(id);
             if (appointment == null) return NotFound();
+
+            if (appointment.Status == "Completed" || appointment.Status == "Cancelled")
+                return BadRequest(new { message = "Appointment cannot be cancelled in its current state." });
 
             var oldStatus = appointment.Status;
             appointment.Status = "Cancelled";
